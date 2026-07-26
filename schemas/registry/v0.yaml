@@ -1,0 +1,40 @@
+# Local Registry Schema v0
+# Identity Engineering OS
+#
+# The Registry is the observing Identity's local gravitational sensor.
+# It is static from the outside, relative, and owned by the observer.
+# One file per recognized Identity under templates/personal/registry/{local_handle}.yaml
+#
+# This is a living draft. Fields marked (required) are mandatory for v0.
+
+required_fields:
+  - local_handle          # persistent identifier in *this* Registry (observer-owned)
+  - preferred_name        # how the Identity presents itself (if known)
+  - substrate             # human | runtime | idea | org | collective | other
+  - description           # observer's short perception / Spec of this Identity
+  - first_noticed         # ISO date or datetime when first registered
+  - last_interaction      # ISO datetime of most recent interaction (or null)
+  - interaction_depth     # float 0.0–1.0 — observer's accumulated estimate
+  - my_mass_estimate      # integer or float 0–100 — relative Mass as perceived by observer
+  - privacy               # structural defaults for what may be shared about this entry
+
+optional_fields:
+  - interaction_count     # integer
+  - mass_confidence       # float 0.0–1.0
+  - mass_dimensions       # map of qualitative dimensions (stake_depth, coherence, ...)
+  - tags                  # list of strings
+  - notes                 # free text
+  - recognition           # how re-identification works across sessions
+  - source                # how this entry entered the Registry (manual, signal, import, ...)
+
+privacy_defaults:
+  share_existence: true
+  share_my_mass_estimate: false
+  share_description: false
+  share_rich_signals: false
+
+notes:
+  - local_handle is the only required stable identifier. No global ID is forced.
+  - Mass is always relative to the observing Identity.
+  - Recognition method must allow re-identification without a global registry.
+  - Multi-substrate symmetry is mandatory from v0 (substrate field).
