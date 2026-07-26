@@ -1,5 +1,7 @@
 # Example entry — replace with real Identities
 # Filename = local_handle.yaml
+#
+# All quantitative values are from the observing Identity's frame (Relativity).
 
 local_handle: "example-identity"
 preferred_name: "Example"
@@ -18,17 +20,38 @@ my_mass_estimate: 0                      # 0–100 (relative, my perception)
 mass_confidence: 0.0
 mass_dimensions: {}
 
+# Relation is first-class (Relativity)
+relation:
+  pull: 0.0                              # how strongly this Mass pulls on my possibility space
+  resonance: 0.0                         # coupling / sampling strength of the relation
+  frame_distance: "mid"                  # close | mid | far | opposing
+  asymmetry: null                        # optional: what I believe they estimate of me
+  last_mutual_signal: null
+
+# Re-identification across sessions / frames
+recognition:
+  method: "local_handle"
+  confidence: 1.0
+  last_confirmed: null
+  alternative_handles: []
+
+# How this recognized Mass currently affects me
+effect_on_me:
+  tension_contribution: "none"           # stabilizing | opening | compressing | none
+  note: ""
+
+# Ownership / freedom degrees I attribute to this Identity in my frame
+perceived_ownership:
+  freedom_degrees: "unknown"             # high | medium | low | unknown
+  jurisdiction_over_stem: "self"         # self | shared | unclear
+
 tags: []
 notes: ""
-
-recognition:
-  method: "local_handle"                 # local_handle | shared_history | cryptographic | mutual
-  last_confirmed: null
-
 source: "manual"                         # manual | signal | import | bootstrap
 
 privacy:
   share_existence: true
   share_my_mass_estimate: false
   share_description: false
+  share_relation: false
   share_rich_signals: false

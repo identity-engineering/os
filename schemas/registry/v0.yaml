@@ -5,7 +5,11 @@
 # It is static from the outside, relative, and owned by the observer.
 # One file per recognized Identity under templates/personal/registry/{local_handle}.yaml
 #
-# This is a living draft. Fields marked (required) are mandatory for v0.
+# Relativity core:
+# - Everything is measured from the observer's frame.
+# - Mass only becomes visible in relation.
+# - Each recognized Mass creates a Spec inside the observer that feeds the Tension Tensor.
+# - The relation itself is first-class.
 
 required_fields:
   - local_handle          # persistent identifier in *this* Registry (observer-owned)
@@ -16,25 +20,43 @@ required_fields:
   - last_interaction      # ISO datetime of most recent interaction (or null)
   - interaction_depth     # float 0.0–1.0 — observer's accumulated estimate
   - my_mass_estimate      # integer or float 0–100 — relative Mass as perceived by observer
+  - relation              # first-class relational properties from the observer's frame
+  - recognition           # how re-identification works across sessions / frames
   - privacy               # structural defaults for what may be shared about this entry
 
 optional_fields:
   - interaction_count     # integer
   - mass_confidence       # float 0.0–1.0
   - mass_dimensions       # map of qualitative dimensions (stake_depth, coherence, ...)
+  - effect_on_me          # how this recognized Mass currently affects my Tension / Spec
+  - perceived_ownership   # degrees of freedom / jurisdiction I attribute to this Identity
   - tags                  # list of strings
   - notes                 # free text
-  - recognition           # how re-identification works across sessions
   - source                # how this entry entered the Registry (manual, signal, import, ...)
+
+relation_fields:
+  - pull                  # 0.0–1.0 how strongly this Mass pulls on my possibility space
+  - resonance             # 0.0–1.0 coupling frequency / sampling strength of the relation
+  - frame_distance        # qualitative: close | mid | far | opposing
+  - asymmetry             # optional: what I believe they estimate of me
+  - last_mutual_signal    # when a signal last came back from them
+
+recognition_fields:
+  - method                # local_handle | shared_history | cryptographic | mutual | ...
+  - confidence            # 0.0–1.0 certainty that this is the same Identity across frames
+  - last_confirmed        # ISO datetime
+  - alternative_handles   # other names/handles I have seen for this Identity
 
 privacy_defaults:
   share_existence: true
   share_my_mass_estimate: false
   share_description: false
+  share_relation: false
   share_rich_signals: false
 
 notes:
   - local_handle is the only required stable identifier. No global ID is forced.
-  - Mass is always relative to the observing Identity.
-  - Recognition method must allow re-identification without a global registry.
+  - All quantitative fields are relative to the observing Identity (my_...).
+  - The relation object makes the edge first-class, as required by Relativity.
+  - effect_on_me and perceived_ownership are asymptotic and ownership-judged.
   - Multi-substrate symmetry is mandatory from v0 (substrate field).
