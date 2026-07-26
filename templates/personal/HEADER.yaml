@@ -1,0 +1,5 @@
+# Placeholder — Header Schema v0.1 not yet defined.
+# See docs/next.md and issue #3.
+#
+# Will be the always-on entry point that every interaction reads
+# and that can trigger a Tension Tensor update.
