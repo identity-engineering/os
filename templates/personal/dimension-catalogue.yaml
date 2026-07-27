@@ -1,0 +1,34 @@
+# Dimension Catalogue / Metric Stem
+# Observer-level basis + metric for distance and tension calculations.
+# See schemas/dimension-catalogue/v0.yaml
+
+observer: "jonas"
+last_updated: null
+
+dimensions:
+  # Example entries — replace / extend through discovery
+  - name: "ownership_depth"
+    weight: 1.0
+    active: true
+    discovered_via: null
+    first_seen: null
+    note: ""
+
+  - name: "clarity_of_vision"
+    weight: 1.0
+    active: true
+    discovered_via: null
+    first_seen: null
+    note: ""
+
+# Sparse metric: only non-orthogonal or specially weighted pairs
+# Default (absent entry) = orthogonal (g = 0 for i ≠ j)
+metric: []
+  # Example:
+  # - dim_a: "ownership_depth"
+  #   dim_b: "forced_alignment_tendency"
+  #   g: -0.4
+  #   confidence: 0.6
+  #   source: "judgment"
+  #   last_updated: "2026-07-27"
+  #   note: "In my frame these tend to anti-correlate"
