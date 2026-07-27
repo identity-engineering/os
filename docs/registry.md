@@ -20,7 +20,17 @@ It answers:
 - When a new dimension is discovered, the observer may evaluate its relevance for already known Identities → the world-view expands and old entries can be re-framed.
 - Each dimensional assessment carries its own confidence.
 - Multi-dimensional distance (to self and between Identities) and overall tension are **derived dynamically** from the whole Registry. They are not stored as primary persistent state.
-- Curvature of the possibility space will later be derived from the Mass distribution + this dimensional metric. The precise physical analog (how material differences produce curvature) remains an open requirement of the IE tension experience.
+
+## Geometry of Mass, Density and Volume (locked 27.07.2026)
+
+- The space is the infinite-dimensional span of all discovered dimensions.
+- Each Identity is an **alloy** (vector over that basis). Degree on each dimension = potential mass component.
+- **Mass** = density of the alloy (relative, confidence- and interaction-depth-weighted).
+- **Volume** candidate = number / weighted count of interacting Identities that estimate me (they sample my dimensions).
+- Self-Mass is never self-declared. It emerges from the estimates returned by the surrounding Identities, weighted by their own Mass and interaction depth.
+- I always hold my estimates of the densities around me; I also receive their estimates of me and (when shared) their own emergent Mass. This gives rich information for both self and other.
+- Open: whether density still needs an explicit depth / intensity parameter in the dimension structure.
+- Open: the exact balance between what I estimate of the surrounding vs. what I receive via signal (to be fixed in the interaction contract).
 
 ## Design decisions (v0)
 
@@ -48,8 +58,9 @@ It answers:
 ## What comes next
 
 1. Minimal interaction signal that can update an existing entry (or propose a new one) and potentially discover / propose new dimensions
-2. Live derivation rules for multi-dimensional distance and tension aggregation
+2. Live derivation rules for multi-dimensional distance, density aggregation and tension
 3. Dimension-discovery and optional cross-Identity propagation mechanics
-4. The still-open physical analog: how dimensional / material differences produce Curvature of the possibility space
+4. Clarification of density depth/intensity parameter (if needed)
+5. The still-open physical analog for how dimensional alloys produce Curvature
 
-See also: `schemas/registry/v0.yaml` and Issue #7.
+See also: `schemas/registry/v0.yaml`, `docs/tensor.md` and Issue #7.

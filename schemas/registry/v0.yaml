@@ -4,10 +4,14 @@
 # The Registry is the observing Identity's local gravitational sensor and
 # the carrier of its high-dimensional, open classification space (the living Tensor).
 #
-# Relativity core:
+# Relativity + Geometry core (locked 27.07.2026):
 # - Everything is measured from the observer's frame.
-# - Mass only becomes visible in relation.
-# - The high-dimensional dimensional vectors *are* the material science of Mass.
+# - The space is infinite-dimensional (distinct sum of all discovered dimensions).
+# - Each Identity is an alloy (vector over that basis).
+# - Degree on each dimension = potential mass component.
+# - Mass = density of the alloy (relative, confidence- and interaction-depth-weighted).
+# - Volume candidate = number / weighted count of interacting Identities that estimate me.
+# - Self-Mass is never self-declared; it emerges from surrounding estimates.
 # - Tension and multi-dimensional distance are derived dynamically from the whole Registry.
 # - No separate persistent Tensor file is required.
 # - Dimensions are open and Identity-discovered; new dimensions can re-frame existing entries.
@@ -22,13 +26,13 @@ required_fields:
   - first_noticed         # ISO date or datetime when first registered
   - last_interaction      # ISO datetime of most recent interaction (or null)
   - interaction_depth     # float 0.0–1.0 — observer's accumulated estimate
-  - my_mass_estimate      # integer or float 0–100 — relative Mass as perceived by observer
-  - dimensions            # open array of contentful dimensional assessments (the living Tensor)
+  - my_mass_estimate      # integer or float 0–100 — relative Mass as perceived by observer (density of alloy)
+  - dimensions            # open array of contentful dimensional assessments (the living Tensor / alloy)
   - recognition           # how re-identification works across sessions / frames
   - privacy               # structural defaults for what may be shared about this entry
 
 optional_fields:
-  - interaction_count     # integer
+  - interaction_count     # integer (contributes to volume candidate when I am the estimated one)
   - mass_confidence       # float 0.0–1.0 (overall)
   - relation              # first-class relational properties (pull, resonance, frame_distance, ...)
   - effect_on_me          # how this recognized Mass currently affects my tension / Spec
@@ -38,13 +42,15 @@ optional_fields:
   - source                # how this entry entered the Registry (manual, signal, import, ...)
 
 dimensions_structure:
-  # Each entry in the dimensions array:
+  # Each entry in the dimensions array (the alloy components):
   - name                  # string — open, contentful, observer-discovered (not a fixed ontology)
   - value                 # number (typically 0.0–1.0 or 0–100) — my assessment on this axis
   - confidence            # float 0.0–1.0 — how certain I am of this assessment
   - last_updated          # ISO datetime
-  - source                # interaction | judgment | observation | probe | inference | ...
+  - source                # interaction | judgment | observation | probe | inference | signal | ...
   - note                  # optional short owned comment
+  # Open question: whether an explicit depth / intensity parameter is still needed per dimension
+  # for a fuller density definition.
 
   # Notes on dimensions:
   # - These are the material science of Mass: character, substance, worldly classification axes.
@@ -54,6 +60,7 @@ dimensions_structure:
   #   whether it is also relevant for already known Identities → world-view expansion.
   # - Distance (to self and between Identities) is computed live from these vectors + confidences.
   # - Tension is an aggregation over the entire Registry; it is never stored as primary state.
+  # - my_mass_estimate is the condensed density of this alloy from the observer's frame.
 
 relation_fields:
   - pull                  # 0.0–1.0 how strongly this Mass pulls on my possibility space
@@ -79,7 +86,10 @@ privacy_defaults:
 notes:
   - local_handle is the only required stable identifier. No global ID is forced.
   - All quantitative fields are relative to the observing Identity.
-  - The open dimensions[] array *is* the living high-dimensional Tensor.
+  - The open dimensions[] array *is* the living high-dimensional Tensor / alloy description.
+  - Self-Mass emerges from surrounding estimates; it is never self-declared.
+  - Volume candidate = number / weighted count of Identities that estimate me.
   - Tension, multi-dimensional distance and (later) Curvature are derived, not primary storage.
   - Dimension discovery and optional cross-Identity propagation are core to world-view expansion.
   - Multi-substrate symmetry is mandatory from v0 (substrate field).
+  - Open: explicit depth/intensity in dimension parameters; exact estimate-vs-signal balance.
