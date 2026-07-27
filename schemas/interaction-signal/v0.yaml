@@ -1,0 +1,32 @@
+# Interaction Signal Schema v0
+# Identity Engineering OS
+#
+# Minimal contract for what crosses the boundary at interaction end.
+# See docs/interaction-signal.md for full reasoning.
+
+always_required:
+  - from                     # sender handle or ephemeral session id
+  - to                       # target handle as known in sender's Registry
+  - timestamp                # ISO datetime
+  - existence                # boolean, always true when signal is sent
+  - interaction_depth_delta  # float 0.0–1.0, contribution of this single interaction
+
+consent_based:
+  - coarse_mass_estimate     # number 0–100, sender's current estimate of receiver
+  - mass_confidence          # float 0.0–1.0
+  - dimensions_delta         # array of {name, value, confidence}
+  - relation_pull            # float 0.0–1.0
+
+privacy_defaults:
+  share_existence: true
+  share_interaction_depth_delta: true
+  share_coarse_mass_estimate: false
+  share_dimensions_delta: false
+  share_relation_pull: false
+  share_rich_signals: false
+
+notes:
+  - The minimal three fields (existence + depth_delta + addressing) are enough to keep volume and interaction tracking alive.
+  - Self-Mass emerges only from received coarse_mass_estimate values; it is never self-declared.
+  - Full dimensional alloys and tension states remain local unless higher consent is given.
+  - Estimate (what I hold in my Registry) and Signal (what I pass) stay strictly separated.

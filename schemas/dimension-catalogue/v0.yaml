@@ -1,0 +1,47 @@
+# Dimension Catalogue / Metric Stem v0
+# Identity Engineering OS
+#
+# Observer-level definition of the currently relevant basis and its metric.
+# This is the Grundstamm for all distance and tension calculations in the observer's frame.
+#
+# It does NOT store per-Identity alloys (those live in the Registry).
+# It defines:
+# - which dimensions are active
+# - their weights
+# - the pairwise angles / correlations between them (the metric g_ij)
+#
+# Mathematical ground:
+# - Basis vectors need not be orthogonal.
+# - g_ij = <e_i, e_j> encodes scaling (diagonal) and angles/dependencies (off-diagonal).
+# - Analogies: oblique coordinates, Riemannian metric tensor, Mahalanobis distance,
+#   crystal lattices, information geometry.
+# - Full per-dimension dependency tensors are deliberately out of scope for v0.
+
+required_fields:
+  - observer                # local_handle of the observing Identity
+  - last_updated            # ISO datetime
+  - dimensions              # list of active dimension definitions
+  - metric                  # sparse pairwise relationships (g_ij)
+
+dimension_entry:
+  - name                    # string, open, contentful
+  - weight                  # float, default 1.0 — importance for distance/tension
+  - active                  # boolean — whether currently used in calculations
+  - discovered_via          # which Identity or probe introduced it (optional)
+  - first_seen              # ISO date
+  - note                    # optional owned comment
+
+metric_entry:               # sparse; only store non-default / non-orthogonal pairs
+  - dim_a                   # name of first dimension
+  - dim_b                   # name of second dimension
+  - g                       # float — inner product / correlation / cos(theta)-like value
+  - confidence              # float 0.0–1.0
+  - source                  # judgment | observation | probe | inference | ...
+  - last_updated            # ISO datetime
+  - note                    # optional
+
+notes:
+  - Default assumption when no metric_entry exists: dimensions are orthogonal (g_ij = 0 for i ≠ j).
+  - Non-orthogonal relationships are first-class and ownership-managed.
+  - The catalogue can grow as new dimensions are discovered; metric entries are added only when the observer judges a dependency relevant.
+  - This file (or table) is the single source of the observer's current metric.
