@@ -1,5 +1,40 @@
-# Placeholder — Header Schema v0.1 not yet defined.
-# See docs/next.md and issue #3.
-#
-# Will be the always-on entry point that every interaction reads
-# and that can trigger a Tension Tensor update.
+# HEADER.yaml — always-on entry point (v0)
+# Read at the start of every interaction.
+# Write Interaction Signal at the end (see docs/interaction-signal.md).
+
+schema_version: "0"
+
+identity:
+  local_handle: "jonas"
+  preferred_name: "Jonas"
+
+substrate: "human"                       # human | runtime | idea | org | collective | other
+
+paths:
+  registry: "registry/"
+  dimension_catalogue: "dimension-catalogue.yaml"
+  trajectory: "trajectory/"
+  stem: "STEM.yaml"
+
+state_differential:
+  last_observed: null                    # ISO datetime — set when you consciously observe state
+  note: ""
+
+vision_gradient:
+  direction: ""                          # short owned description of current direction
+  last_sharpened: null
+  note: ""
+
+privacy:
+  share_existence: true
+  share_interaction_depth_delta: true
+  share_coarse_mass_estimate: false
+  share_dimensions_delta: false
+  share_relation_pull: false
+  share_rich_signals: false
+
+session:
+  # optional ephemeral hints for agents; not source of truth
+  last_signal_at: null
+
+notes: ""
