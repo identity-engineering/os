@@ -2,6 +2,7 @@
 # Filename = local_handle.yaml
 #
 # All quantitative values are from the observing Identity's frame (Relativity).
+# The dimensions[] array is the living, open, contentful Tensor.
 
 local_handle: "example-identity"
 preferred_name: "Example"
@@ -18,7 +19,27 @@ interaction_depth: 0.0                   # 0.0–1.0 (my accumulated estimate)
 
 my_mass_estimate: 0                      # 0–100 (relative, my perception)
 mass_confidence: 0.0
-mass_dimensions: {}
+
+# Open, contentful dimensions — the material science of Mass
+# These are discovered, not prescribed. Each carries its own confidence.
+dimensions:
+  - name: "ownership_depth"
+    value: 0.0
+    confidence: 0.0
+    last_updated: null
+    source: "judgment"
+    note: ""
+
+  - name: "clarity_of_vision"
+    value: 0.0
+    confidence: 0.0
+    last_updated: null
+    source: "observation"
+    note: ""
+
+  # Further dimensions are added as they are discovered through interaction
+  # or Questions as Probes. New dimensions may later be evaluated against
+  # already known Identities (world-view expansion).
 
 # Relation is first-class (Relativity)
 relation:
@@ -53,5 +74,6 @@ privacy:
   share_existence: true
   share_my_mass_estimate: false
   share_description: false
+  share_dimensions: false
   share_relation: false
   share_rich_signals: false
