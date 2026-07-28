@@ -1,0 +1,43 @@
+# Foreign-estimate zone schema v0
+# Identity Engineering OS
+#
+# Bounded region of an Identity's state that authorized others may write into
+# via receive_interaction_signal. Feeds emergent volume and self-Mass.
+# Does not hold Stem, Vision, access policy, or arbitrary third-party registry rows.
+
+location:
+  # Logical location (serialization depends on store):
+  # - files: registry/_foreign_estimates/{sender_handle}.yaml  OR  per-peer section
+  # - sqlite/supabase: table foreign_estimates
+  description: |
+    One record per (observer_identity, sender_identity) pair from the observer's frame:
+    "what this sender has written into me about the relation / about me".
+
+required_fields_per_sender:
+  - sender_handle           # as authenticated / claimed under policy
+  - sender_substrate        # if known
+  - first_signal_at         # ISO datetime
+  - last_signal_at          # ISO datetime
+  - signal_count            # integer
+  - accumulated_depth       # float — sum/decay of interaction_depth_delta (policy-defined)
+  - last_depth_delta        # float — most recent delta
+  - existence_confirmed     # boolean — true after at least one valid existence signal
+
+optional_fields_per_sender:
+  - coarse_mass_estimate    # number 0–100 — sender's estimate of *me* (only if grant allowed apply)
+  - mass_confidence         # float 0.0–1.0
+  - mass_estimate_at        # ISO datetime of last applied mass estimate
+  - dimensions_delta        # array of {name, value, confidence} if grant allowed
+  - relation_pull           # float if grant allowed
+  - last_receipt_id         # id of last receipt issued to sender
+  - quarantine              # boolean — if true, excluded from mass/volume aggregation
+  - notes                   # owned operational note (local only)
+
+derived_from_zone_not_stored_here:
+  - volume_candidate        # count or weighted count of non-quarantined senders with existence_confirmed
+  - emergent_self_mass      # aggregation over coarse_mass_estimate weighted by sender mass + depth (see docs/mass.md when present)
+
+invariants:
+  - Senders never write my Stem, Vision, Metric Stem weights, or access policy through this zone.
+  - Apply is always mediated by Identity Surface policy (auth, scope, rate limit).
+  - Quarantine / revoke can exclude a sender from aggregation without deleting audit history.

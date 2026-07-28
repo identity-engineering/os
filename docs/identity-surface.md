@@ -33,12 +33,14 @@ Relative Mass, volume, and tension can update without the human re-typing estima
 
 | Operation | Type | Purpose |
 |-----------|------|---------|
-| `receive_interaction_signal` | write (bounded) | Apply existence, depth_delta, optional mass estimate, optional consented fields |
+| `receive_interaction_signal` | write (bounded) | Apply existence, depth_delta, optional mass estimate, optional consented fields into foreign-estimate zone |
 | `get_public_card` | read (minimal) | Discoverability: handle, substrate, accepts_ie_signals |
 | `get_receipt` / list recent receipts | read | Audit and confirmation |
 | `list_grants` / `revoke_grant` | policy | Inspect and cut access |
 
 Further tools (rich dimension read/write, custom domain tools) are **opt-in** and subject to the access policy.
+
+See `schemas/surface-operations/v0.yaml` and `docs/foreign-estimate-zone.md`.
 
 ## Bounded foreign-write zone
 
@@ -117,4 +119,5 @@ An idea-Identity can have a surface too (often narrower). A runtime-Identity oft
 - `docs/communication.md` — transport vs payload vs receipt
 - `docs/local-entry.md` — AGENTS.md / local discoverability (not the inter-identity protocol)
 - `docs/interaction-signal.md` — payload fields
+- `docs/foreign-estimate-zone.md` — where applies land
 - `docs/realization-surface-runtime.md` — how this is implemented without every user coding a server
