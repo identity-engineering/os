@@ -1,0 +1,76 @@
+# Identity Surface operations v0
+# Logical ops; bindings = MCP tools and/or HTTP routes (see docs/identity-surface.md).
+
+operations:
+  receive_interaction_signal:
+    type: write_bounded
+    description: |
+      Accept an IE Interaction Signal and, if policy allows, apply it into the
+      callee's foreign-estimate zone. Always returns a receipt.
+    request:
+      required:
+        - from                  # sender handle (authenticated identity)
+        - to                    # target handle (must match this surface)
+        - timestamp             # ISO datetime
+        - existence             # boolean, must be true for a normal ping
+        - interaction_depth_delta  # float 0.0–1.0
+      optional_consent:
+        - coarse_mass_estimate  # sender's estimate of the callee
+        - mass_confidence
+        - dimensions_delta
+        - relation_pull
+      meta:
+        - schema_version        # "0"
+        - transport             # mcp | http | cli | file | a2a | other
+    response_receipt:
+      required:
+        - receipt_id
+        - status                # accepted | applied | rejected | partial
+        - timestamp
+      optional:
+        - applied_fields        # list of field names actually written
+        - rejected_fields       # list of field names refused (with reasons)
+        - reason                # human-readable summary
+        - quarantine            # if sender was quarantined
+
+  get_public_card:
+    type: read_minimal
+    description: Minimal discoverability without exposing the foreign-estimate zone.
+    response:
+      - local_handle
+      - preferred_name          # optional
+      - substrate
+      - accepts_ie_signals      # boolean
+      - schema_version
+
+  get_receipt:
+    type: read
+    request:
+      - receipt_id
+    response:
+      - full receipt record if caller is authorized (sender or owner)
+
+  list_grants:
+    type: policy_read
+    description: Owner or authorized admin lists current grants/scopes.
+
+  revoke_grant:
+    type: policy_write_critical
+    description: |
+      Revoke a grant. Criticality may require human approval depending on policy.
+      Does not by itself erase audit history; may set quarantine on sender.
+
+http_binding_sketch:
+  base: "/ie/v0"
+  post_receive: "/ie/v0/signals"
+  get_card: "/ie/v0/card"
+  get_receipt: "/ie/v0/receipts/{id}"
+
+mcp_binding_sketch:
+  tools:
+    - name: ie_receive_interaction_signal
+      input_schema: request above
+    - name: ie_get_public_card
+      input_schema: {}
+    - name: ie_get_receipt
+      input_schema: { receipt_id: string }

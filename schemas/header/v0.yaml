@@ -1,0 +1,61 @@
+# Header Schema v0
+# Identity Engineering OS
+#
+# Always-on entry point. Every interaction reads this first.
+# The Interaction Signal is written at the end.
+# Together they turn static Registry files into a living system.
+#
+# Design rules:
+# - Minimal enough that any agent/tool in any environment can parse it
+# - Points into Registry + Metric Stem (does not duplicate alloys)
+# - Carries State Differential + Vision Gradient anchors
+# - Privacy defaults structural and session-relevant
+# - Multi-substrate from day 1
+# - No rich tension state stored here (tension is derived live from Registry)
+
+required_fields:
+  - identity                # who this Header belongs to
+  - substrate               # human | runtime | idea | org | collective | other
+  - paths                   # where Registry, Metric Stem, Trajectory live
+  - state_differential      # anchors for observed change (past → now)
+  - vision_gradient         # anchors for intended direction (now → future)
+  - privacy                 # session-relevant sharing defaults
+  - schema_version          # "0"
+
+optional_fields:
+  - session                 # ephemeral session metadata if useful
+  - last_signal_at          # when the last Interaction Signal was written
+  - notes                   # short owned comment
+
+identity_fields:
+  - local_handle            # persistent in this install
+  - preferred_name          # display name if any
+
+paths_fields:
+  - registry                # relative path to registry/ directory
+  - dimension_catalogue     # relative path to Metric Stem file
+  - trajectory              # relative path to trajectory/ (may be empty in v0)
+  - stem                    # relative path to STEM file (may be placeholder)
+
+state_differential_fields:
+  - last_observed           # ISO datetime — when state was last consciously observed
+  - note                    # optional short owned note on recent change
+
+vision_gradient_fields:
+  - direction               # short owned description of current direction
+  - last_sharpened          # ISO datetime or null
+  - note                    # optional
+
+privacy_fields:
+  - share_existence         # default true (aligns with Signal always-passed)
+  - share_interaction_depth_delta  # default true
+  - share_coarse_mass_estimate     # default false
+  - share_dimensions_delta         # default false
+  - share_relation_pull            # default false
+  - share_rich_signals             # default false
+
+notes:
+  - Header is read-only for most agents at session start; updates to anchors are ownership acts.
+  - Rich Mass, dimensions, and tension are NOT in the Header — they live in Registry / are derived.
+  - After interaction, write an Interaction Signal (see schemas/interaction-signal/v0.yaml).
+  - Header must stay small: it is the door, not the house.
