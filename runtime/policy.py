@@ -1,0 +1,79 @@
+"""Minimal access policy for Surface Runtime v0 local apply."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Optional
+
+from .models import InteractionSignal
+
+
+@dataclass
+class LocalPolicy:
+    """Default Free-tier policy.
+
+    Always-passed fields (existence, interaction_depth_delta) auto-apply
+    for any authenticated peer that is not quarantined.
+
+    Consent fields require explicit grant (or open_consent=True for dogfood).
+    Critical surface changes are never handled here – they stay out of band.
+    """
+
+    # When True, consent fields are applied if present (useful for local dogfood).
+    open_consent: bool = False
+
+    # Handles that are currently quarantined (no aggregation influence).
+    quarantined_handles: set[str] = field(default_factory=set)
+
+    # Explicit per-peer grants for consent fields (handle -> set of field names).
+    grants: dict[str, set[str]] = field(default_factory=dict)
+
+    # Simple rate limit: max signals per sender in a short window (local only).
+    max_signals_per_sender: int = 1000
+
+    def is_quarantined(self, handle: str) -> bool:
+        return handle in self.quarantined_handles
+
+    def may_apply_consent_field(self, sender: str, field_name: str) -> bool:
+        if self.open_consent:
+            return True
+        granted = self.grants.get(sender, set())
+        return field_name in granted or "*" in granted
+
+    def evaluate(self, signal: InteractionSignal) -> tuple[list[str], list[dict[str, str]], bool]:
+        """Return (fields_to_apply, rejected_with_reason, quarantine_flag)."""
+        applied: list[str] = []
+        rejected: list[dict[str, str]] = []
+        quarantine = self.is_quarantined(signal.from_handle)
+
+        if quarantine:
+            # Still accept existence for audit, but mark quarantine on receipt.
+            # Depth and consent are refused while quarantined.
+            applied.append("existence")
+            rejected.append({"field": "interaction_depth_delta", "reason": "sender quarantined"})
+            for f in ("coarse_mass_estimate", "mass_confidence", "dimensions_delta", "relation_pull"):
+                if getattr(signal, f) is not None:
+                    rejected.append({"field": f, "reason": "sender quarantined"})
+            return applied, rejected, True
+
+        # Always-passed
+        if signal.existence:
+            applied.append("existence")
+        applied.append("interaction_depth_delta")
+
+        # Consent-based
+        consent_map = {
+            "coarse_mass_estimate": signal.coarse_mass_estimate,
+            "mass_confidence": signal.mass_confidence,
+            "dimensions_delta": signal.dimensions_delta,
+            "relation_pull": signal.relation_pull,
+        }
+        for name, value in consent_map.items():
+            if value is None:
+                continue
+            if self.may_apply_consent_field(signal.from_handle, name):
+                applied.append(name)
+            else:
+                rejected.append({"field": name, "reason": "no grant for consent field"})
+
+        return applied, rejected, False

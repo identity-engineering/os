@@ -1,0 +1,19 @@
+# Example foreign-estimate record (not a real sender)
+# Shape matches schemas/foreign-estimate-zone/v0.yaml
+
+sender_handle: peer-example
+sender_substrate: human
+first_signal_at: "2026-07-28T10:00:00+00:00"
+last_signal_at: "2026-07-28T11:30:00+00:00"
+signal_count: 3
+accumulated_depth: 0.42
+last_depth_delta: 0.15
+existence_confirmed: true
+coarse_mass_estimate: 55
+mass_confidence: 0.6
+mass_estimate_at: "2026-07-28T11:30:00+00:00"
+dimensions_delta: null
+relation_pull: null
+last_receipt_id: null
+quarantine: false
+notes: Example only – replace by real apply path writes
