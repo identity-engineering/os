@@ -84,9 +84,11 @@ This is the local analogue of "follow / connect", without a global social graph 
 | Surface ops (`receive_interaction_signal`, …) | How the receiver applies a sent signal |
 | Foreign-estimate zone | Only default place inbound estimates about me land |
 | Registry | My local list of recognized identities (gravitational sensor) |
-| **Request / inbox** (to be specified) | How I *ask* without forcing an answer |
+| **Request / inbox** | How I *ask* without forcing an answer — tracked in issue #31 |
 
 ## Open work (next schema/ops)
+
+Tracked in **[issue #31](https://github.com/identity-engineering/os/issues/31)**:
 
 1. `request_estimate` (or equivalent) operation + request record shape
 2. Inbox / pending-request store (local files first)
@@ -107,17 +109,20 @@ This is the local analogue of "follow / connect", without a global social graph 
 Structurally this dual looks like connection + endorsement mechanics in social networks.
 The telos is different: relative Mass, volume, tension, Stem ownership, causal entropy — not engagement or content ranking.
 
+Full orientation: **`docs/ecosystem-vision.md`** (standard first, platform optional, collective intelligence as possible emergence).
+
 IE OS therefore positions as:
 
 1. **Local-first installable runtime + open contracts** (what we build now)
 2. **Standard that other systems can speak** (MCP / HTTP / later protocol bridges)
 3. **Optional managed surface** (Pro), not a mandatory global social graph
 
-A full "collective intelligence social layer" may grow on top of these contracts. It is not the v0 product claim.
+## See also
 
-See also:
+- `docs/ecosystem-vision.md`
 - `docs/interaction-signal.md`
 - `docs/foreign-estimate-zone.md`
 - `docs/identity-surface.md`
 - `docs/surface-runtime-worked-example.md`
-- Issue track for request/inbox ops (to be opened from this design)
+- `docs/surface-runtime-local.md`
+- [Issue #31](https://github.com/identity-engineering/os/issues/31) — request + inbox implementation

@@ -12,12 +12,13 @@ It turns the geometric + ownership primitives (Mass, Curvature, Gravitation, Rot
 **This is**
 - A minimal, personal-first structure that can be cloned / copied so the next interaction already has a Header and can update a Tension Tensor.
 - Environment-agnostic core contracts (Stem, Header, Trajectory, relative Mass, local Registry, Privacy defaults).
-- The foundation for later environment adapters (`.github/`, `.claude/`, `.grok/`, skills, agents, hooks…) and, later, a CLI with free personal / paid collective tiers.
+- Local Surface Runtime (apply Interaction Signals into a bounded foreign-estimate zone, receipts).
+- The foundation for later environment adapters (`.github/`, `.claude/`, `.grok/`, skills, agents, hooks…) and a CLI with free personal / paid collective tiers.
 
 **This is not (yet)**
 - A full digital-organism agent system (sensory / immunity / vitality / creativity / stability).
   Those patterns from TIM are valuable, but only after they can be derived from and remain consistent with the Identity Engineering primitives. They stay out of the minimal start on purpose.
-- A finished schema set. The schemas here are deliberate placeholders. The next work is the IE praxis itself.
+- A global social network or attention platform. See `docs/ecosystem-vision.md`.
 
 ## Core idea adapted from TIM
 
@@ -31,35 +32,43 @@ Biology-inspired agents and full Dynamic Governance come later — only when the
 
 ```
 os/
-├── schemas/                  # Core contracts (to be filled)
-│   ├── stem/
-│   ├── header/
-│   ├── trajectory/
-│   ├── mass-proxy/
-│   ├── tension-tensor/
-│   └── registry/
+├── runtime/                  # Surface Runtime v0 (local apply + thin HTTP)
+├── schemas/                  # Core contracts
 ├── templates/
 │   └── personal/             # Minimal Viable Install target
-│       ├── STEM.yaml
-│       ├── HEADER.yaml
-│       ├── trajectory/
-│       └── registry/
 ├── docs/
 │   ├── principles.md
-│   └── next.md
+│   ├── next.md
+│   ├── ecosystem-vision.md
+│   ├── bidirectional-gravitational-sensor.md
+│   ├── surface-runtime-local.md
+│   └── …
 └── README.md
 ```
 
 ## Current status
 
-Skeleton only. The real work is the IE praxis:
+Operational core advancing:
 
-1. Mass attributes & relative measurement
-2. Tension Tensor calculation / update protocol
-3. Communication Header (always-on entry point)
-4. Complete relative identity world view (local Registry, interaction signals, privacy defaults)
+- Local Registry + Metric Stem + Interaction Signal contracts
+- Surface Runtime v0: deterministic local apply, receipts, thin HTTP surface
+- Bidirectional gravitational sensor design (outbound signal + inbound estimate request/inbox)
+- Strategic orientation: standard + local runtime first; ecosystem may grow (`docs/ecosystem-vision.md`)
 
-See `docs/next.md`.
+See `docs/next.md` for praxis priorities and open issues.
+
+## Key docs
+
+| Doc | Purpose |
+|-----|---------|
+| `docs/principles.md` | Invariants |
+| `docs/ecosystem-vision.md` | Standard vs platform vs collective-intelligence horizon |
+| `docs/bidirectional-gravitational-sensor.md` | Outbound signal + inbound request/inbox |
+| `docs/surface-runtime-local.md` | How to run local apply / HTTP |
+| `docs/surface-runtime-worked-example.md` | Concrete signal → receipt walkthrough |
+| `docs/identity-surface.md` | Surface ops and ownership of policy |
+| `docs/foreign-estimate-zone.md` | Bounded write region |
+| `docs/next.md` | Immediate praxis order |
 
 ## Related
 
