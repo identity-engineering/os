@@ -1,0 +1,161 @@
+"""Local deterministic apply path for Identity Surface Runtime v0."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional, Union
+
+from .models import (
+    ApplyStatus,
+    ForeignEstimateRecord,
+    InteractionSignal,
+    Receipt,
+    _utcnow,
+)
+from .policy import LocalPolicy
+from .storage import ForeignEstimateStore
+
+
+def apply_interaction_signal(
+    signal: InteractionSignal,
+    *,
+    registry_root: Union[str, Path],
+    policy: Optional[LocalPolicy] = None,
+    expected_to_handle: Optional[str] = None,
+) -> Receipt:
+    """Apply an Interaction Signal into the local foreign-estimate zone.
+
+    Deterministic, no network. Returns a Receipt in all cases.
+
+    Steps (see docs/foreign-estimate-zone.md):
+    1. Validate payload
+    2. Optional to-handle match (surface identity)
+    3. Policy evaluation (quarantine, always-passed vs consent)
+    4. Load or create ForeignEstimateRecord
+    5. Update counters / fields
+    6. Persist + emit receipt
+    """
+    policy = policy or LocalPolicy()
+    store = ForeignEstimateStore(Path(registry_root))
+
+    # 1. Validate
+    errors = signal.validate_required()
+    if errors:
+        return Receipt.create(
+            ApplyStatus.REJECTED,
+            signal.from_handle,
+            signal.to_handle,
+            reason="; ".join(errors),
+        )
+
+    # 2. Surface identity check (optional but recommended)
+    if expected_to_handle and signal.to_handle != expected_to_handle:
+        return Receipt.create(
+            ApplyStatus.REJECTED,
+            signal.from_handle,
+            signal.to_handle,
+            reason=f"to_handle mismatch: expected {expected_to_handle}",
+        )
+
+    # 3. Policy
+    fields_to_apply, rejected, quarantine = policy.evaluate(signal)
+
+    if not fields_to_apply and rejected:
+        return Receipt.create(
+            ApplyStatus.REJECTED,
+            signal.from_handle,
+            signal.to_handle,
+            rejected=rejected,
+            reason="policy refused all fields",
+            quarantine=quarantine,
+        )
+
+    # 4. Load / create record
+    record = store.load(signal.from_handle)
+    now = signal.timestamp or _utcnow()
+    if record is None:
+        record = ForeignEstimateRecord(
+            sender_handle=signal.from_handle,
+            first_signal_at=now,
+            last_signal_at=now,
+            signal_count=0,
+            existence_confirmed=False,
+        )
+
+    # 5. Apply fields
+    applied: list[str] = []
+
+    if "existence" in fields_to_apply:
+        record.existence_confirmed = True
+        applied.append("existence")
+
+    if "interaction_depth_delta" in fields_to_apply:
+        delta = float(signal.interaction_depth_delta)
+        record.last_depth_delta = delta
+        record.accumulated_depth = float(record.accumulated_depth) + delta
+        applied.append("interaction_depth_delta")
+
+    if "coarse_mass_estimate" in fields_to_apply and signal.coarse_mass_estimate is not None:
+        record.coarse_mass_estimate = float(signal.coarse_mass_estimate)
+        record.mass_estimate_at = now
+        applied.append("coarse_mass_estimate")
+
+    if "mass_confidence" in fields_to_apply and signal.mass_confidence is not None:
+        record.mass_confidence = float(signal.mass_confidence)
+        applied.append("mass_confidence")
+
+    if "dimensions_delta" in fields_to_apply and signal.dimensions_delta is not None:
+        record.dimensions_delta = signal.dimensions_delta
+        applied.append("dimensions_delta")
+
+    if "relation_pull" in fields_to_apply and signal.relation_pull is not None:
+        record.relation_pull = float(signal.relation_pull)
+        applied.append("relation_pull")
+
+    record.last_signal_at = now
+    record.signal_count = int(record.signal_count) + 1
+    record.quarantine = quarantine
+
+    # 6. Persist + receipt
+    receipt = Receipt.create(
+        ApplyStatus.APPLIED if not rejected else ApplyStatus.PARTIAL,
+        signal.from_handle,
+        signal.to_handle,
+        applied=applied,
+        rejected=rejected,
+        reason="applied to foreign-estimate zone" if applied else "no fields applied",
+        quarantine=quarantine,
+    )
+    record.last_receipt_id = receipt.receipt_id
+    store.save(record)
+
+    return receipt
+
+
+def apply_from_dict(
+    payload: dict,
+    *,
+    registry_root: Union[str, Path],
+    policy: Optional[LocalPolicy] = None,
+    expected_to_handle: Optional[str] = None,
+) -> Receipt:
+    """Convenience wrapper: dict payload → InteractionSignal → apply."""
+    signal = InteractionSignal(
+        from_handle=str(payload.get("from") or payload.get("from_handle") or ""),
+        to_handle=str(payload.get("to") or payload.get("to_handle") or ""),
+        timestamp=str(payload.get("timestamp") or _utcnow()),
+        existence=bool(payload.get("existence", True)),
+        interaction_depth_delta=float(payload.get("interaction_depth_delta", 0.0)),
+        coarse_mass_estimate=payload.get("coarse_mass_estimate"),
+        mass_confidence=payload.get("mass_confidence"),
+        dimensions_delta=payload.get("dimensions_delta"),
+        relation_pull=payload.get("relation_pull"),
+        schema_version=str(payload.get("schema_version", "0")),
+        transport=str(payload.get("transport", "cli")),
+    )
+    return apply_interaction_signal(
+        signal,
+        registry_root=registry_root,
+        policy=policy,
+        expected_to_handle=expected_to_handle,
+    )

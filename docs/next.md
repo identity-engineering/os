@@ -1,33 +1,41 @@
 # Next: IE Praxis
 
-The skeleton is intentionally empty of finished schemas.
+Immediate work (order flexible, all high-signal).
 
-Immediate work (order flexible, all high-signal):
+## Done or in flight (July 2026)
 
-1. **Mass attributes & relative measurement**
-   - What fields / dimensions constitute a Mass estimate?
-   - How is interaction-depth weighting applied?
-   - Cold-start, gaming resistance, privacy of the ratings themselves.
-   - Aggregation (weighted by the Mass of the observer).
+- Local Registry + Metric Stem + Interaction Signal contracts
+- Surface Runtime v0 local apply + receipts + thin HTTP (`runtime/`, branch work)
+- Bidirectional gravitational sensor design (`docs/bidirectional-gravitational-sensor.md`)
+- Ecosystem orientation (`docs/ecosystem-vision.md`) — standard first, platform optional
+- Issue #31 — estimate request + inbox (to implement)
 
-2. **Tension Tensor calculation / update protocol**
-   - Minimal signal that is always passed on interaction end.
-   - What is consent-based.
-   - How the update is written back into static files / Header without turning the system into a control machine.
-   - Asymptotic nature (proxies + ownership judgment).
+## Still open (high signal)
 
-3. **Communication Header (always-on entry point)**
-   - Absolute minimum fields any agent/tool in any environment can parse.
-   - Triggers Tension Tensor update.
-   - Carries State Differential + Vision Gradient anchors + current tension signals.
+1. **Mass attributes & relative measurement / emergent self-Mass**
+   - Aggregation rule (issue #15)
+   - Cold-start, gaming resistance, privacy of ratings
 
-4. **Complete relative identity world view**
-   - Local Registry architecture + recognition without global IDs.
-   - Interaction signal contract.
-   - Privacy / Consent / Refusal-of-Control defaults encoded in the schemas.
-   - Multi-substrate symmetry.
+2. **Estimate request + inbox** (issue #31)
+   - Completes bidirectional sensor
+   - Request record, pending store, reply path, never auto-answer
 
-Only after these are solid do we re-introduce environment adapters and, later, any organism-style agents that can be shown to be Framework-derived.
+3. **Tension Tensor update protocol**
+   - Post-interaction hooks
+   - What is always written back vs consent-based
 
-Related issues in this repo: #1 (Minimal Viable Install), #2 (Stem), #3 (Header), #4 (Trajectory), #6 (Mass Proxies), #7 (Registry), #8 (Tension Tensor), #10 (Privacy), #11 (Multi-Substrate).
-Issue #9 (TIM merge) is reframed: practical installability + mature loop ideas are kept; biology agents and un-derived governance patterns are deferred.
+4. **Header / local entry** (always-on entry point)
+   - Minimal fields any agent can parse at session start
+
+5. **CLI skeleton** (`ie init`, `ie signal apply`, …) — issue #18
+
+Only after the relative world view and bidirectional sensor are solid do we push hard on environment adapters and any Framework-derived organism patterns.
+
+## Orientation
+
+- Contracts + local runtime first
+- Collective-intelligence ecosystem is a possible emergence, not the v0 claim — see `docs/ecosystem-vision.md`
+
+## Related issues
+
+#15 (self-Mass), #18 (CLI), #29 (Surface Runtime), #31 (request/inbox), #8 (Tension), #10 (Privacy), #11 (Multi-Substrate).

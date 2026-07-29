@@ -27,11 +27,12 @@ This is what turns dead documents into living identity artifacts.
 - Registry is local (per Identity / per system). Global IDs are not required.
 - Minimal always-shareable signal: existence + interaction depth + optional coarse Mass signal.
 - Richer signals (full Mass estimate, Curvature fragments, tension details) are consent-based.
+- Sensing is bidirectional with agency on both sides: outbound signals and inbound estimate requests (inbox, never auto-answered). See `docs/bidirectional-gravitational-sensor.md`.
 
 ## 4. Privacy, Consent, Refusal-of-Control
 
 Structural defaults that make surveillance, forced alignment, and over-transparency hard by design.
-Encoded from v0.1 in Stem, Header, Mass ratings, and Registry.
+Encoded from v0.1 in Stem, Header, Mass ratings, Registry, and Surface policy.
 
 ## 5. Multi-substrate symmetry from day 1
 
@@ -45,3 +46,9 @@ Later: CLI (`ie install` / `ie update` style) with free personal / paid collecti
 ## 7. No premature organism layer
 
 Biology-inspired agents (sensory, immunity, vitality, creativity, stability) and full Dynamic Governance stay out of the minimal OS until they can be derived from the Framework.
+
+## 8. Standard first, platform optional
+
+IE OS is an open Identity-Geometry standard + local-first runtime. A collective-intelligence ecosystem may grow on top of the contracts; building a global social/attention platform is not the v0 goal.
+
+See `docs/ecosystem-vision.md` for the durable orientation (layers, social analogy, non-goals).
