@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Optional
@@ -28,6 +29,10 @@ app.add_typer(signal_app, name="signal")
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
 
+ACCOUNT_NO = "no_account"
+ACCOUNT_LOGIN = "login"
+ACCOUNT_CREATE = "create"
+
 
 def _version_callback(value: bool) -> None:
     if value:
@@ -44,15 +49,89 @@ def main(
     """Identity Engineering OS CLI."""
 
 
+def _handle_from_name(preferred_name: str) -> str:
+    """Default local_handle: lowercased name, spaces → hyphens, safe chars only."""
+    s = preferred_name.strip().lower()
+    s = re.sub(r"\s+", "-", s)
+    s = re.sub(r"[^a-z0-9._-]", "", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s or "identity"
+
+
+def _prompt_account(account: Optional[str]) -> str:
+    if account:
+        key = account.strip().lower().replace("-", "_")
+        aliases = {
+            "no": ACCOUNT_NO,
+            "none": ACCOUNT_NO,
+            "no_account": ACCOUNT_NO,
+            "local": ACCOUNT_NO,
+            "login": ACCOUNT_LOGIN,
+            "signin": ACCOUNT_LOGIN,
+            "sign_in": ACCOUNT_LOGIN,
+            "create": ACCOUNT_CREATE,
+            "register": ACCOUNT_CREATE,
+            "signup": ACCOUNT_CREATE,
+            "sign_up": ACCOUNT_CREATE,
+        }
+        if key not in aliases:
+            raise SystemExit(
+                "--account must be one of: no_account | login | create"
+            )
+        return aliases[key]
+
+    typer.echo("Account")
+    typer.echo("  1) No account     — local-only Free (default)")
+    typer.echo("  2) Login          — existing IE account (browser)")
+    typer.echo("  3) Create account — new IE account (browser)")
+    choice = typer.prompt("Choice", default="1")
+    mapping = {
+        "1": ACCOUNT_NO,
+        "2": ACCOUNT_LOGIN,
+        "3": ACCOUNT_CREATE,
+        "no": ACCOUNT_NO,
+        "login": ACCOUNT_LOGIN,
+        "create": ACCOUNT_CREATE,
+    }
+    key = choice.strip().lower()
+    if key not in mapping:
+        raise SystemExit("Invalid account choice")
+    return mapping[key]
+
+
+def _resolve_account_flow(mode: str) -> dict:
+    """Browser login/create is stubbed in v0; local install always proceeds."""
+    if mode == ACCOUNT_NO:
+        return {
+            "account_mode": ACCOUNT_NO,
+            "account_id": None,
+            "tier": "free",
+            "public_registry_access": False,
+        }
+
+    typer.echo(
+        "\nBrowser account flow is not wired yet (v0 stub).\n"
+        "When live: CLI opens a browser → login/create → redirect back with account_id.\n"
+        "Proceeding with a local Free install; you can link an account later.\n"
+    )
+    # Reserved for: webbrowser.open(auth_url); poll/callback with account_id
+    return {
+        "account_mode": mode,
+        "account_id": None,  # set when OAuth/callback exists
+        "tier": "free",  # account may still be free; pro comes from account entitlements
+        "public_registry_access": False,  # True once account_id is real
+        "account_link_pending": True,
+    }
+
+
 def _prompt_init(
     path: Optional[Path],
     handle: Optional[str],
     name: Optional[str],
-    tier: Optional[str],
-) -> tuple[Path, str, Optional[str], str]:
-    """Interactive prompts for any missing init fields."""
-    typer.echo("Identity Engineering — local install")
-    typer.echo("(Enter keeps the default shown in brackets.)\n")
+    account: Optional[str],
+) -> tuple[Path, str, str, dict]:
+    typer.echo("Identity Engineering — setup")
+    typer.echo("(Enter keeps the default in brackets.)\n")
 
     if path is None:
         raw = typer.prompt("Install path", default=str(DEFAULT_INIT_PATH))
@@ -60,34 +139,21 @@ def _prompt_init(
     else:
         path = path.expanduser()
 
+    account_mode = _prompt_account(account)
+    account_info = _resolve_account_flow(account_mode)
+
+    if not name:
+        name = typer.prompt("Preferred name").strip()
+        if not name:
+            raise SystemExit("preferred name is required")
+
     if not handle:
-        handle = typer.prompt("local_handle (required)")
-        handle = handle.strip()
+        default_handle = _handle_from_name(name)
+        handle = typer.prompt("local_handle", default=default_handle).strip()
         if not handle:
-            raise SystemExit("handle is required")
+            raise SystemExit("local_handle is required")
 
-    if name is None:
-        default_name = handle
-        name_raw = typer.prompt("preferred_name", default=default_name)
-        name = name_raw.strip() or handle
-
-    if tier is None:
-        typer.echo("\nTier:")
-        typer.echo("  free — local files only, no account (default)")
-        typer.echo("  pro  — optional cloud/surface later (stub in v0)")
-        tier_raw = typer.prompt("Tier", default="free")
-        tier = tier_raw.strip().lower() or "free"
-    tier = tier.lower()
-    if tier not in {"free", "pro"}:
-        raise SystemExit("tier must be 'free' or 'pro'")
-
-    if tier == "pro":
-        typer.echo(
-            "\nPro account linking is not implemented in v0 — "
-            "install will be local-only; you can link later."
-        )
-
-    return path, handle, name, tier
+    return path, handle, name, account_info
 
 
 @app.command("init")
@@ -97,54 +163,66 @@ def init(
         "--path",
         help=f"Install directory (default in dialog: {DEFAULT_INIT_PATH})",
     ),
-    handle: Optional[str] = typer.Option(
-        None, "--handle", "-h", help="local_handle (prompted if omitted)"
+    account: Optional[str] = typer.Option(
+        None,
+        "--account",
+        help="no_account | login | create (prompted if omitted)",
     ),
     name: Optional[str] = typer.Option(
         None, "--name", "-n", help="preferred_name (prompted if omitted)"
     ),
-    tier: Optional[str] = typer.Option(
-        None, "--tier", help="free | pro (prompted if omitted; pro is stub in v0)"
+    handle: Optional[str] = typer.Option(
+        None,
+        "--handle",
+        "-h",
+        help="local_handle (default: lowercased preferred name)",
     ),
     force: bool = typer.Option(False, "--force", help="Overwrite existing template files"),
     yes: bool = typer.Option(
         False,
         "--yes",
         "-y",
-        help="Skip confirmation; still prompts for any missing required fields",
+        help="Skip confirmation when enough flags are provided",
     ),
 ) -> None:
     """Create a personal IE install (interactive by default).
 
+    Prompt order: path → account → preferred name → local_handle.
+
     Examples:
       ie init
-      ie init --handle jonas
-      ie init --path ~/ie --handle jonas --name Jonas --tier free -y
+      ie init --name Jonas
+      ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
     """
-    # Fully non-interactive only when handle is known (path defaults to ~/ie)
-    if handle and path is None and not sys.stdin.isatty() and yes:
-        path = DEFAULT_INIT_PATH
-        name = name or handle
-        tier = (tier or "free").lower()
-    elif handle is None or path is None or name is None or tier is None:
-        if not sys.stdin.isatty() and not handle:
-            raise SystemExit(
-                "Non-interactive init requires --handle "
-                "(and optionally --path, --name, --tier)."
-            )
-        path, handle, name, tier = _prompt_init(path, handle, name, tier)
+    interactive = sys.stdin.isatty()
+
+    if not interactive and not (name and (handle or name)):
+        raise SystemExit(
+            "Non-interactive init requires --name "
+            "(and optionally --handle, --path, --account)."
+        )
+
+    if interactive and (
+        path is None or name is None or handle is None or account is None
+    ):
+        path, handle, name, account_info = _prompt_init(path, handle, name, account)
     else:
-        path = path.expanduser()
-        tier = tier.lower()
+        path = (path or DEFAULT_INIT_PATH).expanduser()
+        if not name:
+            raise SystemExit("--name is required in non-interactive mode")
+        handle = handle or _handle_from_name(name)
+        account_mode = _prompt_account(account or ACCOUNT_NO)
+        account_info = _resolve_account_flow(account_mode)
 
-    assert path is not None and handle is not None
+    assert path is not None and handle is not None and name is not None
 
-    if not yes and sys.stdin.isatty():
+    if not yes and interactive:
         typer.echo("\nAbout to create:")
-        typer.echo(f"  path:   {path}")
-        typer.echo(f"  handle: {handle}")
-        typer.echo(f"  name:   {name}")
-        typer.echo(f"  tier:   {tier}")
+        typer.echo(f"  path:    {path}")
+        typer.echo(f"  name:    {name}")
+        typer.echo(f"  handle:  {handle}")
+        typer.echo(f"  account: {account_info['account_mode']}")
+        typer.echo(f"  tier:    {account_info['tier']}")
         if not typer.confirm("Continue?", default=True):
             raise SystemExit("aborted")
 
@@ -153,14 +231,15 @@ def init(
         handle=handle,
         preferred_name=name,
         force=force,
-        tier=tier,
+        account_info=account_info,
     )
     typer.echo(f"\nIE install created at {root}")
-    typer.echo(f"  handle: {handle}")
-    typer.echo(f"  name:   {name}")
-    typer.echo(f"  tier:   {tier}")
+    typer.echo(f"  name:    {name}")
+    typer.echo(f"  handle:  {handle}")
+    typer.echo(f"  account: {account_info['account_mode']}")
+    typer.echo(f"  tier:    {account_info['tier']}")
     typer.echo("\nNext:")
-    typer.echo(f"  export IE_ROOT={root}   # optional, use ie from any directory")
+    typer.echo(f"  export IE_ROOT={root}   # optional")
     typer.echo("  ie status")
 
 

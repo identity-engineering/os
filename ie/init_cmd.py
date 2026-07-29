@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from .paths import HEADER_NAME, bundled_templates_dir
 
@@ -18,8 +18,14 @@ def _patch_header(
     header_path: Path,
     handle: str,
     preferred_name: Optional[str],
-    tier: str = "free",
+    account_info: Optional[dict[str, Any]] = None,
 ) -> None:
+    account_info = account_info or {
+        "account_mode": "no_account",
+        "account_id": None,
+        "tier": "free",
+        "public_registry_access": False,
+    }
     text = header_path.read_text(encoding="utf-8")
     if yaml is not None:
         data = yaml.safe_load(text) or {}
@@ -27,12 +33,21 @@ def _patch_header(
         identity["local_handle"] = handle
         if preferred_name:
             identity["preferred_name"] = preferred_name
-        data["tier"] = tier
+        data["account"] = {
+            "mode": account_info.get("account_mode"),
+            "account_id": account_info.get("account_id"),
+            "link_pending": bool(account_info.get("account_link_pending")),
+            "public_registry_access": bool(
+                account_info.get("public_registry_access")
+            ),
+        }
+        data["tier"] = account_info.get("tier") or "free"
         header_path.write_text(
             yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
             encoding="utf-8",
         )
         return
+
     lines = []
     for line in text.splitlines(keepends=True):
         if "local_handle:" in line:
@@ -43,7 +58,13 @@ def _patch_header(
             lines.append(line)
     if not text.endswith("\n"):
         lines.append("\n")
-    lines.append(f'tier: "{tier}"\n')
+    lines.append(f'tier: "{account_info.get("tier") or "free"}"\n')
+    lines.append("account:\n")
+    lines.append(f'  mode: "{account_info.get("account_mode")}"\n')
+    lines.append("  account_id: null\n")
+    lines.append(
+        f'  public_registry_access: {str(bool(account_info.get("public_registry_access"))).lower()}\n'
+    )
     header_path.write_text("".join(lines), encoding="utf-8")
 
 
@@ -53,7 +74,7 @@ def init_install(
     handle: str,
     preferred_name: Optional[str] = None,
     force: bool = False,
-    tier: str = "free",
+    account_info: Optional[dict[str, Any]] = None,
 ) -> Path:
     """Create install directory (mkdir -p) and copy templates."""
     target = target.expanduser().resolve()
@@ -87,9 +108,10 @@ def init_install(
         target / HEADER_NAME,
         handle=handle,
         preferred_name=preferred_name,
-        tier=tier,
+        account_info=account_info,
     )
 
+    tier = (account_info or {}).get("tier") or "free"
     readme = target / "README.md"
     if not readme.exists() or force:
         readme.write_text(

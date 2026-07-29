@@ -1,75 +1,64 @@
 # IE CLI (v0 skeleton)
 
-Issue #18 — installable `ie` command. Personal setup does **not** require manual template copying.
+Issue #18 — installable `ie` command.
 
-## Install the tool (once) — distribution
+## Install the tool (once)
 
-Free CLI for everyone must be installable **without a GitHub account or token**.
-That is a **distribution** requirement, separate from Free vs Pro product tiers.
-
-See `docs/distribution.md`.
-
-Until a public package exists, dev install from a checkout:
+Free users must install **without GitHub auth**. See `docs/distribution.md`.
 
 ```bash
-pip install -e /path/to/os
-# or later:
-# brew tap identity-engineering/tap && brew install ie-os
-# pip install ie-os   # once published to PyPI
+# target UX (macOS)
+brew tap identity-engineering/tap && brew install ie-os
+
+# universal Python fallback (once published)
+pipx install ie-os
 ```
 
-## Personal install — interactive
+Dev until public packages exist: `pip install -e /path/to/os`.
+
+## Personal setup — interactive
 
 ```bash
 ie init
 ```
 
-Dialog (Enter = default):
+Prompt order:
 
-```
-Install path [~/ie]:
-local_handle (required):
-preferred_name [same as handle]:
-Tier [free]:
-```
+1. **Install path** — default `~/ie` (created automatically)
+2. **Account** — numbered choice:
+   - `1) No account` — local-only Free (default)
+   - `2) Login` — browser → account (stub in v0)
+   - `3) Create account` — browser → account (stub in v0)
+3. **Preferred name**
+4. **local_handle** — default = preferred name lowercased (spaces → hyphens)
 
-- Creates `~/ie` (or chosen path) including `mkdir -p` — no prior `mkdir` needed
-- `free` = local files only, no account
-- `pro` = stub in v0 (local install still; cloud link later)
+### Account model (product)
 
-Non-interactive:
+| Mode | Tier baseline | Capabilities |
+|------|---------------|--------------|
+| No account | Free | Local files only; no public registry metadata of others |
+| Account (free entitlement) | Free | Basic account metadata; can read **public** registry metadata of others |
+| Account (pro entitlement) | Pro | IE central identity hosting / managed surface |
+
+Tier is determined by the **account**, not a separate “tier” prompt. Browser login/create returns an `account_id` to the CLI (v0: stub, local install still completes).
+
+Non-interactive example:
 
 ```bash
-ie init --path ~/ie --handle jonas --name Jonas --tier free -y
-```
-
-Then:
-
-```bash
-export IE_ROOT=~/ie   # optional
-ie status
-ie signal apply --payload /tmp/signal.json
+ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 ```
 
 ## Commands (v0)
 
 | Command | Purpose |
 |---------|---------|
-| `ie --version` | Package version |
-| `ie init` | Interactive (or flagged) personal install |
-| `ie status` | Handle, registry, foreign estimates |
-| `ie registry list` / `get` | Registry |
-| `ie signal apply` | Apply signal → foreign-estimate zone + receipt |
+| `ie init` | Interactive setup |
+| `ie status` | Install summary |
+| `ie registry list` / `get` | Local registry |
+| `ie signal apply` | Apply signal + receipt |
 | `ie catalogue` / `ie reindex` | Stubs |
-
-## How the CLI finds your install
-
-1. `IE_ROOT` if set and contains `HEADER.yaml`
-2. Else walk upward from cwd
-3. Else: run `ie init` or set `IE_ROOT`
 
 ## See also
 
-- `docs/distribution.md` — why private git ≠ product auth
+- `docs/distribution.md`
 - `docs/surface-runtime-local.md`
-- Issue #18

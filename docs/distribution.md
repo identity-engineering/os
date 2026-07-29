@@ -2,63 +2,56 @@
 
 Locked orientation 29.07.2026
 
-## The confusion
-
-> Why would a private repo force every Free user to have a GitHub token?
-
-It should not. That was a **packaging accident**, not a product rule.
-
-Two different layers:
+## Two layers
 
 | Layer | Question | Free user |
 |-------|----------|-----------|
-| **Distribution** | How does the `ie` binary/package get onto my machine? | Must work with **zero** GitHub account / token |
-| **Product auth** | Do I use only local files, or also a Pro cloud/surface account? | Free = no account; Pro = login when they choose |
+| **Distribution** | How does `ie` get onto the machine? | **No** GitHub account/token |
+| **Product account** | No account / free account / pro account | Optional; only when they choose Login or Create |
 
-## Why Homebrew hit a token wall
+Private **git for development** must not force tokens onto Free installers.
+What must be public is the **released package** (or release artifact).
 
-The first Formula pointed at `github.com/identity-engineering/os/...tar.gz`.
+## Multi-channel packaging (not either/or)
 
-If that repository is **private**, GitHub refuses the download without credentials.
-Homebrew is only fetching **source code of the tool** — not authenticating the user into IE Pro.
+Ship the **same** versioned package through several installers over time:
 
-So:
+| Channel | Audience | Priority |
+|---------|----------|----------|
+| **Homebrew** (`identity-engineering/tap` → later core) | macOS default UX | **Primary for Mac** |
+| **PyPI + pipx** | Linux/Mac/Windows, agents, CI | **Primary universal** |
+| **winget** | Windows | Later |
+| **apt** / other native | Linux distros | Later |
+| Optional: signed binaries | Air-gapped / minimal | Later |
 
-- Private **source repo** → installers that fetch from GitHub need auth
-- That blocks the Free promise even though Free features need no IE account
+**Why PyPI even if you prefer Brew?**
 
-## Correct Free install paths (no GitHub rights)
+- Homebrew Formulae for Python CLIs usually install from a **public** source of truth (often PyPI or a public tarball).
+- One wheel on PyPI feeds: `pipx`, the Brew formula, and later other wrappers.
+- Brew alone does not cover Windows/Linux users or headless agents.
 
-Any one of these is enough:
+So: **Brew as the Mac front door**, **PyPI as the shared package backend** — not competitors.
 
-1. **PyPI** (preferred for Python CLI): `pip install ie-os` / `pipx install ie-os`
-2. **Public release artifacts**: tagged tarball or wheel on a **public** URL (GitHub Releases on a public repo, or object storage)
-3. **Homebrew Formula** that installs from PyPI or a public archive (not from a private git tree)
-4. Optional later: signed binaries
+## Account capabilities (runtime)
 
-The private `os` repo can stay private for **development**. What must be public is the **released package** (or the release tarball), not everyone's Identity data.
+| Account | Public registry metadata of others | Central hosting |
+|---------|--------------------------------------|-----------------|
+| No account | No | No |
+| Free account | Yes (public fields only) | No |
+| Pro account | Yes | Yes (IE managed surface / DB) |
 
-## Product tiers (runtime behavior)
+Local Stem, Registry, and signal apply work in all modes under Ownership defaults.
 
-| Tier | Install | Data | Auth |
-|------|---------|------|------|
-| **Free** | Public package | Local directory from `ie init` (`~/ie` default) | None |
-| **Pro** | Same CLI | Local + optional managed surface / DB | Account only when enabling Pro features |
+## Homebrew + private git (current footgun)
 
-`ie init` asks free vs pro so the path is clear; in v0, Pro is a stub and still creates a local install only.
+If the Formula `url` points at a **private** GitHub archive, Brew needs a token.
+That violates the Free distribution rule.
 
-Commands that need Pro auth (later): link account, sync to managed surface, team policies — not `init`, `status`, `signal apply` on local files.
-
-## Rules of thumb
-
-1. Never require GitHub credentials to use Free IE.
-2. Never require an IE account to use Free local commands.
-3. Keep authoring in a private repo if we want; **publish** wheels/tags for distribution.
-4. Homebrew tap stays valid once the Formula’s `url` points at a public artifact or PyPI — not at a private archive.
+Fix: point Formula at **PyPI** or a **public** release asset after the first publish; keep the git repo private for day-to-day work if desired.
 
 ## Related
 
 - `docs/cli.md`
-- `docs/ecosystem-vision.md`
 - `docs/storage-tiers.md`
+- `docs/ecosystem-vision.md`
 - Tap: [identity-engineering/homebrew-tap](https://github.com/identity-engineering/homebrew-tap)
