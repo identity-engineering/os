@@ -11,13 +11,16 @@ Locked orientation 29.07.2026
 
 ## Canonical public artifact host
 
-**identity-engineering.org** — not GitHub as the primary download URL.
+**identity-engineering.org** only:
 
 ```text
 https://identity-engineering.org/releases/ie-os/{version}/ie_os-{version}.tar.gz
 ```
 
-Private git for development is fine. Bytes that Brew/pip download must be public on the org domain (R2, site static, or equivalent). See `docs/release.md`.
+Backend: **Cloudflare R2** (or temporary static site files until R2 is wired).  
+No public GitHub dist repository.
+
+See `docs/release.md`.
 
 ## Multi-channel packaging
 

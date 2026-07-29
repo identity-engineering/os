@@ -24,7 +24,7 @@ ie = "ie.cli:app"
 [project.urls]
 Homepage = "https://identity-engineering.org"
 Repository = "https://github.com/identity-engineering/os"
-Dist = "https://github.com/identity-engineering/ie-os-dist"
+Releases = "https://identity-engineering.org/releases/ie-os/"
 
 [tool.setuptools.packages.find]
 include = ["ie*", "runtime*"]

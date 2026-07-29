@@ -39,33 +39,17 @@ jobs:
         id: ver
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Release on os (private-ok)
+      - name: GitHub Release on os
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: true
           fail_on_unmatched_files: true
 
-      - name: Upload assets to public ie-os-dist
-        if: ${{ secrets.DIST_REPO_TOKEN != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.DIST_REPO_TOKEN }}
-          VERSION: ${{ steps.ver.outputs.version }}
-          TAG: ${{ github.ref_name }}
+      # Public install path: identity-engineering.org/releases/ie-os/{version}/
+      # Cloudflare R2 (or equivalent) upload — tracked as a dedicated issue; wire secrets here when ready.
+      - name: Publish note (org domain)
         run: |
-          set -euo pipefail
-          # Create release on public dist repo if missing, upload all dist/*
-          if ! gh release view "$TAG" --repo identity-engineering/ie-os-dist >/dev/null 2>&1; then
-            gh release create "$TAG" \
-              --repo identity-engineering/ie-os-dist \
-              --title "ie-os $VERSION" \
-              --notes "Public artifacts for ie-os $VERSION. Source: identity-engineering/os@$TAG"
-          fi
-          gh release upload "$TAG" dist/* \
-            --repo identity-engineering/ie-os-dist \
-            --clobber
-
-      - name: Remind if dist token missing
-        if: ${{ secrets.DIST_REPO_TOKEN == '' }}
-        run: |
-          echo "::warning::DIST_REPO_TOKEN not set. Private os release has assets; upload dist/* manually to identity-engineering/ie-os-dist for token-free brew."
+          echo "Built ie-os ${{ steps.ver.outputs.version }}."
+          echo "Upload dist/* to https://identity-engineering.org/releases/ie-os/${{ steps.ver.outputs.version }}/"
+          echo "Then set sha256 on homebrew-tap Formula/ie-os.rb."
