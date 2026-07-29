@@ -52,3 +52,9 @@ Biology-inspired agents (sensory, immunity, vitality, creativity, stability) and
 IE OS is an open Identity-Geometry standard + local-first runtime. A collective-intelligence ecosystem may grow on top of the contracts; building a global social/attention platform is not the v0 goal.
 
 See `docs/ecosystem-vision.md` for the durable orientation (layers, social analogy, non-goals).
+
+## 9. Python for core and CLI (v0–v1)
+
+Surface Runtime and `ie` CLI are **Python** (Typer). Schemas stay language-neutral. Optional agents (including LangGraph) consume IE via CLI/Surface/contracts — they are not the kernel.
+
+See `docs/language-strategy.md`. Go/Rust only if explicit distribution or isolation triggers fire.
