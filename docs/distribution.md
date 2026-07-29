@@ -10,27 +10,20 @@ Locked orientation 29.07.2026
 | **Product account** | No account / free account / pro account | Optional; only when they choose Login or Create |
 
 Private **git for development** must not force tokens onto Free installers.
-What must be public is the **released package** (or release artifact).
+Public artifacts: **[identity-engineering/ie-os-dist](https://github.com/identity-engineering/ie-os-dist)**.
 
-## Multi-channel packaging (not either/or)
+See `docs/release.md` for the Brew-first ship process.
 
-Ship the **same** versioned package through several installers over time:
+## Multi-channel packaging
 
 | Channel | Audience | Priority |
 |---------|----------|----------|
-| **Homebrew** (`identity-engineering/tap` → later core) | macOS default UX | **Primary for Mac** |
-| **PyPI + pipx** | Linux/Mac/Windows, agents, CI | **Primary universal** |
-| **winget** | Windows | Later |
-| **apt** / other native | Linux distros | Later |
-| Optional: signed binaries | Air-gapped / minimal | Later |
+| **Homebrew** (`identity-engineering/tap`) | macOS | **Primary for Mac** |
+| **Public sdist on ie-os-dist** | Brew source + manual pip | **Required for token-free** |
+| **PyPI + pipx** | Universal | Parallel, later |
+| **winget** / **apt** | Windows / Linux | Later |
 
-**Why PyPI even if you prefer Brew?**
-
-- Homebrew Formulae for Python CLIs usually install from a **public** source of truth (often PyPI or a public tarball).
-- One wheel on PyPI feeds: `pipx`, the Brew formula, and later other wrappers.
-- Brew alone does not cover Windows/Linux users or headless agents.
-
-So: **Brew as the Mac front door**, **PyPI as the shared package backend** — not competitors.
+Brew Formula `url` must point at **ie-os-dist** (or PyPI), never at a private archive.
 
 ## Account capabilities (runtime)
 
@@ -38,20 +31,11 @@ So: **Brew as the Mac front door**, **PyPI as the shared package backend** — n
 |---------|--------------------------------------|-----------------|
 | No account | No | No |
 | Free account | Yes (public fields only) | No |
-| Pro account | Yes | Yes (IE managed surface / DB) |
-
-Local Stem, Registry, and signal apply work in all modes under Ownership defaults.
-
-## Homebrew + private git (current footgun)
-
-If the Formula `url` points at a **private** GitHub archive, Brew needs a token.
-That violates the Free distribution rule.
-
-Fix: point Formula at **PyPI** or a **public** release asset after the first publish; keep the git repo private for day-to-day work if desired.
+| Pro account | Yes | Yes |
 
 ## Related
 
+- `docs/release.md`
 - `docs/cli.md`
-- `docs/storage-tiers.md`
-- `docs/ecosystem-vision.md`
+- `docs/language-strategy.md`
 - Tap: [identity-engineering/homebrew-tap](https://github.com/identity-engineering/homebrew-tap)

@@ -15,17 +15,23 @@ def package_root() -> Path:
 
 
 def bundled_templates_dir() -> Path:
-    """Personal templates shipped with the package/repo."""
-    # Prefer repo layout (editable install / git checkout)
-    repo_templates = package_root() / "templates" / "personal"
-    if repo_templates.is_dir():
-        return repo_templates
-    # Fallback: package-adjacent copy if we ever vendor templates under ie/
-    alt = Path(__file__).resolve().parent / "templates" / "personal"
-    if alt.is_dir():
-        return alt
+    """Personal templates shipped with the package/repo.
+
+    Search order:
+    1. Repo layout: <repo>/templates/personal (editable install)
+    2. Bundled in package: ie/templates/personal (wheel/sdist install)
+    """
+    here = Path(__file__).resolve().parent
+    candidates = [
+        package_root() / "templates" / "personal",
+        here / "templates" / "personal",
+    ]
+    for path in candidates:
+        if path.is_dir():
+            return path
     raise FileNotFoundError(
-        "Could not find templates/personal. Reinstall ie-os from the os repository."
+        "Could not find templates/personal. Reinstall ie-os "
+        "(wheel must include ie/templates/personal; see docs/release.md)."
     )
 
 

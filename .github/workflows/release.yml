@@ -1,0 +1,71 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bundle templates into package
+        run: |
+          mkdir -p ie/templates
+          rm -rf ie/templates/personal
+          cp -R templates/personal ie/templates/personal
+
+      - name: Install build tooling
+        run: pip install --upgrade pip build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: List dist
+        run: ls -la dist/
+
+      - name: Extract version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Release on os (private-ok)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+
+      - name: Upload assets to public ie-os-dist
+        if: ${{ secrets.DIST_REPO_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.DIST_REPO_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Create release on public dist repo if missing, upload all dist/*
+          if ! gh release view "$TAG" --repo identity-engineering/ie-os-dist >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo identity-engineering/ie-os-dist \
+              --title "ie-os $VERSION" \
+              --notes "Public artifacts for ie-os $VERSION. Source: identity-engineering/os@$TAG"
+          fi
+          gh release upload "$TAG" dist/* \
+            --repo identity-engineering/ie-os-dist \
+            --clobber
+
+      - name: Remind if dist token missing
+        if: ${{ secrets.DIST_REPO_TOKEN == '' }}
+        run: |
+          echo "::warning::DIST_REPO_TOKEN not set. Private os release has assets; upload dist/* manually to identity-engineering/ie-os-dist for token-free brew."
