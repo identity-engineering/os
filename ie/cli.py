@@ -11,7 +11,7 @@ import typer
 
 from ie import __version__
 from ie.init_cmd import init_install
-from ie.paths import find_ie_root, require_ie_root
+from ie.paths import require_ie_root
 from ie.registry_cmd import get_peer, list_peers
 from ie.status_cmd import collect_status, format_status
 
@@ -25,6 +25,8 @@ registry_app = typer.Typer(help="Local Registry operations")
 signal_app = typer.Typer(help="Interaction Signal operations")
 app.add_typer(registry_app, name="registry")
 app.add_typer(signal_app, name="signal")
+
+DEFAULT_INIT_PATH = Path.home() / "ie"
 
 
 def _version_callback(value: bool) -> None:
@@ -42,23 +44,124 @@ def main(
     """Identity Engineering OS CLI."""
 
 
+def _prompt_init(
+    path: Optional[Path],
+    handle: Optional[str],
+    name: Optional[str],
+    tier: Optional[str],
+) -> tuple[Path, str, Optional[str], str]:
+    """Interactive prompts for any missing init fields."""
+    typer.echo("Identity Engineering — local install")
+    typer.echo("(Enter keeps the default shown in brackets.)\n")
+
+    if path is None:
+        raw = typer.prompt("Install path", default=str(DEFAULT_INIT_PATH))
+        path = Path(raw).expanduser()
+    else:
+        path = path.expanduser()
+
+    if not handle:
+        handle = typer.prompt("local_handle (required)")
+        handle = handle.strip()
+        if not handle:
+            raise SystemExit("handle is required")
+
+    if name is None:
+        default_name = handle
+        name_raw = typer.prompt("preferred_name", default=default_name)
+        name = name_raw.strip() or handle
+
+    if tier is None:
+        typer.echo("\nTier:")
+        typer.echo("  free — local files only, no account (default)")
+        typer.echo("  pro  — optional cloud/surface later (stub in v0)")
+        tier_raw = typer.prompt("Tier", default="free")
+        tier = tier_raw.strip().lower() or "free"
+    tier = tier.lower()
+    if tier not in {"free", "pro"}:
+        raise SystemExit("tier must be 'free' or 'pro'")
+
+    if tier == "pro":
+        typer.echo(
+            "\nPro account linking is not implemented in v0 — "
+            "install will be local-only; you can link later."
+        )
+
+    return path, handle, name, tier
+
+
 @app.command("init")
 def init(
-    path: Path = typer.Argument(
-        Path("."),
-        help="Directory for the new IE install (created if missing)",
+    path: Optional[Path] = typer.Option(
+        None,
+        "--path",
+        help=f"Install directory (default in dialog: {DEFAULT_INIT_PATH})",
     ),
-    handle: str = typer.Option(..., "--handle", "-h", help="local_handle for this Identity"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="preferred_name"),
+    handle: Optional[str] = typer.Option(
+        None, "--handle", "-h", help="local_handle (prompted if omitted)"
+    ),
+    name: Optional[str] = typer.Option(
+        None, "--name", "-n", help="preferred_name (prompted if omitted)"
+    ),
+    tier: Optional[str] = typer.Option(
+        None, "--tier", help="free | pro (prompted if omitted; pro is stub in v0)"
+    ),
     force: bool = typer.Option(False, "--force", help="Overwrite existing template files"),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip confirmation; still prompts for any missing required fields",
+    ),
 ) -> None:
-    """Create a personal IE install from bundled templates."""
-    root = init_install(path, handle=handle, preferred_name=name, force=force)
-    typer.echo(f"IE install created at {root}")
-    typer.echo(f"  handle: {handle}")
-    if name:
+    """Create a personal IE install (interactive by default).
+
+    Examples:
+      ie init
+      ie init --handle jonas
+      ie init --path ~/ie --handle jonas --name Jonas --tier free -y
+    """
+    # Fully non-interactive only when handle is known (path defaults to ~/ie)
+    if handle and path is None and not sys.stdin.isatty() and yes:
+        path = DEFAULT_INIT_PATH
+        name = name or handle
+        tier = (tier or "free").lower()
+    elif handle is None or path is None or name is None or tier is None:
+        if not sys.stdin.isatty() and not handle:
+            raise SystemExit(
+                "Non-interactive init requires --handle "
+                "(and optionally --path, --name, --tier)."
+            )
+        path, handle, name, tier = _prompt_init(path, handle, name, tier)
+    else:
+        path = path.expanduser()
+        tier = tier.lower()
+
+    assert path is not None and handle is not None
+
+    if not yes and sys.stdin.isatty():
+        typer.echo("\nAbout to create:")
+        typer.echo(f"  path:   {path}")
+        typer.echo(f"  handle: {handle}")
         typer.echo(f"  name:   {name}")
-    typer.echo("Next: cd into the directory and run `ie status`")
+        typer.echo(f"  tier:   {tier}")
+        if not typer.confirm("Continue?", default=True):
+            raise SystemExit("aborted")
+
+    root = init_install(
+        path,
+        handle=handle,
+        preferred_name=name,
+        force=force,
+        tier=tier,
+    )
+    typer.echo(f"\nIE install created at {root}")
+    typer.echo(f"  handle: {handle}")
+    typer.echo(f"  name:   {name}")
+    typer.echo(f"  tier:   {tier}")
+    typer.echo("\nNext:")
+    typer.echo(f"  export IE_ROOT={root}   # optional, use ie from any directory")
+    typer.echo("  ie status")
 
 
 @app.command("status")
@@ -131,7 +234,6 @@ def signal_apply(
         raw = sys.stdin.read()
     data = json.loads(raw)
 
-    # Default to_handle from HEADER
     expected = to_handle
     if expected is None:
         st = collect_status(root)
