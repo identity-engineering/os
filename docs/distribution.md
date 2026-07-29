@@ -7,35 +7,36 @@ Locked orientation 29.07.2026
 | Layer | Question | Free user |
 |-------|----------|-----------|
 | **Distribution** | How does `ie` get onto the machine? | **No** GitHub account/token |
-| **Product account** | No account / free account / pro account | Optional; only when they choose Login or Create |
+| **Product account** | No account / free account / pro account | Optional |
 
-Private **git for development** must not force tokens onto Free installers.
-Public artifacts: **[identity-engineering/ie-os-dist](https://github.com/identity-engineering/ie-os-dist)**.
+## Canonical public artifact host
 
-See `docs/release.md` for the Brew-first ship process.
+**identity-engineering.org** — not GitHub as the primary download URL.
+
+```text
+https://identity-engineering.org/releases/ie-os/{version}/ie_os-{version}.tar.gz
+```
+
+Private git for development is fine. Bytes that Brew/pip download must be public on the org domain (R2, site static, or equivalent). See `docs/release.md`.
 
 ## Multi-channel packaging
 
 | Channel | Audience | Priority |
 |---------|----------|----------|
-| **Homebrew** (`identity-engineering/tap`) | macOS | **Primary for Mac** |
-| **Public sdist on ie-os-dist** | Brew source + manual pip | **Required for token-free** |
-| **PyPI + pipx** | Universal | Parallel, later |
-| **winget** / **apt** | Windows / Linux | Later |
-
-Brew Formula `url` must point at **ie-os-dist** (or PyPI), never at a private archive.
+| **Homebrew** + **.org releases** | macOS | Primary |
+| PyPI / pipx | Universal | Parallel, later |
+| winget / apt | Windows / Linux | Later |
 
 ## Account capabilities (runtime)
 
-| Account | Public registry metadata of others | Central hosting |
-|---------|--------------------------------------|-----------------|
+| Account | Public registry metadata | Central hosting |
+|---------|--------------------------|-----------------|
 | No account | No | No |
-| Free account | Yes (public fields only) | No |
+| Free account | Yes (public fields) | No |
 | Pro account | Yes | Yes |
 
 ## Related
 
 - `docs/release.md`
 - `docs/cli.md`
-- `docs/language-strategy.md`
 - Tap: [identity-engineering/homebrew-tap](https://github.com/identity-engineering/homebrew-tap)
