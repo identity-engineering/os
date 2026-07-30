@@ -1,0 +1,12 @@
+name = "ie-os-releases"
+main = "src/worker.js"
+compatibility_date = "2026-07-01"
+account_id = "322d4800eb573fae08729813273419c0"
+
+[[r2_buckets]]
+binding = "IE_OS_RELEASES"
+bucket_name = "ie-os-releases"
+
+[[routes]]
+pattern = "identity-engineering.org/releases/ie-os/*"
+zone_name = "identity-engineering.org"

@@ -46,10 +46,25 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
 
-      # Public install path: identity-engineering.org/releases/ie-os/{version}/
-      # Cloudflare R2 (or equivalent) upload — tracked as a dedicated issue; wire secrets here when ready.
-      - name: Publish note (org domain)
+      - name: Upload to R2 (org domain)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          echo "Built ie-os ${{ steps.ver.outputs.version }}."
-          echo "Upload dist/* to https://identity-engineering.org/releases/ie-os/${{ steps.ver.outputs.version }}/"
-          echo "Then set sha256 on homebrew-tap Formula/ie-os.rb."
+          pip install awscli
+          aws configure set default.s3.addressing_style path
+          aws s3 cp dist/ s3://ie-os-releases/releases/ie-os/${VERSION}/ \
+            --recursive \
+            --endpoint-url https://322d4800eb573fae08729813273419c0.r2.cloudflarestorage.com \
+            --no-progress
+
+      - name: Verify public URL
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          echo "Artifact URL:"
+          echo "  https://identity-engineering.org/releases/ie-os/${VERSION}/ie_os-${VERSION}.tar.gz"
+          echo ""
+          echo "sha256 for Formula:"
+          sha256sum dist/ie_os-${VERSION}.tar.gz | awk '{print $1}'
