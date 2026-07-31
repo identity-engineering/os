@@ -34,6 +34,7 @@ def apply_interaction_signal(
     4. Load or create ForeignEstimateRecord
     5. Update counters / fields
     6. Persist + emit receipt
+    7. Optional: mark inbound estimate request answered (in_reply_to_request_id)
     """
     policy = policy or LocalPolicy()
     store = ForeignEstimateStore(Path(registry_root))
@@ -129,6 +130,23 @@ def apply_interaction_signal(
     record.last_receipt_id = receipt.receipt_id
     store.save(record)
 
+    # 7. Optional reply linkage to inbound estimate request
+    if signal.in_reply_to_request_id and receipt.status in (
+        ApplyStatus.APPLIED,
+        ApplyStatus.PARTIAL,
+    ):
+        try:
+            from .request import mark_request_answered
+
+            mark_request_answered(
+                registry_root,
+                signal.in_reply_to_request_id,
+                receipt.receipt_id,
+            )
+        except Exception:
+            # Best-effort audit link; signal apply already succeeded.
+            pass
+
     return receipt
 
 
@@ -152,6 +170,11 @@ def apply_from_dict(
         relation_pull=payload.get("relation_pull"),
         schema_version=str(payload.get("schema_version", "0")),
         transport=str(payload.get("transport", "cli")),
+        in_reply_to_request_id=(
+            str(payload["in_reply_to_request_id"])
+            if payload.get("in_reply_to_request_id")
+            else None
+        ),
     )
     return apply_interaction_signal(
         signal,
