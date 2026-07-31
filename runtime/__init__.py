@@ -1,7 +1,7 @@
 """IE OS Surface Runtime – local deterministic core (v0)."""
 
 from .apply import apply_interaction_signal
-from .mass import MassReadout, compute_mass_readout
+from .mass import MassReadout, build_public_card, compute_mass_readout
 from .models import ApplyStatus, EstimateRequest, InteractionSignal, Receipt, RequestStatus
 from .request import (
     create_inbound_request,
@@ -24,5 +24,6 @@ __all__ = [
     "set_request_status",
     "mark_request_answered",
     "compute_mass_readout",
+    "build_public_card",
     "MassReadout",
 ]
