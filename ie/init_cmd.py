@@ -104,6 +104,9 @@ def init_install(
     fe = target / "registry" / "_foreign_estimates"
     fe.mkdir(parents=True, exist_ok=True)
 
+    inbox = target / "registry" / "_inbound_requests"
+    inbox.mkdir(parents=True, exist_ok=True)
+
     _patch_header(
         target / HEADER_NAME,
         handle=handle,
@@ -119,8 +122,9 @@ def init_install(
             f"Created by `ie init` (tier: {tier}).\n\n"
             f"- Header: `{HEADER_NAME}`\n"
             f"- Registry: `registry/`\n"
-            f"- Foreign estimates: `registry/_foreign_estimates/`\n\n"
-            f"Commands: `ie status`, `ie signal apply`, `ie registry list`\n",
+            f"- Foreign estimates: `registry/_foreign_estimates/`\n"
+            f"- Inbound estimate requests: `registry/_inbound_requests/`\n\n"
+            f"Commands: `ie status`, `ie signal apply`, `ie request list`, `ie registry list`\n",
             encoding="utf-8",
         )
 
