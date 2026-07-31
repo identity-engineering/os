@@ -11,8 +11,13 @@ always_required:
   - existence                # boolean, always true when signal is sent
   - interaction_depth_delta  # float 0.0–1.0, contribution of this single interaction
 
+always_passed_when_known:
+  - sender_emergent_mass     # 0–100 — sender's *computed* emergent self-Mass
+                             # (mean of estimates they received). Public geometry.
+                             # Not a self-declared rating. Omit only if unobserved.
+
 consent_based:
-  - coarse_mass_estimate     # number 0–100, sender's current estimate of receiver
+  - coarse_mass_estimate     # number 0–100, sender's current estimate of *receiver*
   - mass_confidence          # float 0.0–1.0
   - dimensions_delta         # array of {name, value, confidence}
   - relation_pull            # float 0.0–1.0
@@ -25,14 +30,16 @@ meta_optional:
 privacy_defaults:
   share_existence: true
   share_interaction_depth_delta: true
+  share_sender_emergent_mass: true     # public gravitational weight of the sender
   share_coarse_mass_estimate: false
   share_dimensions_delta: false
   share_relation_pull: false
   share_rich_signals: false
 
 notes:
-  - The minimal three fields (existence + depth_delta + addressing) are enough to keep volume and interaction tracking alive.
-  - Self-Mass emerges only from received coarse_mass_estimate values; it is never self-declared.
-  - Full dimensional alloys and tension states remain local unless higher consent is given.
+  - The minimal fields keep volume and interaction tracking alive.
+  - sender_emergent_mass is the sender's derived Mass from *their* inbound estimates;
+    receivers use it as M_i when computing their own emergent self-Mass (docs/mass.md).
+  - Self-Mass is never self-declared; publishing the derived number is allowed.
   - Estimate (what I hold in my Registry) and Signal (what I pass) stay strictly separated.
-  - When answering an estimate request, set in_reply_to_request_id so the peer's inbox can mark the request answered.
+  - When answering an estimate request, set in_reply_to_request_id for audit linkage.

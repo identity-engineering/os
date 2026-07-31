@@ -8,70 +8,79 @@ operations:
       Accept an IE Interaction Signal and, if policy allows, apply it into the
       callee's foreign-estimate zone. Always returns a receipt.
       Optional in_reply_to_request_id links a reply to an inbound estimate request.
+      sender_emergent_mass (when present) is always-passed public geometry.
     request:
       required:
-        - from                  # sender handle (authenticated identity)
-        - to                    # target handle (must match this surface)
-        - timestamp             # ISO datetime
-        - existence             # boolean, must be true for a normal ping
-        - interaction_depth_delta  # float 0.0–1.0
+        - from
+        - to
+        - timestamp
+        - existence
+        - interaction_depth_delta
+      always_passed_when_known:
+        - sender_emergent_mass   # sender's computed emergent self-Mass (0–100)
       optional_consent:
-        - coarse_mass_estimate  # sender's estimate of the callee
+        - coarse_mass_estimate
         - mass_confidence
         - dimensions_delta
         - relation_pull
       meta:
-        - schema_version        # "0"
-        - transport             # mcp | http | cli | file | a2a | other
-        - in_reply_to_request_id  # optional uuid linking a reply to an inbox request
+        - schema_version
+        - transport
+        - in_reply_to_request_id
     response_receipt:
       required:
         - receipt_id
-        - status                # accepted | applied | rejected | partial
+        - status
         - timestamp
       optional:
-        - applied_fields        # list of field names actually written
-        - rejected_fields       # list of field names refused (with reasons)
-        - reason                # human-readable summary
-        - quarantine            # if sender was quarantined
+        - applied_fields
+        - rejected_fields
+        - reason
+        - quarantine
 
   request_estimate:
     type: write_inbox
     description: |
       Land an estimate request in the target Identity's inbound request inbox.
-      Never auto-answers. Owner may ignore, quarantine, or answer later with a
-      normal Interaction Signal (optionally linked via in_reply_to_request_id).
+      Never auto-answers.
     request:
       required:
-        - requester             # who is asking
-        - target                # who should estimate (this surface when inbound)
-        - timestamp             # ISO datetime (server may stamp if omitted)
+        - requester
+        - target
+        - timestamp
       optional:
-        - requested_fields      # e.g. [coarse_mass_estimate, mass_confidence]
+        - requested_fields
         - note
-        - request_id            # client-supplied id; otherwise generated
+        - request_id
         - schema_version
         - transport
     response:
       - request_id
-      - status                  # pending on create
+      - status
 
   list_inbound_requests:
     type: read_owner
     description: Owner lists pending / historical inbound estimate requests.
     request:
       optional:
-        - status                # pending | ignored | quarantined | answered | expired
+        - status
 
   get_public_card:
     type: read_minimal
-    description: Minimal discoverability without exposing the foreign-estimate zone.
+    description: |
+      Discoverability plus live emergent self-Mass (derived, never self-declared).
+      Always readable — gravitational weight of this Identity in the field.
     response:
       - local_handle
-      - preferred_name          # optional
+      - preferred_name
       - substrate
-      - accepts_ie_signals      # boolean
+      - accepts_ie_signals
       - schema_version
+      - emergent_self_mass      # number 0–100 or null if unobserved
+      - mass_unobserved         # boolean
+      - volume_count
+      - estimator_count
+      - mass_formula_version
 
   get_receipt:
     type: read
@@ -88,7 +97,6 @@ operations:
     type: policy_write_critical
     description: |
       Revoke a grant. Criticality may require human approval depending on policy.
-      Does not by itself erase audit history; may set quarantine on sender.
 
 http_binding_sketch:
   base: "/ie/v0"

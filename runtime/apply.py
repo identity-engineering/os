@@ -23,23 +23,10 @@ def apply_interaction_signal(
     policy: Optional[LocalPolicy] = None,
     expected_to_handle: Optional[str] = None,
 ) -> Receipt:
-    """Apply an Interaction Signal into the local foreign-estimate zone.
-
-    Deterministic, no network. Returns a Receipt in all cases.
-
-    Steps (see docs/foreign-estimate-zone.md):
-    1. Validate payload
-    2. Optional to-handle match (surface identity)
-    3. Policy evaluation (quarantine, always-passed vs consent)
-    4. Load or create ForeignEstimateRecord
-    5. Update counters / fields
-    6. Persist + emit receipt
-    7. Optional: mark inbound estimate request answered (in_reply_to_request_id)
-    """
+    """Apply an Interaction Signal into the local foreign-estimate zone."""
     policy = policy or LocalPolicy()
     store = ForeignEstimateStore(Path(registry_root))
 
-    # 1. Validate
     errors = signal.validate_required()
     if errors:
         return Receipt.create(
@@ -49,7 +36,6 @@ def apply_interaction_signal(
             reason="; ".join(errors),
         )
 
-    # 2. Surface identity check (optional but recommended)
     if expected_to_handle and signal.to_handle != expected_to_handle:
         return Receipt.create(
             ApplyStatus.REJECTED,
@@ -58,7 +44,6 @@ def apply_interaction_signal(
             reason=f"to_handle mismatch: expected {expected_to_handle}",
         )
 
-    # 3. Policy
     fields_to_apply, rejected, quarantine = policy.evaluate(signal)
 
     if not fields_to_apply and rejected:
@@ -71,7 +56,6 @@ def apply_interaction_signal(
             quarantine=quarantine,
         )
 
-    # 4. Load / create record
     record = store.load(signal.from_handle)
     now = signal.timestamp or _utcnow()
     if record is None:
@@ -83,7 +67,6 @@ def apply_interaction_signal(
             existence_confirmed=False,
         )
 
-    # 5. Apply fields
     applied: list[str] = []
 
     if "existence" in fields_to_apply:
@@ -95,6 +78,11 @@ def apply_interaction_signal(
         record.last_depth_delta = delta
         record.accumulated_depth = float(record.accumulated_depth) + delta
         applied.append("interaction_depth_delta")
+
+    if "sender_emergent_mass" in fields_to_apply and signal.sender_emergent_mass is not None:
+        record.sender_emergent_mass = float(signal.sender_emergent_mass)
+        record.sender_emergent_mass_at = now
+        applied.append("sender_emergent_mass")
 
     if "coarse_mass_estimate" in fields_to_apply and signal.coarse_mass_estimate is not None:
         record.coarse_mass_estimate = float(signal.coarse_mass_estimate)
@@ -117,7 +105,6 @@ def apply_interaction_signal(
     record.signal_count = int(record.signal_count) + 1
     record.quarantine = quarantine
 
-    # 6. Persist + receipt
     receipt = Receipt.create(
         ApplyStatus.APPLIED if not rejected else ApplyStatus.PARTIAL,
         signal.from_handle,
@@ -130,7 +117,6 @@ def apply_interaction_signal(
     record.last_receipt_id = receipt.receipt_id
     store.save(record)
 
-    # 7. Optional reply linkage to inbound estimate request
     if signal.in_reply_to_request_id and receipt.status in (
         ApplyStatus.APPLIED,
         ApplyStatus.PARTIAL,
@@ -144,7 +130,6 @@ def apply_interaction_signal(
                 receipt.receipt_id,
             )
         except Exception:
-            # Best-effort audit link; signal apply already succeeded.
             pass
 
     return receipt
@@ -158,12 +143,17 @@ def apply_from_dict(
     expected_to_handle: Optional[str] = None,
 ) -> Receipt:
     """Convenience wrapper: dict payload → InteractionSignal → apply."""
+    sem = payload.get("sender_emergent_mass")
+    if sem is None:
+        sem = payload.get("from_emergent_mass")
+
     signal = InteractionSignal(
         from_handle=str(payload.get("from") or payload.get("from_handle") or ""),
         to_handle=str(payload.get("to") or payload.get("to_handle") or ""),
         timestamp=str(payload.get("timestamp") or _utcnow()),
         existence=bool(payload.get("existence", True)),
         interaction_depth_delta=float(payload.get("interaction_depth_delta", 0.0)),
+        sender_emergent_mass=float(sem) if sem is not None else None,
         coarse_mass_estimate=payload.get("coarse_mass_estimate"),
         mass_confidence=payload.get("mass_confidence"),
         dimensions_delta=payload.get("dimensions_delta"),

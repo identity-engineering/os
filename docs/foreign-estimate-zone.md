@@ -18,6 +18,8 @@ From the whole zone the Identity **derives**:
 - **volume candidate** — how many (weighted) Identities are estimating / orbiting me
 - **emergent self-Mass** — aggregation of others' estimates of me (never self-declared)
 
+Derivation rule: **`docs/mass.md`** (weighted mean of `coarse_mass_estimate` by sender Mass × confidence × depth factor). Implementation: `runtime/mass.py`, CLI `ie mass`.
+
 ## Where it lives
 
 Logical model is store-agnostic:
@@ -40,7 +42,7 @@ It is **not** mixed into the observer's alloy dimensions about *others* without 
    - else → mark rejected on receipt
 5. Update `last_signal_at`, `signal_count`, depth accumulation.
 6. Persist audit + issue **receipt** (`applied` / `partial` / `rejected`).
-7. Invalidate or recompute derived volume / self-Mass caches if any.
+7. Derived volume / self-Mass are recomputed on read (`ie mass` / `compute_mass_readout`); no mandatory cache in v0.
 
 ## Relation to my Registry entries about others
 
@@ -50,6 +52,8 @@ It is **not** mixed into the observer's alloy dimensions about *others* without 
 | What **they** wrote **into me** about me / the relation | **foreign-estimate zone** |
 
 Both feed geometry; only the second is surface-writable by them.
+
+For self-Mass weights, the observer's `my_mass_estimate` of the sender (Registry) multiplies the sender's estimate of me (zone). See `docs/mass.md`.
 
 ## Human ownership
 
@@ -62,3 +66,4 @@ Both feed geometry; only the second is surface-writable by them.
 - `schemas/foreign-estimate-zone/v0.yaml`
 - `schemas/surface-operations/v0.yaml`
 - `schemas/interaction-signal/v0.yaml`
+- `docs/mass.md` — emergent self-Mass formula v0
