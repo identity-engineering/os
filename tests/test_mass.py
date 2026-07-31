@@ -8,17 +8,13 @@ from pathlib import Path
 
 from runtime.mass import (
     M_UNKNOWN,
+    build_public_card,
     compute_mass_readout,
     depth_factor,
     weight_for,
 )
 from runtime.models import ForeignEstimateRecord
 from runtime.storage import ForeignEstimateStore
-
-try:
-    import yaml  # type: ignore
-except ImportError:  # pragma: no cover
-    yaml = None
 
 
 class MassFormulaTests(unittest.TestCase):
@@ -44,28 +40,6 @@ class MassReadoutTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def _write_peer(self, handle: str, mass: float) -> None:
-        data = {
-            "local_handle": handle,
-            "preferred_name": handle,
-            "substrate": "human",
-            "my_mass_estimate": mass,
-            "interaction_depth": 0.5,
-            "dimensions": [],
-        }
-        path = self.registry / f"{handle}.yaml"
-        if yaml is not None:
-            path.write_text(
-                yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
-                encoding="utf-8",
-            )
-        else:
-            import json
-
-            path.with_suffix(".json").write_text(
-                json.dumps(data, indent=2), encoding="utf-8"
-            )
-
     def _save_estimate(
         self,
         handle: str,
@@ -75,6 +49,7 @@ class MassReadoutTests(unittest.TestCase):
         depth: float = 1.0,
         quarantine: bool = False,
         existence: bool = True,
+        sender_emergent_mass: float | None = None,
     ) -> None:
         rec = ForeignEstimateRecord(
             sender_handle=handle,
@@ -87,6 +62,10 @@ class MassReadoutTests(unittest.TestCase):
             coarse_mass_estimate=estimate,
             mass_confidence=confidence,
             quarantine=quarantine,
+            sender_emergent_mass=sender_emergent_mass,
+            sender_emergent_mass_at=(
+                "2026-07-31T00:00:00+00:00" if sender_emergent_mass is not None else None
+            ),
         )
         self.store.save(rec)
 
@@ -97,27 +76,31 @@ class MassReadoutTests(unittest.TestCase):
         self.assertEqual(out.estimator_count, 0)
 
     def test_existence_only_no_self_mass(self):
-        self._save_estimate("alice", estimate=None, depth=0.5)
+        self._save_estimate("alice", estimate=None, depth=0.5, sender_emergent_mass=40)
         out = compute_mass_readout(self.registry)
         self.assertIsNone(out.emergent_self_mass)
         self.assertEqual(out.volume_count, 1)
         self.assertEqual(out.estimator_count, 0)
 
     def test_single_estimator_equals_estimate(self):
-        self._write_peer("alice", 50)
-        self._save_estimate("alice", estimate=70, confidence=1.0, depth=1.0)
+        self._save_estimate(
+            "alice", estimate=70, confidence=1.0, depth=1.0, sender_emergent_mass=50
+        )
         out = compute_mass_readout(self.registry)
         self.assertIsNotNone(out.emergent_self_mass)
         assert out.emergent_self_mass is not None
         self.assertAlmostEqual(out.emergent_self_mass, 70.0)
         self.assertEqual(out.estimator_count, 1)
+        self.assertEqual(out.contributors[0].sender_mass_source, "signal")
 
-    def test_weighted_mean_two_senders(self):
-        # Heavy peer says 80; light peer says 20 → result closer to 80
-        self._write_peer("heavy", 90)
-        self._write_peer("light", 10)
-        self._save_estimate("heavy", estimate=80, confidence=1.0, depth=1.0)
-        self._save_estimate("light", estimate=20, confidence=1.0, depth=1.0)
+    def test_weighted_mean_by_sender_emergent_mass(self):
+        # High emergent-Mass sender says 80; low says 20 → closer to 80
+        self._save_estimate(
+            "heavy", estimate=80, confidence=1.0, depth=1.0, sender_emergent_mass=90
+        )
+        self._save_estimate(
+            "light", estimate=20, confidence=1.0, depth=1.0, sender_emergent_mass=10
+        )
         out = compute_mass_readout(self.registry)
         self.assertIsNotNone(out.emergent_self_mass)
         assert out.emergent_self_mass is not None
@@ -129,27 +112,68 @@ class MassReadoutTests(unittest.TestCase):
         expected = (w_h * 80 + w_l * 20) / (w_h + w_l)
         self.assertAlmostEqual(out.emergent_self_mass, expected)
 
-    def test_quarantine_excluded(self):
-        self._write_peer("alice", 50)
-        self._write_peer("bob", 50)
-        self._save_estimate("alice", estimate=90, confidence=1.0, depth=1.0)
+    def test_registry_my_mass_estimate_is_ignored(self):
+        # Even if local Registry claims the sender is massive, weighting uses
+        # sender_emergent_mass from the signal only.
+        import json
+
+        peer = self.registry / "alice.json"
+        peer.write_text(
+            json.dumps({"local_handle": "alice", "my_mass_estimate": 99}),
+            encoding="utf-8",
+        )
         self._save_estimate(
-            "bob", estimate=10, confidence=1.0, depth=1.0, quarantine=True
+            "alice", estimate=40, confidence=1.0, depth=1.0, sender_emergent_mass=10
+        )
+        out = compute_mass_readout(self.registry)
+        contrib = [c for c in out.contributors if c.included][0]
+        self.assertEqual(contrib.sender_mass, 10.0)
+        self.assertEqual(contrib.sender_mass_source, "signal")
+
+    def test_quarantine_excluded(self):
+        self._save_estimate(
+            "alice", estimate=90, confidence=1.0, depth=1.0, sender_emergent_mass=50
+        )
+        self._save_estimate(
+            "bob",
+            estimate=10,
+            confidence=1.0,
+            depth=1.0,
+            quarantine=True,
+            sender_emergent_mass=50,
         )
         out = compute_mass_readout(self.registry)
         self.assertAlmostEqual(out.emergent_self_mass or -1, 90.0)
         self.assertEqual(out.estimator_count, 1)
-        self.assertEqual(out.volume_count, 1)  # bob quarantined → not in volume
+        self.assertEqual(out.volume_count, 1)
 
-    def test_unknown_sender_uses_m_unknown(self):
+    def test_missing_sender_mass_uses_m_unknown(self):
         self._save_estimate("stranger", estimate=40, confidence=1.0, depth=1.0)
         out = compute_mass_readout(self.registry)
-        self.assertIsNotNone(out.emergent_self_mass)
-        assert out.emergent_self_mass is not None
-        self.assertAlmostEqual(out.emergent_self_mass, 40.0)
+        self.assertAlmostEqual(out.emergent_self_mass or -1, 40.0)
         contrib = [c for c in out.contributors if c.included][0]
         self.assertEqual(contrib.sender_mass, M_UNKNOWN)
         self.assertEqual(contrib.sender_mass_source, "cold_start")
+
+    def test_public_card_includes_mass(self):
+        self._save_estimate(
+            "alice", estimate=55, confidence=1.0, depth=1.0, sender_emergent_mass=40
+        )
+        card = build_public_card(
+            local_handle="me",
+            registry_root=self.registry,
+            preferred_name="Me",
+        )
+        self.assertEqual(card["local_handle"], "me")
+        self.assertAlmostEqual(card["emergent_self_mass"], 55.0)
+        self.assertFalse(card["mass_unobserved"])
+        self.assertEqual(card["volume_count"], 1)
+        self.assertEqual(card["estimator_count"], 1)
+
+    def test_public_card_unobserved(self):
+        card = build_public_card(local_handle="me", registry_root=self.registry)
+        self.assertIsNone(card["emergent_self_mass"])
+        self.assertTrue(card["mass_unobserved"])
 
 
 if __name__ == "__main__":
