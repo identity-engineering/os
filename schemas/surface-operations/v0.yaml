@@ -7,6 +7,7 @@ operations:
     description: |
       Accept an IE Interaction Signal and, if policy allows, apply it into the
       callee's foreign-estimate zone. Always returns a receipt.
+      Optional in_reply_to_request_id links a reply to an inbound estimate request.
     request:
       required:
         - from                  # sender handle (authenticated identity)
@@ -22,6 +23,7 @@ operations:
       meta:
         - schema_version        # "0"
         - transport             # mcp | http | cli | file | a2a | other
+        - in_reply_to_request_id  # optional uuid linking a reply to an inbox request
     response_receipt:
       required:
         - receipt_id
@@ -32,6 +34,34 @@ operations:
         - rejected_fields       # list of field names refused (with reasons)
         - reason                # human-readable summary
         - quarantine            # if sender was quarantined
+
+  request_estimate:
+    type: write_inbox
+    description: |
+      Land an estimate request in the target Identity's inbound request inbox.
+      Never auto-answers. Owner may ignore, quarantine, or answer later with a
+      normal Interaction Signal (optionally linked via in_reply_to_request_id).
+    request:
+      required:
+        - requester             # who is asking
+        - target                # who should estimate (this surface when inbound)
+        - timestamp             # ISO datetime (server may stamp if omitted)
+      optional:
+        - requested_fields      # e.g. [coarse_mass_estimate, mass_confidence]
+        - note
+        - request_id            # client-supplied id; otherwise generated
+        - schema_version
+        - transport
+    response:
+      - request_id
+      - status                  # pending on create
+
+  list_inbound_requests:
+    type: read_owner
+    description: Owner lists pending / historical inbound estimate requests.
+    request:
+      optional:
+        - status                # pending | ignored | quarantined | answered | expired
 
   get_public_card:
     type: read_minimal
@@ -63,6 +93,8 @@ operations:
 http_binding_sketch:
   base: "/ie/v0"
   post_receive: "/ie/v0/signals"
+  post_request: "/ie/v0/requests"
+  get_requests: "/ie/v0/requests"
   get_card: "/ie/v0/card"
   get_receipt: "/ie/v0/receipts/{id}"
 
@@ -70,6 +102,10 @@ mcp_binding_sketch:
   tools:
     - name: ie_receive_interaction_signal
       input_schema: request above
+    - name: ie_request_estimate
+      input_schema: request_estimate.request
+    - name: ie_list_inbound_requests
+      input_schema: { status: optional string }
     - name: ie_get_public_card
       input_schema: {}
     - name: ie_get_receipt

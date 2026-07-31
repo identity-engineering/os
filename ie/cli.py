@@ -24,8 +24,10 @@ app = typer.Typer(
 )
 registry_app = typer.Typer(help="Local Registry operations")
 signal_app = typer.Typer(help="Interaction Signal operations")
+request_app = typer.Typer(help="Inbound estimate-request inbox (bidirectional sensor)")
 app.add_typer(registry_app, name="registry")
 app.add_typer(signal_app, name="signal")
+app.add_typer(request_app, name="request")
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
 
@@ -301,7 +303,11 @@ def signal_apply(
         None, "--to", help="Override expected to_handle (default: from HEADER)"
     ),
 ) -> None:
-    """Apply an Interaction Signal into this install's foreign-estimate zone."""
+    """Apply an Interaction Signal into this install's foreign-estimate zone.
+
+    Optional payload field in_reply_to_request_id links a reply to an inbound
+    estimate request and marks that request answered.
+    """
     root = path.resolve() if path else require_ie_root()
     registry = root / "registry"
     if not registry.is_dir():
@@ -332,6 +338,137 @@ def signal_apply(
     typer.echo(json.dumps(receipt.to_dict(), indent=2, ensure_ascii=False))
     if receipt.status == ApplyStatus.REJECTED:
         raise typer.Exit(code=1)
+
+
+@request_app.command("create")
+def request_create(
+    requester: str = typer.Option(..., "--from", "--requester", help="Requester handle"),
+    target: Optional[str] = typer.Option(
+        None, "--to", "--target", help="Target handle (default: this install's handle)"
+    ),
+    scope: Optional[str] = typer.Option(
+        None,
+        "--scope",
+        help="Comma-separated requested fields (e.g. coarse_mass_estimate,mass_confidence)",
+    ),
+    note: Optional[str] = typer.Option(None, "--note", help="Optional short note"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Land an estimate request in this install's inbound inbox (local receive)."""
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+    if not registry.is_dir():
+        raise SystemExit(f"No registry/ under {root}")
+
+    if target is None:
+        st = collect_status(root)
+        target = st.get("handle")
+        if not target:
+            raise SystemExit("Could not resolve target handle; pass --to")
+
+    fields = [f.strip() for f in (scope or "").split(",") if f.strip()]
+
+    from runtime.request import RequestError, create_inbound_request
+
+    try:
+        req = create_inbound_request(
+            registry_root=registry,
+            requester_handle=requester,
+            target_handle=target,
+            requested_fields=fields,
+            note=note,
+            transport="cli",
+        )
+    except RequestError as e:
+        raise SystemExit(str(e))
+
+    typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
+
+
+@request_app.command("list")
+def request_list(
+    status: Optional[str] = typer.Option(
+        None, "--status", help="Filter: pending|ignored|quarantined|answered|expired"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """List inbound estimate requests."""
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+
+    from runtime.models import RequestStatus
+    from runtime.request import list_inbound_requests
+
+    st_filter = None
+    if status:
+        try:
+            st_filter = RequestStatus(status.strip().lower())
+        except ValueError:
+            raise SystemExit(
+                "--status must be one of: pending|ignored|quarantined|answered|expired"
+            )
+
+    rows = list_inbound_requests(registry, status=st_filter)
+    if not rows:
+        typer.echo("(no requests)")
+        return
+    for r in rows:
+        fields = ",".join(r.requested_fields) if r.requested_fields else "-"
+        typer.echo(
+            f"{r.request_id}  {r.status.value:12}  from={r.requester_handle}  "
+            f"scope={fields}  at={r.timestamp}"
+        )
+
+
+@request_app.command("show")
+def request_show(
+    request_id: str = typer.Argument(..., help="request_id"),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """Show one inbound request as JSON."""
+    root = path.resolve() if path else require_ie_root()
+    from runtime.request import get_inbound_request
+
+    req = get_inbound_request(root / "registry", request_id)
+    if req is None:
+        raise SystemExit(f"No request {request_id!r}")
+    typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
+
+
+@request_app.command("ignore")
+def request_ignore(
+    request_id: str = typer.Argument(..., help="request_id"),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """Mark an inbound request as ignored (no auto-answer; no quarantine)."""
+    root = path.resolve() if path else require_ie_root()
+    from runtime.models import RequestStatus
+    from runtime.request import RequestError, set_request_status
+
+    try:
+        req = set_request_status(root / "registry", request_id, RequestStatus.IGNORED)
+    except RequestError as e:
+        raise SystemExit(str(e))
+    typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
+
+
+@request_app.command("quarantine")
+def request_quarantine(
+    request_id: str = typer.Argument(..., help="request_id"),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """Quarantine the requester path for this request (symmetric to signal policy)."""
+    root = path.resolve() if path else require_ie_root()
+    from runtime.models import RequestStatus
+    from runtime.request import RequestError, set_request_status
+
+    try:
+        req = set_request_status(
+            root / "registry", request_id, RequestStatus.QUARANTINED
+        )
+    except RequestError as e:
+        raise SystemExit(str(e))
+    typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
 
 
 @app.command("catalogue")

@@ -17,6 +17,11 @@ consent_based:
   - dimensions_delta         # array of {name, value, confidence}
   - relation_pull            # float 0.0–1.0
 
+meta_optional:
+  - schema_version           # "0"
+  - transport                # mcp | http | cli | file | a2a | other
+  - in_reply_to_request_id   # uuid; links this signal as answer to an inbound estimate request
+
 privacy_defaults:
   share_existence: true
   share_interaction_depth_delta: true
@@ -30,3 +35,4 @@ notes:
   - Self-Mass emerges only from received coarse_mass_estimate values; it is never self-declared.
   - Full dimensional alloys and tension states remain local unless higher consent is given.
   - Estimate (what I hold in my Registry) and Signal (what I pass) stay strictly separated.
+  - When answering an estimate request, set in_reply_to_request_id so the peer's inbox can mark the request answered.

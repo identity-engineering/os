@@ -1,0 +1,55 @@
+# Estimate Request Schema v0
+# Identity Engineering OS
+#
+# Inbound path of the bidirectional gravitational sensor.
+# A request asks a Registry peer to send *me* an estimate.
+# It lands in the peer's inbox. Answer is optional (Refusal-of-Control).
+# Reply is a normal Interaction Signal (optionally linked via request_id).
+#
+# See docs/estimate-request.md and docs/bidirectional-gravitational-sensor.md.
+
+location:
+  # Local Free tier:
+  #   registry/_inbound_requests/{request_id}.yaml
+  # Managed later: table inbound_requests
+  description: |
+    One record per pending or historical estimate request received by this Identity.
+    Owned and inspected by the surface owner. Never auto-answered.
+
+required_fields:
+  - request_id              # uuid string
+  - requester_handle        # who is asking to be estimated / who wants an estimate of the target
+  - target_handle           # who is asked to produce the estimate (this surface when inbound)
+  - timestamp               # ISO datetime when the request was created / received
+  - status                  # pending | ignored | quarantined | answered | expired
+
+optional_fields:
+  - requested_fields        # list of field names the requester hopes for
+                            # e.g. [coarse_mass_estimate, mass_confidence]
+                            # empty / omitted = peer decides what to share
+  - note                    # short free-text from requester (local display)
+  - schema_version          # "0"
+  - transport               # mcp | http | cli | file | a2a | other
+  - answered_at             # ISO datetime when a reply signal was linked
+  - reply_receipt_id        # receipt_id of the Interaction Signal that answered
+  - ignored_at              # when status became ignored
+  - quarantine              # boolean mirror for policy symmetry with signals
+
+invariants:
+  - Requests never auto-answer.
+  - No path from a request into Stem, Vision, Metric Stem weights, or access-policy mutation.
+  - Rate limits and quarantine apply to requests symmetrically with signals.
+  - High-Mass identities see inbox pressure, not mandatory estimation work.
+  - Reply reuses receive_interaction_signal; optional in_reply_to_request_id links audit.
+
+status_semantics:
+  pending: awaiting owner decision (ignore / quarantine / answer later)
+  ignored: owner declined without quarantine; no further aggregation effect
+  quarantined: requester treated like quarantined signal sender for this path
+  answered: a reply Interaction Signal was applied and linked
+  expired: optional soft expiry (v0 may leave unused)
+
+non_goals:
+  - No global social graph or forced mutual estimation
+  - No requirement that every Registry member rates everyone else
+  - No automatic outbound request on every interaction (hooks are opt-in later)

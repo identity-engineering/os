@@ -34,13 +34,15 @@ Relative Mass, volume, and tension can update without the human re-typing estima
 | Operation | Type | Purpose |
 |-----------|------|---------|
 | `receive_interaction_signal` | write (bounded) | Apply existence, depth_delta, optional mass estimate, optional consented fields into foreign-estimate zone |
+| `request_estimate` | write (inbox) | Land an inbound estimate request; never auto-answered |
+| `list_inbound_requests` | read (owner) | Inspect pending / historical estimate requests |
 | `get_public_card` | read (minimal) | Discoverability: handle, substrate, accepts_ie_signals |
 | `get_receipt` / list recent receipts | read | Audit and confirmation |
 | `list_grants` / `revoke_grant` | policy | Inspect and cut access |
 
 Further tools (rich dimension read/write, custom domain tools) are **opt-in** and subject to the access policy.
 
-See `schemas/surface-operations/v0.yaml` and `docs/foreign-estimate-zone.md`.
+See `schemas/surface-operations/v0.yaml`, `docs/foreign-estimate-zone.md`, and `docs/estimate-request.md`.
 
 ## Bounded foreign-write zone
 
@@ -81,6 +83,7 @@ Examples of **non-critical** (may be agent-automated if policy allows):
 - Applying a minimal authenticated signal into the foreign-estimate zone
 - Emitting receipts
 - Rotating non-secret operational metadata
+- Listing or ignoring inbound estimate requests under existing policy
 
 ### Human-in-the-loop requirements
 
@@ -103,6 +106,10 @@ Speaking with "my AI" is not identical to being the Identity's sovereign control
 
 Stricter Identities may set everything to pending review. More open Identities may widen grants per peer.
 
+## Estimate requests (inbox)
+
+Inbound `request_estimate` never auto-answers. Load is inbox pressure, not mandatory estimation work. See `docs/estimate-request.md` and `docs/bidirectional-gravitational-sensor.md`.
+
 ## Identity as app
 
 Each Identity:
@@ -120,4 +127,5 @@ An idea-Identity can have a surface too (often narrower). A runtime-Identity oft
 - `docs/local-entry.md` — AGENTS.md / local discoverability (not the inter-identity protocol)
 - `docs/interaction-signal.md` — payload fields
 - `docs/foreign-estimate-zone.md` — where applies land
+- `docs/estimate-request.md` — inbound request + inbox
 - `docs/realization-surface-runtime.md` — how this is implemented without every user coding a server
