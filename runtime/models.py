@@ -38,6 +38,10 @@ class InteractionSignal:
     existence: bool = True
     interaction_depth_delta: float = 0.0
 
+    # Public geometry of the sender (always-passed when known)
+    # Their computed emergent self-Mass — never a self-declared rating.
+    sender_emergent_mass: Optional[float] = None
+
     # Consent-based (optional)
     coarse_mass_estimate: Optional[float] = None
     mass_confidence: Optional[float] = None
@@ -47,7 +51,6 @@ class InteractionSignal:
     # Meta
     schema_version: str = "0"
     transport: str = "cli"
-    # Optional reply linkage to an inbound estimate request (schemas/estimate-request)
     in_reply_to_request_id: Optional[str] = None
 
     def validate_required(self) -> list[str]:
@@ -62,6 +65,13 @@ class InteractionSignal:
             errors.append("existence must be bool")
         if not (0.0 <= float(self.interaction_depth_delta) <= 1.0):
             errors.append("interaction_depth_delta must be in [0.0, 1.0]")
+        if self.sender_emergent_mass is not None:
+            try:
+                m = float(self.sender_emergent_mass)
+                if not (0.0 <= m <= 100.0):
+                    errors.append("sender_emergent_mass must be in [0.0, 100.0]")
+            except (TypeError, ValueError):
+                errors.append("sender_emergent_mass must be a number")
         return errors
 
 
@@ -125,6 +135,9 @@ class ForeignEstimateRecord:
     mass_estimate_at: Optional[str] = None
     dimensions_delta: Optional[list[dict[str, Any]]] = None
     relation_pull: Optional[float] = None
+    # Last known emergent self-Mass of the *sender* (from their signal / card)
+    sender_emergent_mass: Optional[float] = None
+    sender_emergent_mass_at: Optional[str] = None
     last_receipt_id: Optional[str] = None
     quarantine: bool = False
     notes: Optional[str] = None

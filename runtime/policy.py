@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .models import InteractionSignal
 
@@ -12,23 +11,16 @@ from .models import InteractionSignal
 class LocalPolicy:
     """Default Free-tier policy.
 
-    Always-passed fields (existence, interaction_depth_delta) auto-apply
-    for any authenticated peer that is not quarantined.
+    Always-passed fields auto-apply for non-quarantined senders:
+    - existence, interaction_depth_delta
+    - sender_emergent_mass (public geometry of the sender)
 
-    Consent fields require explicit grant (or open_consent=True for dogfood).
-    Critical surface changes are never handled here – they stay out of band.
+    Consent fields (estimates *of me*) require grant or open_consent.
     """
 
-    # When True, consent fields are applied if present (useful for local dogfood).
     open_consent: bool = False
-
-    # Handles that are currently quarantined (no aggregation influence).
     quarantined_handles: set[str] = field(default_factory=set)
-
-    # Explicit per-peer grants for consent fields (handle -> set of field names).
     grants: dict[str, set[str]] = field(default_factory=dict)
-
-    # Simple rate limit: max signals per sender in a short window (local only).
     max_signals_per_sender: int = 1000
 
     def is_quarantined(self, handle: str) -> bool:
@@ -47,11 +39,19 @@ class LocalPolicy:
         quarantine = self.is_quarantined(signal.from_handle)
 
         if quarantine:
-            # Still accept existence for audit, but mark quarantine on receipt.
-            # Depth and consent are refused while quarantined.
             applied.append("existence")
-            rejected.append({"field": "interaction_depth_delta", "reason": "sender quarantined"})
-            for f in ("coarse_mass_estimate", "mass_confidence", "dimensions_delta", "relation_pull"):
+            # Still record their published mass for audit, but no depth/consent weight.
+            if signal.sender_emergent_mass is not None:
+                applied.append("sender_emergent_mass")
+            rejected.append(
+                {"field": "interaction_depth_delta", "reason": "sender quarantined"}
+            )
+            for f in (
+                "coarse_mass_estimate",
+                "mass_confidence",
+                "dimensions_delta",
+                "relation_pull",
+            ):
                 if getattr(signal, f) is not None:
                     rejected.append({"field": f, "reason": "sender quarantined"})
             return applied, rejected, True
@@ -60,8 +60,10 @@ class LocalPolicy:
         if signal.existence:
             applied.append("existence")
         applied.append("interaction_depth_delta")
+        if signal.sender_emergent_mass is not None:
+            applied.append("sender_emergent_mass")
 
-        # Consent-based
+        # Consent-based (about *me*)
         consent_map = {
             "coarse_mass_estimate": signal.coarse_mass_estimate,
             "mass_confidence": signal.mass_confidence,
