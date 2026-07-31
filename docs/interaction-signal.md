@@ -77,6 +77,15 @@ Rich dimensional vectors, full alloy descriptions, tension signals and asymmetry
 - The weighted collection of all `coarse_mass_estimate` values I receive (weighted by the sender's Mass and by accumulated interaction depth) is the primary input to my emergent self-Mass.
 - My own estimates of others remain in my Registry and shape *my* picture of the surrounding densities; they are not required to be sent back.
 
+**Locked formula (v0):** `docs/mass.md` — implementation `runtime/mass.py`, CLI `ie mass`.
+
+```
+w_i = (M_i/100) * c_i * max(d_i/(1+d_i), ε)
+self_Mass = Σ(w_i * E_i) / Σ w_i     # or unobserved if no weights
+```
+
+where E_i is the received estimate of me, M_i is my Registry mass of the sender, c_i is mass_confidence, d_i is accumulated_depth.
+
 ## Privacy defaults (structural)
 
 ```yaml
@@ -93,7 +102,7 @@ Refusal-of-Control is expressed simply: an Identity can refuse to emit anything 
 
 ## What this deliberately does not include yet
 
-- Exact aggregation formula for emergent self-Mass (weights, decay, cold-start)
+- Wall-clock decay of old estimates (open in docs/mass.md)
 - Automatic dimension-propagation rules
 - Cryptographic binding of signals to local_handles
 - Multi-party / collective signals
