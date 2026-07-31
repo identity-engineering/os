@@ -10,6 +10,11 @@ This folder is the observing Identity's **local gravitational sensor** and the c
 - Tension and multi-dimensional distance are derived dynamically — not stored as primary state
 - No global IDs required
 
+Special subdirectories:
+
+- `_foreign_estimates/` — bounded zone others may write into via Interaction Signals
+- `_inbound_requests/` — estimate-request inbox (never auto-answered)
+
 See `schemas/registry/v0.yaml` for the full contract and `docs/registry.md` for the reasoning.
 
 ## Current entries
