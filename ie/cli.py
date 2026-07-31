@@ -116,12 +116,11 @@ def _resolve_account_flow(mode: str) -> dict:
         "When live: CLI opens a browser → login/create → redirect back with account_id.\n"
         "Proceeding with a local Free install; you can link an account later.\n"
     )
-    # Reserved for: webbrowser.open(auth_url); poll/callback with account_id
     return {
         "account_mode": mode,
-        "account_id": None,  # set when OAuth/callback exists
-        "tier": "free",  # account may still be free; pro comes from account entitlements
-        "public_registry_access": False,  # True once account_id is real
+        "account_id": None,
+        "tier": "free",
+        "public_registry_access": False,
         "account_link_pending": True,
     }
 
@@ -187,15 +186,7 @@ def init(
         help="Skip confirmation when enough flags are provided",
     ),
 ) -> None:
-    """Create a personal IE install (interactive by default).
-
-    Prompt order: path → account → preferred name → local_handle.
-
-    Examples:
-      ie init
-      ie init --name Jonas
-      ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
-    """
+    """Create a personal IE install (interactive by default)."""
     interactive = sys.stdin.isatty()
 
     if not interactive and not (name and (handle or name)):
@@ -251,11 +242,25 @@ def status(
         None, "--path", help="IE install root (default: walk from cwd / IE_ROOT)"
     ),
 ) -> None:
-    """Show handle, registry peers, foreign-estimate senders."""
+    """Show handle, registry peers, foreign-estimate senders, mass readout summary."""
     root = path.resolve() if path else require_ie_root()
     if path and not (root / "HEADER.yaml").is_file():
         raise SystemExit(f"No HEADER.yaml under {root}")
     typer.echo(format_status(collect_status(root)))
+    registry = root / "registry"
+    if registry.is_dir():
+        from runtime.mass import compute_mass_readout
+
+        readout = compute_mass_readout(registry)
+        mass_s = (
+            f"{readout.emergent_self_mass:.2f}"
+            if readout.emergent_self_mass is not None
+            else "unobserved"
+        )
+        typer.echo(
+            f"  self-Mass:  {mass_s}  "
+            f"(estimators={readout.estimator_count}, volume={readout.volume_count})"
+        )
 
 
 @registry_app.command("list")
@@ -303,11 +308,7 @@ def signal_apply(
         None, "--to", help="Override expected to_handle (default: from HEADER)"
     ),
 ) -> None:
-    """Apply an Interaction Signal into this install's foreign-estimate zone.
-
-    Optional payload field in_reply_to_request_id links a reply to an inbound
-    estimate request and marks that request answered.
-    """
+    """Apply an Interaction Signal into this install's foreign-estimate zone."""
     root = path.resolve() if path else require_ie_root()
     registry = root / "registry"
     if not registry.is_dir():
@@ -471,6 +472,63 @@ def request_quarantine(
     typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
 
 
+@app.command("mass")
+def mass(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(
+        False, "--json", help="Print full MassReadout as JSON"
+    ),
+    detail: bool = typer.Option(
+        False, "--detail", "-d", help="Per-contributor table (human output)"
+    ),
+) -> None:
+    """Emergent self-Mass from foreign-estimate zone (never self-declared).
+
+    Weighted mean of received coarse_mass_estimate values:
+    weight = (sender_Mass/100) * confidence * depth_factor(accumulated_depth).
+    See docs/mass.md.
+    """
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+    if not registry.is_dir():
+        raise SystemExit(f"No registry/ under {root}")
+
+    from runtime.mass import compute_mass_readout
+
+    readout = compute_mass_readout(registry)
+    if json_out:
+        typer.echo(json.dumps(readout.to_dict(), indent=2, ensure_ascii=False))
+        return
+
+    mass_s = (
+        f"{readout.emergent_self_mass:.4f}"
+        if readout.emergent_self_mass is not None
+        else "unobserved"
+    )
+    typer.echo(f"emergent self-Mass: {mass_s}")
+    typer.echo(f"  formula:           v{readout.formula_version}")
+    typer.echo(f"  estimators:        {readout.estimator_count}")
+    typer.echo(f"  total weight:      {readout.total_weight:.6f}")
+    typer.echo(f"  volume count:      {readout.volume_count}")
+    typer.echo(f"  volume weighted:   {readout.volume_weighted:.4f}")
+    for n in readout.notes:
+        typer.echo(f"  note: {n}")
+
+    if detail:
+        typer.echo("\ncontributors:")
+        for c in readout.contributors:
+            if not c.included:
+                typer.echo(
+                    f"  - {c.sender_handle}: skipped ({c.skip_reason or 'n/a'})"
+                )
+                continue
+            typer.echo(
+                f"  - {c.sender_handle}: E={c.estimate:.1f} c={c.confidence:.2f} "
+                f"d={c.accumulated_depth:.3f} M={c.sender_mass:.1f}"
+                f"({c.sender_mass_source}) w={c.weight:.6f}"
+            )
+
+
 @app.command("catalogue")
 def catalogue(
     path: Optional[Path] = typer.Option(None, "--path"),
@@ -486,10 +544,27 @@ def catalogue(
 
 
 @app.command("reindex")
-def reindex() -> None:
-    """Stub: rebuild derived indexes (volume / self-Mass caches)."""
-    typer.echo("ie reindex: not implemented yet (no derived caches in v0).")
-    raise typer.Exit(code=0)
+def reindex(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Recompute derived readouts (volume / emergent self-Mass). Live only in v0."""
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+    if not registry.is_dir():
+        raise SystemExit(f"No registry/ under {root}")
+
+    from runtime.mass import compute_mass_readout
+
+    readout = compute_mass_readout(registry)
+    mass_s = (
+        f"{readout.emergent_self_mass:.4f}"
+        if readout.emergent_self_mass is not None
+        else "unobserved"
+    )
+    typer.echo("ie reindex: derived readouts recomputed (no persistent cache in v0)")
+    typer.echo(f"  emergent self-Mass: {mass_s}")
+    typer.echo(f"  estimators:         {readout.estimator_count}")
+    typer.echo(f"  volume count:       {readout.volume_count}")
 
 
 if __name__ == "__main__":
