@@ -3,29 +3,23 @@
 Self-Mass is never self-declared. It is a weighted mean of coarse_mass_estimate
 values others applied into this Identity's foreign-estimate zone.
 
-See docs/mass.md for the locked v0 formula.
+Weight M_i is the *sender's* emergent self-Mass (last seen on their signal /
+public card), not the observer's private my_mass_estimate of the sender.
+
+See docs/mass.md.
 """
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from .models import ForeignEstimateRecord
 from .storage import ForeignEstimateStore
 
-try:
-    import yaml  # type: ignore
-except ImportError:  # pragma: no cover
-    yaml = None
-
-# Cold-start: Mass attributed to a sender with no Registry entry (0–100 scale).
+# Cold-start when sender never published sender_emergent_mass (0–100 scale).
 M_UNKNOWN = 10.0
-# Default confidence when sender omitted mass_confidence.
 DEFAULT_CONFIDENCE = 0.5
-# Floor on depth_factor so near-zero depth still yields a tiny weight.
 DEPTH_EPS = 0.01
 
 
@@ -48,31 +42,6 @@ def weight_for(
     return (m / 100.0) * c * df
 
 
-def _load_registry_mass(registry_root: Path, handle: str) -> Optional[float]:
-    """Read observer's my_mass_estimate of this sender from registry/{handle}."""
-    for ext in (".yaml", ".yml", ".json"):
-        path = Path(registry_root) / f"{handle}{ext}"
-        if not path.is_file():
-            continue
-        text = path.read_text(encoding="utf-8")
-        if path.suffix == ".json":
-            data = json.loads(text)
-        elif yaml is not None:
-            data = yaml.safe_load(text) or {}
-        else:
-            return None
-        if not isinstance(data, dict):
-            return None
-        raw = data.get("my_mass_estimate")
-        if raw is None:
-            return None
-        try:
-            return float(raw)
-        except (TypeError, ValueError):
-            return None
-    return None
-
-
 @dataclass
 class Contributor:
     """One sender's contribution to the self-Mass aggregate."""
@@ -82,7 +51,7 @@ class Contributor:
     confidence: float
     accumulated_depth: float
     sender_mass: float
-    sender_mass_source: str  # "registry" | "cold_start"
+    sender_mass_source: str  # "signal" | "cold_start"
     weight: float
     quarantined: bool = False
     included: bool = True
@@ -122,6 +91,7 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
     """Compute volume + emergent self-Mass from the foreign-estimate zone.
 
     Pure function of files under registry/. No network. No Stem writes.
+    M_i = last sender_emergent_mass stored from their signals (else M_UNKNOWN).
     """
     root = Path(registry_root)
     store = ForeignEstimateStore(root)
@@ -148,8 +118,10 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
                     if rec.mass_confidence is not None
                     else DEFAULT_CONFIDENCE,
                     accumulated_depth=float(rec.accumulated_depth),
-                    sender_mass=0.0,
-                    sender_mass_source="registry",
+                    sender_mass=float(rec.sender_emergent_mass)
+                    if rec.sender_emergent_mass is not None
+                    else 0.0,
+                    sender_mass_source="signal",
                     weight=0.0,
                     quarantined=True,
                     included=False,
@@ -169,8 +141,12 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
                     estimate=0.0,
                     confidence=DEFAULT_CONFIDENCE,
                     accumulated_depth=float(rec.accumulated_depth),
-                    sender_mass=0.0,
-                    sender_mass_source="registry",
+                    sender_mass=float(rec.sender_emergent_mass)
+                    if rec.sender_emergent_mass is not None
+                    else M_UNKNOWN,
+                    sender_mass_source=(
+                        "signal" if rec.sender_emergent_mass is not None else "cold_start"
+                    ),
                     weight=0.0,
                     included=False,
                     skip_reason="no_coarse_mass_estimate",
@@ -178,22 +154,19 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
             )
             continue
 
-        reg_mass = _load_registry_mass(root, handle)
-        if reg_mass is None:
+        if rec.sender_emergent_mass is not None:
+            sender_mass = float(rec.sender_emergent_mass)
+            mass_source = "signal"
+        else:
             sender_mass = M_UNKNOWN
             mass_source = "cold_start"
-        else:
-            sender_mass = reg_mass
-            mass_source = "registry"
 
         conf = (
             float(rec.mass_confidence)
             if rec.mass_confidence is not None
             else DEFAULT_CONFIDENCE
         )
-        est = float(rec.coarse_mass_estimate)
-        # Clamp estimate to the documented 0–100 scale
-        est = max(0.0, min(100.0, est))
+        est = max(0.0, min(100.0, float(rec.coarse_mass_estimate)))
 
         w = weight_for(
             sender_mass=sender_mass,
@@ -239,3 +212,26 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
         formula_version="0",
         notes=notes,
     )
+
+
+def build_public_card(
+    *,
+    local_handle: str,
+    registry_root: Union[str, Path],
+    preferred_name: Optional[str] = None,
+    substrate: str = "human",
+) -> dict[str, Any]:
+    """Public card payload including live emergent self-Mass (always readable)."""
+    readout = compute_mass_readout(registry_root)
+    return {
+        "local_handle": local_handle,
+        "preferred_name": preferred_name,
+        "substrate": substrate,
+        "accepts_ie_signals": True,
+        "schema_version": "0",
+        "emergent_self_mass": readout.emergent_self_mass,
+        "mass_unobserved": readout.emergent_self_mass is None,
+        "volume_count": readout.volume_count,
+        "estimator_count": readout.estimator_count,
+        "mass_formula_version": readout.formula_version,
+    }
