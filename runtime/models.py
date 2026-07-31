@@ -20,6 +20,14 @@ class ApplyStatus(str, Enum):
     PARTIAL = "partial"
 
 
+class RequestStatus(str, Enum):
+    PENDING = "pending"
+    IGNORED = "ignored"
+    QUARANTINED = "quarantined"
+    ANSWERED = "answered"
+    EXPIRED = "expired"
+
+
 @dataclass
 class InteractionSignal:
     """Minimal Interaction Signal payload (mirrors schemas/interaction-signal/v0.yaml)."""
@@ -39,6 +47,8 @@ class InteractionSignal:
     # Meta
     schema_version: str = "0"
     transport: str = "cli"
+    # Optional reply linkage to an inbound estimate request (schemas/estimate-request)
+    in_reply_to_request_id: Optional[str] = None
 
     def validate_required(self) -> list[str]:
         errors: list[str] = []
@@ -127,3 +137,62 @@ class ForeignEstimateRecord:
         known = {f.name for f in cls.__dataclass_fields__.values()}  # type: ignore
         filtered = {k: v for k, v in data.items() if k in known}
         return cls(**filtered)
+
+
+@dataclass
+class EstimateRequest:
+    """Inbound estimate request (mirrors schemas/estimate-request/v0.yaml)."""
+
+    request_id: str
+    requester_handle: str
+    target_handle: str
+    timestamp: str
+    status: RequestStatus = RequestStatus.PENDING
+    requested_fields: list[str] = field(default_factory=list)
+    note: Optional[str] = None
+    schema_version: str = "0"
+    transport: str = "cli"
+    answered_at: Optional[str] = None
+    reply_receipt_id: Optional[str] = None
+    ignored_at: Optional[str] = None
+    quarantine: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        d["status"] = self.status.value if isinstance(self.status, RequestStatus) else self.status
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "EstimateRequest":
+        known = {f.name for f in cls.__dataclass_fields__.values()}  # type: ignore
+        filtered = {k: v for k, v in data.items() if k in known}
+        status = filtered.get("status", "pending")
+        if isinstance(status, str):
+            try:
+                filtered["status"] = RequestStatus(status)
+            except ValueError:
+                filtered["status"] = RequestStatus.PENDING
+        return cls(**filtered)
+
+    @classmethod
+    def create(
+        cls,
+        requester_handle: str,
+        target_handle: str,
+        *,
+        requested_fields: Optional[list[str]] = None,
+        note: Optional[str] = None,
+        transport: str = "cli",
+        request_id: Optional[str] = None,
+        timestamp: Optional[str] = None,
+    ) -> "EstimateRequest":
+        return cls(
+            request_id=request_id or str(uuid4()),
+            requester_handle=requester_handle,
+            target_handle=target_handle,
+            timestamp=timestamp or _utcnow(),
+            status=RequestStatus.PENDING,
+            requested_fields=list(requested_fields or []),
+            note=note,
+            transport=transport,
+        )
