@@ -84,17 +84,19 @@ This is the local analogue of "follow / connect", without a global social graph 
 | Surface ops (`receive_interaction_signal`, …) | How the receiver applies a sent signal |
 | Foreign-estimate zone | Only default place inbound estimates about me land |
 | Registry | My local list of recognized identities (gravitational sensor) |
-| **Request / inbox** | How I *ask* without forcing an answer — tracked in issue #31 |
+| **Request / inbox** | How I *ask* without forcing an answer — `schemas/estimate-request/v0.yaml`, `docs/estimate-request.md` |
 
-## Open work (next schema/ops)
+## Implementation status (v0)
 
-Tracked in **[issue #31](https://github.com/identity-engineering/os/issues/31)**:
+Local path for **#31** is implemented:
 
-1. `request_estimate` (or equivalent) operation + request record shape
-2. Inbox / pending-request store (local files first)
-3. Reply path = normal signal or explicit `estimate_reply` linked to request id
-4. Rate limits and quarantine on requests (symmetric to signal policy)
-5. Hooks: post-interaction outbound; optional auto-request policies (off by default)
+- Schema: `schemas/estimate-request/v0.yaml`
+- File store: `registry/_inbound_requests/`
+- Ops + CLI: `runtime/request.py`, `ie request …`
+- Reply linkage: optional `in_reply_to_request_id` on Interaction Signal
+- Docs: `docs/estimate-request.md`
+
+Still later: network delivery between installs, HTTP/MCP binding for `request_estimate`, opt-in post-interaction outbound hooks.
 
 ## Privacy & Ownership defaults
 
@@ -125,4 +127,5 @@ IE OS therefore positions as:
 - `docs/identity-surface.md`
 - `docs/surface-runtime-worked-example.md`
 - `docs/surface-runtime-local.md`
+- `docs/estimate-request.md`
 - [Issue #31](https://github.com/identity-engineering/os/issues/31) — request + inbox implementation

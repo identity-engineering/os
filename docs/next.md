@@ -12,9 +12,10 @@
 ## Next
 
 1. **Cloudflare R2** under org domain + first `v0.1.0` publish + `brew install` dogfood
-2. Estimate request + inbox (#31)
+2. **Estimate request + inbox (#31)** — schemas, local store, CLI (this branch / PR)
 3. Emergent self-Mass (#15)
 4. Tension update protocol / hooks
+5. MCP binding for Surface Runtime (remaining #29 exit criterion)
 
 ## Related issues
 
