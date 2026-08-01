@@ -37,6 +37,17 @@ It needs a **default Geometry Extraction** that runs after (or as part of) every
 
 Probes = the bridge between "AI happening / human happening" and the IE Geometry OS.
 
+## Concrete v0 shape (this branch)
+
+- Schema: `schemas/geometry-receipt/v0.yaml`
+- Hook design: `docs/geometry-hook.md`
+- Implementation: `runtime/geometry.py`
+  - `GeometryReceipt` model
+  - three coarse extractors (DepthMass, ConsentBoundary, ExistenceContinuity)
+  - `run_geometry_hook(...)`
+  - `GeometryReceiptStore` under `registry/_geometry_receipts/`
+- Wire point: `apply_interaction_signal(..., emit_geometry_receipt=True)` (opt-in, best-effort)
+
 ## Relation to existing contracts
 
 - **Interaction Signal** remains the universal carrier across boundaries (`docs/interaction-signal.md`).
@@ -53,9 +64,10 @@ Probes = the bridge between "AI happening / human happening" and the IE Geometry
 
 ## Next levers
 
-1. Schema and minimal extractors for Geometry Receipt (this branch).
-2. Surface / runtime hook: after `receive_interaction_signal` (and after internal Think/Mature) → emit Geometry Receipt.
-3. Public framework clarification (thin): Probes are the process, not an extra tool layer.
-4. Later: richer extractors (Space DoF, Ownership Jurisdiction profiles, Frequency/Resonance weights).
+1. Dogfood Interact path with `emit_geometry_receipt=True`.
+2. Think / Mature entry points (same extractor interface, `target="self"`).
+3. Feed selected Geometry Receipt fields into live Tension aggregation once emergent self-Mass (#15) is stable.
+4. Public framework clarification (thin): Probes are the process, not an extra tool layer.
+5. Richer extractors behind the same interface.
 
-See `schemas/geometry-receipt/v0.yaml` and `docs/next.md`.
+See `schemas/geometry-receipt/v0.yaml`, `docs/geometry-hook.md`, and `docs/next.md`.

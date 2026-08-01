@@ -22,8 +22,15 @@ def apply_interaction_signal(
     registry_root: Union[str, Path],
     policy: Optional[LocalPolicy] = None,
     expected_to_handle: Optional[str] = None,
+    emit_geometry_receipt: bool = False,
+    observer_handle: Optional[str] = None,
 ) -> Receipt:
-    """Apply an Interaction Signal into the local foreign-estimate zone."""
+    """Apply an Interaction Signal into the local foreign-estimate zone.
+
+    When emit_geometry_receipt=True, runs the v0 Geometry Hook after a
+    non-rejected apply and stores a local Geometry Receipt. Extraction is
+    best-effort and never fails the Interaction apply itself.
+    """
     policy = policy or LocalPolicy()
     store = ForeignEstimateStore(Path(registry_root))
 
@@ -58,6 +65,9 @@ def apply_interaction_signal(
 
     record = store.load(signal.from_handle)
     now = signal.timestamp or _utcnow()
+    prior_signal_count = int(record.signal_count) if record is not None else 0
+    prior_accumulated_depth = float(record.accumulated_depth) if record is not None else 0.0
+
     if record is None:
         record = ForeignEstimateRecord(
             sender_handle=signal.from_handle,
@@ -132,6 +142,31 @@ def apply_interaction_signal(
         except Exception:
             pass
 
+    # Optional Geometry Hook (Probes-as-Bridge). Best-effort; never fails apply.
+    if emit_geometry_receipt and receipt.status != ApplyStatus.REJECTED:
+        try:
+            from .geometry import GeometryReceiptStore, run_geometry_hook
+
+            observer = observer_handle or signal.to_handle or expected_to_handle or "local"
+            geo = run_geometry_hook(
+                signal,
+                receipt,
+                observer=observer,
+                mode="interact",
+                context={
+                    "prior_signal_count": prior_signal_count,
+                    "prior_accumulated_depth": prior_accumulated_depth,
+                },
+            )
+            if geo is not None:
+                GeometryReceiptStore(registry_root).save(geo)
+                # Annotate apply reason lightly for audit visibility.
+                receipt.reason = (
+                    (receipt.reason or "") + f"; geometry_receipt={geo.receipt_id}"
+                ).strip("; ")
+        except Exception:
+            pass
+
     return receipt
 
 
@@ -141,6 +176,8 @@ def apply_from_dict(
     registry_root: Union[str, Path],
     policy: Optional[LocalPolicy] = None,
     expected_to_handle: Optional[str] = None,
+    emit_geometry_receipt: bool = False,
+    observer_handle: Optional[str] = None,
 ) -> Receipt:
     """Convenience wrapper: dict payload → InteractionSignal → apply."""
     sem = payload.get("sender_emergent_mass")
@@ -171,4 +208,6 @@ def apply_from_dict(
         registry_root=registry_root,
         policy=policy,
         expected_to_handle=expected_to_handle,
+        emit_geometry_receipt=emit_geometry_receipt,
+        observer_handle=observer_handle,
     )

@@ -11,11 +11,12 @@
 
 ## Next
 
-1. **Geometry Receipt + Probes-as-Bridge** (this branch / PR)  
-   Every Interaction (Think / Interact / Mature) produces relative geometry. Schema + working definition landed; next: runtime hook + minimal extractors.
+1. **Geometry Receipt + Probes-as-Bridge + Hook** (this branch / PR)  
+   Working definition, schema, three coarse extractors, opt-in post-apply hook.  
+   Dogfood Interact path next; then Think/Mature entry points.
 2. **Emergent self-Mass (#15)** — weighted aggregation from foreign estimates
 3. **Cloudflare R2** under org domain + first `v0.1.0` publish + `brew install` dogfood
-4. Tension update protocol / hooks (now grounded by Geometry Receipt)
+4. Tension update protocol (now grounded by Geometry Receipt feed)
 5. MCP binding for Surface Runtime (remaining #29 exit criterion)
 
 ## Related issues
