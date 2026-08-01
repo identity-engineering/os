@@ -11,12 +11,12 @@
 
 ## Next
 
-1. **Geometry Receipt + Probes-as-Bridge + Hook** (this branch / PR)  
-   Working definition, schema, three coarse extractors, opt-in post-apply hook.  
-   Dogfood Interact path next; then Think/Mature entry points.
+1. **Geometry Receipt + Probes-as-Bridge + TIM cycle** (this branch / PR)  
+   Always-on Geometry Hook after Interact; TIM cycle grounded as Probe modes (`docs/tim-cycle.md`).  
+   Dogfood Interact; then Think/Mature entry points.
 2. **Emergent self-Mass (#15)** — weighted aggregation from foreign estimates
 3. **Cloudflare R2** under org domain + first `v0.1.0` publish + `brew install` dogfood
-4. Tension update protocol (now grounded by Geometry Receipt feed)
+4. Tension update protocol (Geometry Receipt feed)
 5. MCP binding for Surface Runtime (remaining #29 exit criterion)
 
 ## Related issues

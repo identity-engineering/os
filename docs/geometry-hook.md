@@ -6,7 +6,7 @@ Working design · 01.08.2026
 
 After every Interaction (and, later, after internal Think / Mature events) the OS runs a **Geometry Extraction** step that produces a local **Geometry Receipt**.
 
-This is the operational form of "Questions as Probes": the continuous bridge from agentic life to relative IE geometry. See `docs/probes-as-bridge.md`.
+This is the operational form of "Questions as Probes": the continuous bridge from agentic life to relative IE geometry. See `docs/probes-as-bridge.md` and `docs/tim-cycle.md`.
 
 ## When it runs
 
@@ -15,7 +15,8 @@ This is the operational form of "Questions as Probes": the continuous bridge fro
 | Successful `receive_interaction_signal` / `apply_interaction_signal` | `interact` | foreign handle (sender) |
 | Explicit self-call (CLI / future agent) | `think` or `mature` | `self` |
 
-v0 ships the **Interact path** first (wired into local apply). Think / Mature are the same extractor interface with different `mode` and `target="self"`.
+**Default: always on** for the Interact path after a non-rejected apply.  
+Opt-out only for tests (`emit_geometry_receipt=False`). Runtime cost of the three coarse extractors is negligible; quality can improve later without changing the always-on posture.
 
 ## Pipeline
 
@@ -26,7 +27,7 @@ Geometry Extraction (observer Metric Stem context, optional)
         ↓
 Geometry Receipt (local)
         ↓
-Store under registry/_geometry_receipts/   (audit + later Tensor feed)
+Store under registry/_geometry_receipts/
 ```
 
 The Geometry Receipt is **local by default**. It does not cross the boundary unless future consent fields explicitly allow coarse fragments.
@@ -61,16 +62,10 @@ registry/
   _foreign_estimates/
     peer-alice.yaml
   _geometry_receipts/
-    <receipt_id>.yaml     # one file per Geometry Receipt
+    <receipt_id>.yaml
   _inbound_requests/
     …
 ```
-
-## Opt-in behaviour (v0)
-
-- Default: Geometry Hook is **off** on apply (no behaviour change for existing callers).
-- Enable with `emit_geometry_receipt=True` on apply, or CLI flag / env later.
-- When enabled, a Geometry Receipt is written after a non-rejected apply; failures in extraction never fail the Interaction apply itself (best-effort, logged on the apply Receipt reason or a sibling field).
 
 ## Explicit non-goals of v0
 
@@ -81,8 +76,8 @@ registry/
 
 ## Next after this slice
 
-1. Dogfood the Interact path with real signals.
-2. Add Think / Mature entry points (CLI `ie probe think` / `ie probe mature` sketches).
+1. Dogfood the Interact path (default on).
+2. Add Think / Mature entry points (CLI sketches; same extractor interface).
 3. Feed selected Geometry Receipt fields into live Tension aggregation once #15 (emergent self-Mass) is stable.
 4. Richer extractors behind the same interface.
 
@@ -91,5 +86,6 @@ registry/
 - `schemas/geometry-receipt/v0.yaml`
 - `runtime/geometry.py`
 - `docs/probes-as-bridge.md`
+- `docs/tim-cycle.md`
 - `docs/interaction-signal.md`
 - `docs/tensor.md`

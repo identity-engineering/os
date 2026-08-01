@@ -22,14 +22,14 @@ def apply_interaction_signal(
     registry_root: Union[str, Path],
     policy: Optional[LocalPolicy] = None,
     expected_to_handle: Optional[str] = None,
-    emit_geometry_receipt: bool = False,
+    emit_geometry_receipt: bool = True,
     observer_handle: Optional[str] = None,
 ) -> Receipt:
     """Apply an Interaction Signal into the local foreign-estimate zone.
 
-    When emit_geometry_receipt=True, runs the v0 Geometry Hook after a
-    non-rejected apply and stores a local Geometry Receipt. Extraction is
-    best-effort and never fails the Interaction apply itself.
+    Geometry Hook runs by default after a non-rejected apply (Probes-as-Bridge).
+    Extraction is best-effort and never fails the Interaction apply itself.
+    Pass emit_geometry_receipt=False only for tests or explicit opt-out.
     """
     policy = policy or LocalPolicy()
     store = ForeignEstimateStore(Path(registry_root))
@@ -142,7 +142,7 @@ def apply_interaction_signal(
         except Exception:
             pass
 
-    # Optional Geometry Hook (Probes-as-Bridge). Best-effort; never fails apply.
+    # Geometry Hook (Probes-as-Bridge). Default on. Best-effort; never fails apply.
     if emit_geometry_receipt and receipt.status != ApplyStatus.REJECTED:
         try:
             from .geometry import GeometryReceiptStore, run_geometry_hook
@@ -160,7 +160,6 @@ def apply_interaction_signal(
             )
             if geo is not None:
                 GeometryReceiptStore(registry_root).save(geo)
-                # Annotate apply reason lightly for audit visibility.
                 receipt.reason = (
                     (receipt.reason or "") + f"; geometry_receipt={geo.receipt_id}"
                 ).strip("; ")
@@ -176,7 +175,7 @@ def apply_from_dict(
     registry_root: Union[str, Path],
     policy: Optional[LocalPolicy] = None,
     expected_to_handle: Optional[str] = None,
-    emit_geometry_receipt: bool = False,
+    emit_geometry_receipt: bool = True,
     observer_handle: Optional[str] = None,
 ) -> Receipt:
     """Convenience wrapper: dict payload → InteractionSignal → apply."""
