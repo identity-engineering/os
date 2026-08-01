@@ -1,56 +1,74 @@
-# TIM Cycle as IE Probe Modes
+# TIM Cycle as IE Probe Modes (Discipline Cross)
 
 Working definition · 01.08.2026
 
 ## Status
 
-TIM (Think · Interact · Mature) was previously held at arm's length: useful as an installability lesson, but not imported into IE OS because it was not yet Framework-grounded.
+TIM (Think · Interact · Mature) entered IE OS only as an installability lesson and was held back from deeper import until Framework-grounded.
 
-**Probes-as-Bridge changes that.**  
-Once every Interaction is understood as measurement + potential reshape under Relativity, the three phases become the natural modes of the Probe process itself — not a foreign organism layer.
+**Probes-as-Bridge + living-form lens change that.**  
+Under Relativity every act is Interaction. TIM is the phase organization of that Interaction relative to the Identity membrane (Surface). Biology supplies the operational lens; it does not replace geometric primitives.
 
-This doc pulls **only the cycle** into IE OS.  
-Biology-inspired agents, Dynamic Governance, and full TIM organism patterns remain out (see `docs/principles.md` §7).
+This doc defines the **discipline cross**:
 
-## The cycle, grounded
+- **Layer A — Geometry (IE Core):** Mass, Curvature, Stem, Relativity, Causal Entropy, …  
+- **Layer B — Operational cycle (TIM):** Think / Interact / Mature as Probe phases  
+- **Layer C — Living-form perspective:** Cell / organism as *lens* on how B metabolizes A  
 
-| Mode | IE character | Geometry target | Typical outputs |
-|------|--------------|-----------------|-----------------|
-| **Think** | Internal Self-Probe | Own Stem (State Differential + Vision Gradient), relative worldview | Geometry Receipt `mode=think`, `target=self` |
-| **Interact** | Relational Probe | Foreign geometry via Interaction Signal; own estimates of the other | Interaction Signal + Geometry Receipt `mode=interact` |
-| **Mature** | Directed Self-Probe + learning | Revue, analysis, explicit Stem evolution | Geometry Receipt `mode=mature` + optional Ownership Move |
+See `docs/living-form.md` for the cell mapping and the June 2026 article grounding.
+
+## Everything is Interaction
+
+There is no clean split "question vs action".  
+Self-talk, prompts, tool calls, ownership moves, and learning reviews are all Interaction under Relativity — measurement and potential reshape at once.
+
+TIM names three **phases by observer-reference to the membrane**:
+
+| Mode | Relative to membrane | Probe character | Geometry focus |
+|------|----------------------|-----------------|----------------|
+| **Think** | Inside | Internal Self-Probe | Own Stem (State Differential + Vision Gradient), relative worldview |
+| **Interact** | Across | Relational Probe | Foreign geometry via Interaction Signal; own estimates of the other |
+| **Mature** | Inside, directed | Directed Self-Probe + learning | Integrate new reality; optional Ownership Move |
 
 Mature is Think with a clear Vision Gradient and an Ownership Move (commitment, jurisdiction claim).
 
-There is no separate "question vs action" split. Under Relativity every mode is both measurement and potential reshape.
+## Discipline cross (short form)
+
+> **TIM is the biology-inspired operations discipline of Identity Engineering.**  
+> It organizes Interaction (under Relativity) into Self- and Other-phases and treats Identity as a living operative form (cell → organism as perspective).  
+> It does not introduce new geometric primitives. It specifies how geometry *lives*, metabolizes, and scales to collective form through continuous Probes.
+
+Physics-inspired layer describes the shape of identity space.  
+Living-form layer describes the metabolism of that shape through time.
 
 ## Operational mapping (v0)
 
 | Mode | Entry point today | Geometry Hook |
 |------|-------------------|---------------|
 | Interact | `apply_interaction_signal` / Surface `receive_interaction_signal` | **Always on** after non-rejected apply |
-| Think | Not yet a first-class CLI op (follow-up: `ie probe think`) | Same extractor interface, `target=self` |
-| Mature | Not yet a first-class CLI op (follow-up: `ie probe mature`) | Same interface + optional `ownership_move` field |
+| Think | Not yet first-class CLI (`ie probe think` follow-up) | Same extractor interface, `target=self` |
+| Mature | Not yet first-class CLI (`ie probe mature` follow-up) | Same interface + optional `ownership_move` |
 
-Extractors stay mode-aware only where needed; most geometry fields are shared.
+## What stays out
 
-## What this is not
+- TIM as a product brand  
+- Sensory / immunity / vitality / creativity / stability **agents** as shipped modules  
+- Claim that TIM is empirically proven biology  
+- Identity = agentic loop (explicitly rejected; see `docs/living-form.md`)
 
-- Not a re-introduction of TIM as a product brand.
-- Not sensory / immunity / vitality / creativity / stability agents.
-- Not a claim that TIM science is proven; it is an operational cycle that fits Relativity + Probes.
-- Not a requirement that every human or agent names the phases explicitly. The OS can run Geometry Extraction without the user saying "I am Maturing."
+Regulatory vocabulary from the cell-nucleus article (shared context, fast coordination, governance, long-term priority) may inform later design. It is not v0 implementation.
 
 ## Why this is safe to pull in now
 
-1. **Framework-grounded**: Relativity + Questions as Probes already imply continuous geometry from interaction. TIM names the natural self/other/learning split of that process.
-2. **Minimal surface**: Only three mode labels on Geometry Receipt + documentation. No new organism contracts.
-3. **Installability continuity**: The original TIM lesson (files that live on the next interaction) is preserved and strengthened by always-on Geometry Receipts.
+1. **Framework-grounded:** Relativity + Questions as Probes already imply continuous geometry from Interaction. TIM only names the self/other/learning phase split.  
+2. **Membrane-first:** Surface + foreign-estimate zone give the cell boundary that the June article required.  
+3. **Minimal surface:** Mode labels on Geometry Receipt + documentation. No organism runtime.  
+4. **Installability:** Files that live on the next interaction remain the practical ambition; Geometry Receipt strengthens that.
 
-## Next
+## Related
 
-1. Dogfood Interact path (already wired, default on).
-2. Thin Think / Mature entry points sharing `runtime/geometry.py`.
-3. Optional public framework note: TIM cycle as operational Probe modes (not a new Core Concept).
-
-See `docs/probes-as-bridge.md`, `docs/geometry-hook.md`, `schemas/geometry-receipt/v0.yaml`.
+- `docs/living-form.md` — cell / organism lens, article mapping  
+- `docs/probes-as-bridge.md`  
+- `docs/geometry-hook.md`  
+- `schemas/geometry-receipt/v0.yaml`  
+- LinkedIn: *KI ist nicht das neue Gehirn. Sie ist der Zellkern.* (Jonas Siebler, 15.06.2026)  
