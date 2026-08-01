@@ -25,6 +25,14 @@ The high-dimensional, open, contentful dimensional space that lives inside each 
 - Non-orthogonal relationships between dimensions are first-class via the Metric Stem (g_ij).
 - Full per-dimension dependency tensors remain out of scope for v0.
 
+## How the Tensor is updated (01.08.2026)
+
+The primary practical update path is the **Geometry Receipt** produced by the Probe process after every Interaction (Think / Interact / Mature). See `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`.
+
+- Geometry Receipts are local by default.
+- They feed Registry alloys, Metric Stem confidence, and live Tension aggregation.
+- They never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
+
 ## Storage implication
 
 See `docs/storage-tiers.md`. Free = local files/SQLite. Personal Pro = managed SQL. Skills are storage-agnostic.
@@ -36,3 +44,4 @@ See `docs/storage-tiers.md`. Free = local files/SQLite. Personal Pro = managed S
 - Tensor = geometric reading of alloys under that metric (live)
 - Tension = aggregation over the Registry (live)
 - Curvature = later derived quantity
+- Geometry Receipt = the continuous Probe bridge that keeps the Tensor alive

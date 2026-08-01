@@ -1,6 +1,7 @@
 # Minimal Interaction Signal Contract v0
 
-Locked 27.07.2026
+Locked 27.07.2026  
+Updated 01.08.2026 — Geometry Receipt link
 
 This contract defines the absolute minimum that must be exchangeable at the end of an interaction so that:
 
@@ -18,6 +19,8 @@ There are always two kinds of information:
 2. **What I receive / pass** (the signal that actually crosses the boundary)
 
 The signal is only the second kind. Everything else remains local unless explicitly consented.
+
+After (or as part of) every Interaction the observer may also produce a local **Geometry Receipt** (see `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`). The Geometry Receipt is the relative geometry interpretation under the observer's Metric Stem. It is not part of the minimal cross-boundary signal; it is the local Probe process.
 
 ## Always-passed (minimal, no consent required)
 
@@ -69,7 +72,7 @@ Rich dimensional vectors, full alloy descriptions, tension signals and asymmetry
    → the receiver may (ownership-controlled) incorporate or propose new dimensions into its own world-view and optionally re-evaluate existing entries against them.
 
 4. **Everything else stays local to the sender**  
-   The sender updates its own Registry entry for the receiver with whatever it estimated during the interaction. That estimate never has to leave the sender's frame.
+   The sender updates its own Registry entry for the receiver with whatever it estimated during the interaction. That estimate never has to leave the sender's frame. The sender may also write a local Geometry Receipt (Probe process).
 
 ## Volume and emergent self-Mass (consequence of the contract)
 
@@ -106,11 +109,13 @@ Refusal-of-Control is expressed simply: an Identity can refuse to emit anything 
 - Automatic dimension-propagation rules
 - Cryptographic binding of signals to local_handles
 - Multi-party / collective signals
+- Automatic high-fidelity Geometry Extraction (see `docs/probes-as-bridge.md`)
 
 Those come after the minimal contract is stable and dogfooded.
 
-## Relation to Header
+## Relation to Header / Surface / Probes
 
-The Header (still to be defined in detail) is the always-on entry point that an agent reads at the start of an interaction.  
-The Signal is what is written at the end.  
+The local entry (formerly "Header") is the always-on entry point that an agent reads at the start of an interaction.  
+The Signal is what is written at the end across the boundary.  
+The Geometry Receipt is the local Probe interpretation that turns the Interaction into relative geometry for the Tensor.  
 Together they turn static Registry files into a living system.

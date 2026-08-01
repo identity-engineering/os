@@ -11,10 +11,12 @@
 
 ## Next
 
-1. **Emergent self-Mass (#15)** — weighted aggregation from foreign estimates (this branch / PR)
-2. **Cloudflare R2** under org domain + first `v0.1.0` publish + `brew install` dogfood
-3. Tension update protocol / hooks
-4. MCP binding for Surface Runtime (remaining #29 exit criterion)
+1. **Geometry Receipt + Probes-as-Bridge** (this branch / PR)  
+   Every Interaction (Think / Interact / Mature) produces relative geometry. Schema + working definition landed; next: runtime hook + minimal extractors.
+2. **Emergent self-Mass (#15)** — weighted aggregation from foreign estimates
+3. **Cloudflare R2** under org domain + first `v0.1.0` publish + `brew install` dogfood
+4. Tension update protocol / hooks (now grounded by Geometry Receipt)
+5. MCP binding for Surface Runtime (remaining #29 exit criterion)
 
 ## Related issues
 

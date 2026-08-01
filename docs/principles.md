@@ -8,7 +8,7 @@ Every operational contract must be derivable from or consistent with the core pr
 - Curvature, Gravitation, Rotation, Frequency, Relativity
 - Identity Stem (State Differential + Vision Gradient)
 - Causal Entropic Forces
-- Questions as Probes
+- Questions as Probes (the continuous process that turns Interaction into relative geometry — see `docs/probes-as-bridge.md`)
 - Ownership as relative degrees of freedom / Jurisdiction over the Stem
 
 No pattern is imported just because it worked in TIM.
@@ -16,8 +16,8 @@ No pattern is imported just because it worked in TIM.
 ## 2. Static files + Dynamic Header + Living Tension Tensor
 
 - Static layer = the Spec / relative perception an Identity holds of itself and others.
-- Header = always-on entry point for State Differential + Vision Gradient + current tension signals.
-- Every interaction can update the Tension Tensor and write back into the static files.
+- Header / local entry = always-on entry point for State Differential + Vision Gradient + current tension signals.
+- Every interaction can update the Tension Tensor (via Geometry Receipt) and write back into the static files.
 
 This is what turns dead documents into living identity artifacts.
 

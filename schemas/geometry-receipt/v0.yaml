@@ -1,0 +1,66 @@
+# Geometry Receipt Schema v0
+# Identity Engineering OS
+#
+# Local (and optionally consented) interpretation of an Interaction
+# under the observer's Metric Stem. This is the operational form of
+# "Questions as Probes": every Interaction can produce relative geometry.
+#
+# See docs/probes-as-bridge.md.
+
+schema_version: "0"
+
+purpose: |
+  Capture the relative geometry deltas observed or induced by one Interaction
+  (Think / Interact / Mature). Feeds Tensor, Mass aggregation, and ownership
+  tracking without requiring a separate "Probe tool" surface.
+
+always_local:                       # never auto-exported; stays in observer frame
+  - receipt_id                      # uuid
+  - timestamp                       # ISO datetime
+  - mode                            # think | interact | mature
+  - observer                        # local handle / session that performed the extraction
+  - target                          # self | foreign handle (as known in observer Registry)
+  - source_signal_ref               # optional link to Interaction Signal id / receipt
+
+geometry_deltas:                    # sparse; only what was observed with confidence
+  relative_mass_proxy:              # optional
+    value: number                   # 0–100 scale relative to observer
+    confidence: float               # 0.0–1.0
+    notes: string                   # free, short
+
+  tension_components:               # optional, sparse
+    - name: string                  # e.g. ownership_depth, vision_clarity, frequency_match
+      delta: float                  # signed change observed in this interaction
+      confidence: float
+
+  degrees_of_freedom:               # optional Space-oriented
+    unbound_estimate: number        # rough count or score of unbound DoF
+    constraints_noted: [string]     # short labels of observed constraints
+    confidence: float
+
+  jurisdiction_shift:               # optional Ownership-oriented
+    access_delta: float             # -1.0 … +1.0 perceived change in Access
+    jurisdiction_delta: float       # -1.0 … +1.0 perceived change in Jurisdiction over Stem
+    notes: string
+
+  stem_differential:                # optional
+    state_delta_summary: string     # short observation on State Differential
+    vision_gradient_shift: string   # short observation on Vision Gradient clarity / direction
+    coherence_note: string
+
+ownership_move:                     # optional, Mature-mode typical
+  commitment: string                # concrete next action (e.g. 72h)
+  ownership_level_estimate: number  # 0–100, observer's own sense of claim strength
+
+privacy:
+  default: local_only
+  may_be_consented_to_target: false # Geometry Receipt is observer-side by default
+  exception: |
+    Only coarse, consented fragments may ever leave the observer frame
+    (via Interaction Signal consent fields). Full Geometry Receipt stays local.
+
+notes:
+  - Geometry Receipt is the bridge, not a new core primitive.
+  - Quality of extraction is an engineering surface; v0 extractors may be coarse.
+  - Self-Mass is never written from a self Geometry Receipt; it emerges only from foreign estimates.
+  - Tensor remains live (derived); Receipts are the primary update path.
