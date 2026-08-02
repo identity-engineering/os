@@ -28,11 +28,12 @@ jobs:
     name: Tag tested main
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.IE_RELEASE_TOKEN }}
+      GH_TOKEN: ${{ secrets.IE_RELEASE_TOKEN || github.token }}
       RELEASE_DATE: ${{ inputs.release_date || '' }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
     steps:
       - name: Require release token
+        if: env.DRY_RUN != 'true'
         run: |
           if [[ -z "$GH_TOKEN" ]]; then
             echo "Missing IE_RELEASE_TOKEN repository secret."
@@ -44,7 +45,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.IE_RELEASE_TOKEN }}
+          token: ${{ secrets.IE_RELEASE_TOKEN || github.token }}
 
       - name: Determine release eligibility
         id: eligibility
