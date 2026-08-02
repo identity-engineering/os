@@ -12,7 +12,7 @@ import typer
 
 from ie import __version__
 from ie.init_cmd import init_install
-from ie.paths import require_ie_root
+from ie.paths import remember_ie_root, require_ie_root
 from ie.registry_cmd import get_peer, list_peers
 from ie.status_cmd import collect_status, format_status
 
@@ -226,13 +226,13 @@ def init(
         force=force,
         account_info=account_info,
     )
+    remember_ie_root(root)
     typer.echo(f"\nIE install created at {root}")
     typer.echo(f"  name:    {name}")
     typer.echo(f"  handle:  {handle}")
     typer.echo(f"  account: {account_info['account_mode']}")
     typer.echo(f"  tier:    {account_info['tier']}")
     typer.echo("\nNext:")
-    typer.echo(f"  export IE_ROOT={root}   # optional")
     typer.echo("  ie status")
 
 

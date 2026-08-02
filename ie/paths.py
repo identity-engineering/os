@@ -7,6 +7,43 @@ from pathlib import Path
 from typing import Optional
 
 HEADER_NAME = "HEADER.yaml"
+CONFIG_DIR_NAME = "ie-os"
+ACTIVE_ROOT_NAME = "active-root"
+
+
+def active_root_config_path() -> Path:
+    """Return the user config file that stores the active IE install root."""
+    config_home = os.environ.get("XDG_CONFIG_HOME")
+    if config_home:
+        base = Path(config_home).expanduser()
+    else:
+        base = Path.home() / ".config"
+    return base / CONFIG_DIR_NAME / ACTIVE_ROOT_NAME
+
+
+def remember_ie_root(root: Path) -> None:
+    """Persist a valid install root for commands run outside that directory."""
+    root = root.expanduser().resolve()
+    if not (root / HEADER_NAME).is_file():
+        raise ValueError(f"Cannot remember IE root without {HEADER_NAME}: {root}")
+
+    config_path = active_root_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(f"{root}\n", encoding="utf-8")
+
+
+def remembered_ie_root() -> Optional[Path]:
+    """Load the remembered root, ignoring missing or stale configuration."""
+    config_path = active_root_config_path()
+    try:
+        raw = config_path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not raw:
+        return None
+
+    root = Path(raw).expanduser().resolve()
+    return root if (root / HEADER_NAME).is_file() else None
 
 
 def package_root() -> Path:
@@ -36,7 +73,7 @@ def bundled_templates_dir() -> Path:
 
 
 def find_ie_root(start: Optional[Path] = None) -> Optional[Path]:
-    """Walk upward from start (default cwd) looking for HEADER.yaml."""
+    """Find an IE root from the environment, cwd, or remembered config."""
     env = os.environ.get("IE_ROOT")
     if env:
         p = Path(env).expanduser().resolve()
@@ -46,6 +83,13 @@ def find_ie_root(start: Optional[Path] = None) -> Optional[Path]:
     for candidate in [cur, *cur.parents]:
         if (candidate / HEADER_NAME).is_file():
             return candidate
+    remembered = remembered_ie_root()
+    if remembered is not None:
+        return remembered
+
+    default_root = (Path.home() / "ie").resolve()
+    if (default_root / HEADER_NAME).is_file():
+        return default_root
     return None
 
 

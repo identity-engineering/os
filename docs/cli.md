@@ -48,6 +48,13 @@ Non-interactive example:
 ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 ```
 
+`ie init` remembers the created install as the active local root. Later commands
+can therefore be run from any directory without manually exporting `IE_ROOT`.
+The default install at `~/ie` is also discovered automatically. An explicit
+`IE_ROOT`, `--path`, or an install found in the current directory still takes
+precedence. The remembered path is stored at
+`$XDG_CONFIG_HOME/ie-os/active-root` (or `~/.config/ie-os/active-root`).
+
 ## Commands (v0)
 
 | Command | Purpose |
