@@ -14,13 +14,23 @@ Locked orientation 29.07.2026
 **identity-engineering.org** only:
 
 ```text
-https://identity-engineering.org/releases/ie-os/{version}/ie_os-{version}.tar.gz
+https://identity-engineering.org/releases/ie-os/2026.8.2/ie_os-2026.8.2.tar.gz
 ```
 
-Backend: **Cloudflare R2** (or temporary static site files until R2 is wired).  
-No public GitHub dist repository.
+The Git tag keeps the date form `vYYYY.MM.DD` for one-release-per-day
+idempotency. The public path and filename use the normalized package version
+(`YYYY.M.D`), so the installed CLI prints the same version:
 
-See `docs/release.md`.
+```text
+ie-os 2026.8.2
+```
+
+Backend: **Cloudflare R2**, served through the existing Pages Function. Private
+`identity-engineering/os` is build source only. There is no public GitHub dist
+repository.
+
+The Homebrew Formula uses the normalized tarball URL and the SHA-256 of that
+exact R2 object. See `docs/release.md` for the automated release contract.
 
 ## Multi-channel packaging
 

@@ -8,6 +8,7 @@
 - Ecosystem orientation — standard first
 - CLI: interactive `ie init`, signal apply, registry, request inbox
 - Public installs path (Cloudflare R2 — open issue)
+- Emergent self-Mass aggregation (#15)
 
 ## Next
 
@@ -18,7 +19,7 @@
    (storage exists; continuous write-back is the heartbeat)
 3. **Access & Jurisdiction / membrane policy** — **#40**  
    (v0 only records consent outcomes observationally)
-4. **Cloudflare R2** + first `v0.1.0` publish + brew dogfood
+4. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 5. MCP binding for Surface Runtime (remaining #29 exit criterion)
 
 ## Related issues

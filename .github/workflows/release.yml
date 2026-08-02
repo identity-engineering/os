@@ -7,18 +7,67 @@ on:
 
 permissions:
   contents: write
+  actions: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    env:
+      R2_ENDPOINT: https://322d4800eb573fae08729813273419c0.r2.cloudflarestorage.com
+      RELEASE_TOKEN: ${{ secrets.IE_RELEASE_TOKEN }}
     steps:
+      - name: Require release token
+        run: |
+          if [[ -z "$RELEASE_TOKEN" ]]; then
+            echo "Missing IE_RELEASE_TOKEN repository secret."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Validate tag and derive public version
+        id: version
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+            echo "Release tags must use vYYYY.MM.DD: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          tag_version="${GITHUB_REF_NAME#v}"
+          year="${tag_version%%.*}"
+          remainder="${tag_version#*.}"
+          month="${remainder%%.*}"
+          day="${remainder#*.}"
+          version="${year}.$((10#${month})).$((10#${day}))"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build setuptools-scm
+
+      - name: Verify merge CI for tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ci_success_runs="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${GITHUB_SHA}&event=push&status=completed&per_page=100" \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')"
+          if [[ "$ci_success_runs" == "0" ]]; then
+            echo "No successful merge CI run exists for tagged commit ${GITHUB_SHA}."
+            exit 1
+          fi
 
       - name: Bundle templates into package
         run: |
@@ -26,45 +75,94 @@ jobs:
           rm -rf ie/templates/personal
           cp -R templates/personal ie/templates/personal
 
-      - name: Install build tooling
-        run: pip install --upgrade pip build
-
       - name: Build sdist and wheel
-        run: python -m build
+        run: rm -rf dist && python -m build
 
-      - name: List dist
-        run: ls -la dist/
+      - name: Verify normalized artifacts
+        id: artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          tarball="dist/ie_os-${VERSION}.tar.gz"
+          wheel="dist/ie_os-${VERSION}-py3-none-any.whl"
+          test -f "$tarball"
+          test -f "$wheel"
+          echo "tarball_sha256=$(sha256sum "$tarball" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "tarball_size=$(stat -c '%s' "$tarball")" >> "$GITHUB_OUTPUT"
+          ls -la dist/
 
-      - name: Extract version from tag
-        id: ver
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Upload artifacts to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          python -m pip install awscli
+          aws configure set default.s3.addressing_style path
+          aws s3 cp "dist/ie_os-${VERSION}.tar.gz" \
+            "s3://ie-os-releases/releases/ie-os/${VERSION}/ie_os-${VERSION}.tar.gz" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --no-progress
+          aws s3 cp "dist/ie_os-${VERSION}-py3-none-any.whl" \
+            "s3://ie-os-releases/releases/ie-os/${VERSION}/ie_os-${VERSION}-py3-none-any.whl" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --no-progress
+
+      - name: Verify public R2 URLs
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          LOCAL_SHA256: ${{ steps.artifacts.outputs.tarball_sha256 }}
+          LOCAL_SIZE: ${{ steps.artifacts.outputs.tarball_size }}
+        run: |
+          set -euo pipefail
+          url="https://identity-engineering.org/releases/ie-os/${VERSION}/ie_os-${VERSION}.tar.gz"
+          headers="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors --dump-header - --output /dev/null "$url")"
+          remote_size="$(printf '%s\n' "$headers" | awk 'tolower($1) == "content-length:" {print $2}' | tr -d '\r' | tail -n 1)"
+          cache_control="$(printf '%s\n' "$headers" | awk 'tolower($1) == "cache-control:" {$1=""; sub(/^ /, ""); print}' | tr -d '\r' | tail -n 1)"
+          [[ "$remote_size" == "$LOCAL_SIZE" ]]
+          [[ "$cache_control" == *immutable* ]]
+          remote_sha256="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url" | sha256sum | awk '{print $1}')"
+          [[ "$remote_sha256" == "$LOCAL_SHA256" ]]
+          echo "Artifact URL: $url"
+          echo "sha256 for Formula: $LOCAL_SHA256"
 
       - name: GitHub Release on os
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/ie_os-${{ steps.version.outputs.version }}.tar.gz
+            dist/ie_os-${{ steps.version.outputs.version }}-py3-none-any.whl
           generate_release_notes: true
           fail_on_unmatched_files: true
 
-      - name: Upload to R2 (org domain)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          VERSION: ${{ steps.ver.outputs.version }}
-        run: |
-          pip install awscli
-          aws configure set default.s3.addressing_style path
-          aws s3 cp dist/ s3://ie-os-releases/releases/ie-os/${VERSION}/ \
-            --recursive \
-            --endpoint-url https://322d4800eb573fae08729813273419c0.r2.cloudflarestorage.com \
-            --no-progress
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: identity-engineering/homebrew-tap
+          ref: main
+          path: homebrew-tap
+          token: ${{ secrets.IE_RELEASE_TOKEN }}
+          fetch-depth: 0
 
-      - name: Verify public URL
+      - name: Update Homebrew formula
         env:
-          VERSION: ${{ steps.ver.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TARBALL_SHA256: ${{ steps.artifacts.outputs.tarball_sha256 }}
         run: |
-          echo "Artifact URL:"
-          echo "  https://identity-engineering.org/releases/ie-os/${VERSION}/ie_os-${VERSION}.tar.gz"
-          echo ""
-          echo "sha256 for Formula:"
-          sha256sum dist/ie_os-${VERSION}.tar.gz | awk '{print $1}'
+          set -euo pipefail
+          python scripts/update_homebrew_formula.py \
+            homebrew-tap/Formula/ie-os.rb \
+            --version "$VERSION" \
+            --sha256 "$TARBALL_SHA256"
+          if git -C homebrew-tap diff --quiet -- Formula/ie-os.rb; then
+            echo "Homebrew formula already points to ${VERSION}."
+            exit 0
+          fi
+          git -C homebrew-tap config user.name "identity-engineering release bot"
+          git -C homebrew-tap config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C homebrew-tap add Formula/ie-os.rb
+          git -C homebrew-tap commit -m "ie-os ${VERSION}"
+          git -C homebrew-tap pull --rebase origin main
+          git -C homebrew-tap push origin HEAD:main
