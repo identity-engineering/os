@@ -1,0 +1,359 @@
+"""Geometry Receipt + minimal extractors + post-interaction hook (v0).
+
+Questions as Probes operationalized: every Interaction can produce relative
+geometry under the observer's frame. See docs/geometry-hook.md and
+docs/probes-as-bridge.md.
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Optional, Union
+from uuid import uuid4
+
+from .models import InteractionSignal, Receipt, ApplyStatus
+
+
+def _utcnow_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+@dataclass
+class GeometryReceipt:
+    """Local Geometry Receipt (mirrors schemas/geometry-receipt/v0.yaml)."""
+
+    receipt_id: str
+    timestamp: str
+    mode: str  # think | interact | mature
+    observer: str
+    target: str  # "self" or foreign handle
+    source_signal_ref: Optional[str] = None
+
+    # Sparse geometry deltas (only populated fields matter)
+    relative_mass_proxy: Optional[dict[str, Any]] = None
+    tension_components: list[dict[str, Any]] = field(default_factory=list)
+    degrees_of_freedom: Optional[dict[str, Any]] = None
+    jurisdiction_shift: Optional[dict[str, Any]] = None
+    stem_differential: Optional[dict[str, Any]] = None
+    ownership_move: Optional[dict[str, Any]] = None
+
+    notes: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        mode: str,
+        observer: str,
+        target: str,
+        source_signal_ref: Optional[str] = None,
+    ) -> "GeometryReceipt":
+        return cls(
+            receipt_id=str(uuid4()),
+            timestamp=_utcnow_iso(),
+            mode=mode,
+            observer=observer,
+            target=target,
+            source_signal_ref=source_signal_ref,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Extractors (pure, coarse, deterministic)
+# ---------------------------------------------------------------------------
+
+Extractor = Callable[
+    [InteractionSignal, Receipt, Optional[dict[str, Any]]],
+    dict[str, Any],
+]
+
+
+def extract_depth_mass(
+    signal: InteractionSignal,
+    apply_receipt: Receipt,
+    context: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """DepthMassExtractor: sender's emergent Mass as relative_mass_proxy + density tension.
+
+    relative_mass_proxy for target=sender is **their** emergent self-Mass
+    (same normalized process as local Self-Mass — weighted inbound estimates of them).
+    Sources the observer may treat as "real enough":
+      1. signal.sender_emergent_mass (always-passed public geometry on the signal)
+      2. context["sender_emergent_mass"] (last stored value in foreign-estimate zone)
+      3. context["public_card_emergent_self_mass"] (live/cached public card read)
+
+    Never uses coarse_mass_estimate: that is the sender's estimate *of the observer*,
+    not the sender's own Mass.
+    """
+    out: dict[str, Any] = {}
+    context = context or {}
+
+    depth = float(signal.interaction_depth_delta or 0.0)
+    depth_applied = "interaction_depth_delta" in (apply_receipt.applied_fields or [])
+
+    proxy_value: Optional[float] = None
+    confidence = 0.0
+    source = ""
+
+    if signal.sender_emergent_mass is not None:
+        proxy_value = float(signal.sender_emergent_mass)
+        confidence = 0.7
+        source = "signal.sender_emergent_mass"
+    elif context.get("sender_emergent_mass") is not None:
+        proxy_value = float(context["sender_emergent_mass"])
+        confidence = 0.55
+        source = "stored foreign-estimate sender_emergent_mass"
+    elif context.get("public_card_emergent_self_mass") is not None:
+        proxy_value = float(context["public_card_emergent_self_mass"])
+        confidence = 0.6
+        source = "public_card.emergent_self_mass"
+
+    if proxy_value is not None:
+        out["relative_mass_proxy"] = {
+            "value": round(proxy_value, 2),
+            "confidence": confidence,
+            "notes": (
+                "sender emergent self-Mass (derived from their inbound estimates; "
+                f"source={source}). Not Self-Mass of the observer."
+            ),
+        }
+    elif depth_applied or depth > 0.0:
+        # No published Mass yet: depth-only placeholder, explicitly not their Mass.
+        out["relative_mass_proxy"] = {
+            "value": round(min(100.0, depth * 80.0), 2),
+            "confidence": 0.15,
+            "notes": (
+                "depth-only placeholder — sender has not published emergent Mass "
+                "(no signal field, no stored value, no public card). Not Self-Mass."
+            ),
+        }
+
+    if depth_applied or depth > 0.0:
+        out["tension_components"] = [
+            {
+                "name": "interaction_density",
+                "delta": round(depth, 4),
+                "confidence": 0.6 if depth > 0 else 0.2,
+            }
+        ]
+    return out
+
+
+def extract_membrane_policy(
+    signal: InteractionSignal,
+    apply_receipt: Receipt,
+    context: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """MembranePolicyExtractor (v0 stub): observe LocalPolicy consent outcomes.
+
+    Records *what the membrane did* to consent-gated fields on this apply.
+    Does **not** claim Access/Jurisdiction geometry — that needs a proper
+    Ownership operationalization (OS #40). Signed access/jurisdiction deltas
+    are intentionally omitted until the subject of Access is defined.
+    """
+    out: dict[str, Any] = {}
+    applied = set(apply_receipt.applied_fields or [])
+    rejected = {
+        r.get("field") for r in (apply_receipt.rejected_fields or []) if r.get("field")
+    }
+
+    consent_fields = {
+        "coarse_mass_estimate",
+        "mass_confidence",
+        "dimensions_delta",
+        "relation_pull",
+    }
+    applied_consent = sorted(applied & consent_fields)
+    rejected_consent = sorted(rejected & consent_fields)
+
+    if not applied_consent and not rejected_consent:
+        return out
+
+    # Observational stub only: no signed Access/Jurisdiction claim.
+    notes_parts = [
+        "v0 membrane policy observation (not Ownership geometry; see OS #40)"
+    ]
+    if applied_consent:
+        notes_parts.append(f"consent_applied={applied_consent}")
+    if rejected_consent:
+        notes_parts.append(f"consent_rejected={rejected_consent}")
+
+    out["jurisdiction_shift"] = {
+        # Explicit nulls in spirit: schema allows numbers; 0.0 + notes = "no claim".
+        "access_delta": 0.0,
+        "jurisdiction_delta": 0.0,
+        "notes": "; ".join(notes_parts),
+    }
+    out["tension_components"] = [
+        {
+            "name": "membrane_consent_outcome",
+            "delta": float(len(applied_consent) - len(rejected_consent)),
+            "confidence": 0.35,
+        }
+    ]
+    return out
+
+
+# Back-compat alias (older docs/commits named this ConsentBoundaryExtractor)
+extract_consent_boundary = extract_membrane_policy
+
+
+def extract_existence_continuity(
+    signal: InteractionSignal,
+    apply_receipt: Receipt,
+    context: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """ExistenceContinuityExtractor: simple relation-stability / continuity hint."""
+    out: dict[str, Any] = {}
+    context = context or {}
+
+    if "existence" not in (apply_receipt.applied_fields or []) and not signal.existence:
+        return out
+
+    prior_count = int(context.get("prior_signal_count") or 0)
+    prior_depth = float(context.get("prior_accumulated_depth") or 0.0)
+    new_depth = prior_depth + float(signal.interaction_depth_delta or 0.0)
+
+    if prior_count <= 0:
+        summary = "first confirmed existence in observer frame"
+        coherence = "new relation anchor"
+    else:
+        summary = f"re-confirmed existence (signal_count now ~{prior_count + 1})"
+        coherence = "continuing relation" if new_depth > prior_depth else "existence only"
+
+    out["stem_differential"] = {
+        "state_delta_summary": summary,
+        "vision_gradient_shift": "",
+        "coherence_note": coherence,
+    }
+    out["tension_components"] = [
+        {
+            "name": "relation_continuity",
+            "delta": 0.05 if prior_count > 0 else 0.1,
+            "confidence": 0.45,
+        }
+    ]
+    return out
+
+
+DEFAULT_EXTRACTORS: tuple[Extractor, ...] = (
+    extract_depth_mass,
+    extract_membrane_policy,
+    extract_existence_continuity,
+)
+
+
+def _merge_extractor_outputs(base: GeometryReceipt, partials: list[dict[str, Any]]) -> None:
+    """Merge sparse extractor outputs into the receipt (in place)."""
+    for p in partials:
+        if not p:
+            continue
+        if "relative_mass_proxy" in p and base.relative_mass_proxy is None:
+            base.relative_mass_proxy = p["relative_mass_proxy"]
+        if "jurisdiction_shift" in p and base.jurisdiction_shift is None:
+            base.jurisdiction_shift = p["jurisdiction_shift"]
+        if "stem_differential" in p and base.stem_differential is None:
+            base.stem_differential = p["stem_differential"]
+        if "degrees_of_freedom" in p and base.degrees_of_freedom is None:
+            base.degrees_of_freedom = p["degrees_of_freedom"]
+        if "ownership_move" in p and base.ownership_move is None:
+            base.ownership_move = p["ownership_move"]
+        for tc in p.get("tension_components") or []:
+            base.tension_components.append(tc)
+
+
+def run_geometry_hook(
+    signal: InteractionSignal,
+    apply_receipt: Receipt,
+    *,
+    observer: str,
+    mode: str = "interact",
+    context: Optional[dict[str, Any]] = None,
+    extractors: Optional[tuple[Extractor, ...]] = None,
+) -> Optional[GeometryReceipt]:
+    """Run Geometry Extraction after an Interaction.
+
+    Returns a GeometryReceipt or None if apply was fully rejected.
+    Extractor failures are best-effort: recorded in notes, never raise into apply.
+    """
+    if apply_receipt.status == ApplyStatus.REJECTED:
+        return None
+
+    extractors = extractors or DEFAULT_EXTRACTORS
+    target = signal.from_handle if mode == "interact" else "self"
+
+    receipt = GeometryReceipt.create(
+        mode=mode,
+        observer=observer,
+        target=target,
+        source_signal_ref=apply_receipt.receipt_id,
+    )
+
+    partials: list[dict[str, Any]] = []
+    extractor_errors: list[str] = []
+    for ext in extractors:
+        name = getattr(ext, "__name__", type(ext).__name__)
+        try:
+            partials.append(ext(signal, apply_receipt, context) or {})
+        except Exception as exc:  # noqa: BLE001 — intentional best-effort boundary
+            # Best-effort: a single extractor failure must not kill the hook.
+            # Surface the failure in notes so dogfood is not silent.
+            extractor_errors.append(f"{name}: {type(exc).__name__}: {exc}")
+            continue
+
+    _merge_extractor_outputs(receipt, partials)
+    notes = ["v0 geometry hook — coarse extractors only"]
+    if extractor_errors:
+        notes.append("extractor_errors=" + " | ".join(extractor_errors))
+    receipt.notes = "; ".join(notes)
+    return receipt
+
+
+class GeometryReceiptStore:
+    """Minimal file store for Geometry Receipts under registry/_geometry_receipts/."""
+
+    def __init__(self, registry_root: Union[str, Path]):
+        self.root = Path(registry_root) / "_geometry_receipts"
+        self.root.mkdir(parents=True, exist_ok=True)
+
+    def save(self, receipt: GeometryReceipt) -> Path:
+        path = self.root / f"{receipt.receipt_id}.yaml"
+        data = receipt.to_dict()
+        try:
+            import yaml  # type: ignore
+
+            path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        except Exception:
+            import json
+
+            path = path.with_suffix(".json")
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return path
+
+    def load(self, receipt_id: str) -> Optional[dict[str, Any]]:
+        yaml_path = self.root / f"{receipt_id}.yaml"
+        json_path = self.root / f"{receipt_id}.json"
+        if yaml_path.exists():
+            try:
+                import yaml  # type: ignore
+
+                return yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+            except Exception:
+                return None
+        if json_path.exists():
+            import json
+
+            return json.loads(json_path.read_text(encoding="utf-8"))
+        return None
+
+    def list_ids(self) -> list[str]:
+        ids: list[str] = []
+        for p in self.root.iterdir():
+            if p.suffix in {".yaml", ".json"}:
+                ids.append(p.stem)
+        return sorted(ids)

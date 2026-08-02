@@ -1,0 +1,73 @@
+# Geometry Receipt Schema v0
+# Identity Engineering OS
+#
+# Local (and optionally consented) interpretation of an Interaction
+# under the observer's Metric Stem. This is the operational form of
+# "Questions as Probes": every Interaction can produce relative geometry.
+#
+# See docs/probes-as-bridge.md.
+# Write-back into Tensor / Tension / Registry: OS #8 (not automatic in v0).
+
+schema_version: "0"
+
+purpose: |
+  Capture the relative geometry deltas observed or induced by one Interaction
+  (Think / Interact / Mature). Intended primary path into Tensor, Mass context,
+  and ownership tracking without a separate "Probe tool" surface.
+  v0: write local receipt only; continuous feed is OS #8.
+
+always_local:                       # never auto-exported; stays in observer frame
+  - receipt_id                      # uuid
+  - timestamp                       # ISO datetime
+  - mode                            # think | interact | mature
+  - observer                        # local handle / session that performed the extraction
+  - target                          # self | foreign handle (as known in observer Registry)
+  - source_signal_ref               # optional link to Interaction Signal id / receipt
+
+geometry_deltas:                    # sparse; only what was observed with confidence
+  relative_mass_proxy:              # optional — for Interact target=sender: their emergent self-Mass
+    value: number                   # 0–100; sender's derived Mass (same process as local Self-Mass)
+    confidence: float               # 0.0–1.0
+    notes: string                   # must name source: signal | stored | public_card | depth_placeholder
+    # Sources (priority): signal.sender_emergent_mass → zone last value → public_card.emergent_self_mass
+    # Never: coarse_mass_estimate (estimate of the observer, not of the sender)
+
+  tension_components:               # optional, sparse
+    - name: string                  # e.g. interaction_density, relation_continuity, membrane_consent_outcome
+      delta: float                  # signed change observed in this interaction
+      confidence: float
+
+  degrees_of_freedom:               # optional Space-oriented
+    unbound_estimate: number        # rough count or score of unbound DoF
+    constraints_noted:              # short labels of observed constraints
+      - string
+    confidence: float
+
+  jurisdiction_shift:               # optional; v0 membrane stub only — real Access/Jurisdiction is OS #40
+    access_delta: float             # -1.0 … +1.0; v0 extractors leave 0.0 (no claim)
+    jurisdiction_delta: float       # -1.0 … +1.0; v0 extractors leave 0.0 (no claim)
+    notes: string                   # policy observation text until #40 defines subject of Access
+
+  stem_differential:                # optional
+    state_delta_summary: string     # short observation on State Differential
+    vision_gradient_shift: string   # short observation on Vision Gradient clarity / direction
+    coherence_note: string
+
+ownership_move:                     # optional, Mature-mode typical
+  commitment: string                # concrete next action (e.g. 72h)
+  ownership_level_estimate: number  # 0–100, observer's own sense of claim strength
+
+privacy:
+  default: local_only
+  may_be_consented_to_target: false # Geometry Receipt is observer-side by default
+  exception: |
+    Only coarse, consented fragments may ever leave the observer frame
+    (via Interaction Signal consent fields). Full Geometry Receipt stays local.
+
+notes:
+  - Geometry Receipt is the bridge, not a new core primitive.
+  - Quality of extraction is an engineering surface; v0 extractors may be coarse.
+  - Self-Mass is never written from a self Geometry Receipt; it emerges only from foreign estimates.
+  - Tensor remains live (derived); Receipts are the intended primary update path (feed: OS #8).
+  - relative_mass_proxy for a foreign target is their published emergent self-Mass, not Self-Mass of the observer.
+  - jurisdiction_shift in v0 is observational membrane policy notes only (OS #40).
