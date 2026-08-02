@@ -1,0 +1,138 @@
+name: Daily Release Tag
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      release_date:
+        description: "Europe/Berlin date override (YYYY.MM.DD); blank uses today"
+        required: false
+        type: string
+      dry_run:
+        description: "Check release eligibility without creating a tag"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: daily-release-tag
+  cancel-in-progress: false
+
+jobs:
+  tag-main:
+    name: Tag tested main
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.IE_RELEASE_TOKEN }}
+      RELEASE_DATE: ${{ inputs.release_date || '' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+    steps:
+      - name: Require release token
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "Missing IE_RELEASE_TOKEN repository secret."
+            exit 1
+          fi
+
+      - name: Checkout main with release token
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.IE_RELEASE_TOKEN }}
+
+      - name: Determine release eligibility
+        id: eligibility
+        run: |
+          set -euo pipefail
+
+          git fetch --prune origin main --tags
+
+          if [[ -n "$RELEASE_DATE" ]]; then
+            public_version="$RELEASE_DATE"
+          else
+            public_version="$(TZ=Europe/Berlin date +%Y.%m.%d)"
+          fi
+
+          if [[ ! "$public_version" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+            echo "Release date must use YYYY.MM.DD: $public_version"
+            exit 1
+          fi
+
+          tag="v${public_version}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "${tag} already exists; nothing to release."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          main_sha="$(git rev-parse origin/main)"
+          latest_tag="$(git tag --list 'v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' | sort -V | tail -n 1)"
+
+          if [[ -n "$latest_tag" ]]; then
+            latest_sha="$(git rev-list -n 1 "$latest_tag")"
+            if ! git merge-base --is-ancestor "$latest_sha" "$main_sha"; then
+              echo "Latest release tag ${latest_tag} is not an ancestor of main."
+              exit 1
+            fi
+            commits_since_release="$(git rev-list --count "${latest_sha}..${main_sha}")"
+          else
+            commits_since_release="$(git rev-list --count "$main_sha")"
+          fi
+
+          if [[ "$commits_since_release" == "0" ]]; then
+            echo "main has no commits since ${latest_tag:-the repository start}; nothing to release."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          ci_success_runs="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${main_sha}&event=push&status=completed&per_page=100" \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')"
+          if [[ "$ci_success_runs" == "0" ]]; then
+            echo "CI has not completed successfully for main ${main_sha}."
+            echo "The next scheduled run will retry after the merge CI finishes."
+            exit 1
+          fi
+
+          echo "main=${main_sha}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${public_version}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Recheck main before tagging
+        if: steps.eligibility.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          current_sha="$(git rev-parse origin/main)"
+          if [[ "$current_sha" != "${{ steps.eligibility.outputs.main }}" ]]; then
+            echo "main advanced while release eligibility was checked. No tag created."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.eligibility.outputs.tag }}" >/dev/null 2>&1; then
+            echo "${{ steps.eligibility.outputs.tag }} was created concurrently; nothing to release."
+            exit 0
+          fi
+
+      - name: Create immutable release tag
+        if: steps.eligibility.outputs.skip != 'true' && env.DRY_RUN != 'true'
+        env:
+          RELEASE_TAG: ${{ steps.eligibility.outputs.tag }}
+          RELEASE_SHA: ${{ steps.eligibility.outputs.main }}
+        run: |
+          set -euo pipefail
+          git config user.name "identity-engineering release bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "$RELEASE_TAG" "$RELEASE_SHA" --message "ie-os ${RELEASE_TAG#v}"
+          git push origin "refs/tags/${RELEASE_TAG}"
+
+      - name: Report dry run
+        if: steps.eligibility.outputs.skip != 'true' && env.DRY_RUN == 'true'
+        run: |
+          echo "Dry run: would create ${{ steps.eligibility.outputs.tag }} at ${{ steps.eligibility.outputs.main }}."

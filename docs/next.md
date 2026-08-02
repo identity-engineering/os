@@ -12,7 +12,7 @@
 ## Next
 
 1. **Emergent self-Mass (#15)** — weighted aggregation from foreign estimates (this branch / PR)
-2. **Cloudflare R2** under org domain + first `v0.1.0` publish + `brew install` dogfood
+2. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 3. Tension update protocol / hooks
 4. MCP binding for Surface Runtime (remaining #29 exit criterion)
 

@@ -1,74 +1,148 @@
-# Release process (Brew-first)
+# Release process
 
-Goal: **token-free** `brew install ie-os` for Free users.
+Goal: **token-free** `brew install ie-os` for Free users. `main` is the reviewed
+source branch. Releases are created directly from a tested `main` commit; there
+is no release PR and no release merge step.
 
-## Canonical public URLs
+## Version contract
+
+The Git tag is the release source of truth:
+
+| Surface | Format | Example |
+|---------|--------|---------|
+| Git tag | `vYYYY.MM.DD` | `v2026.08.02` |
+| Public URL path | PEP 440 normalized | `2026.8.2` |
+| Artifact filename | `ie_os-YYYY.M.D` | `ie_os-2026.8.2.tar.gz` |
+| Python metadata and CLI | PEP 440 normalized | `2026.8.2` |
+
+`setuptools-scm` derives the package version from the tag. A clean editable
+checkout without an installed distribution reports a development version.
+The build already emits normalized artifact names; no post-build rename is
+needed.
+
+## CI gate (`ci.yml`)
+
+The CI workflow runs for:
+
+- every pull request targeting `main`
+- every push to `main`, including a completed merge
+- merge queue check requests
+
+It runs the test suite on Python 3.10, 3.11, and 3.12, then builds and installs
+the package once. Configure all four checks as required branch-protection
+checks before allowing a merge:
 
 ```text
-https://identity-engineering.org/releases/ie-os/{version}/ie_os-{version}.tar.gz
-https://identity-engineering.org/releases/ie-os/{version}/ie_os-{version}-py3-none-any.whl
+CI / test (Python 3.10)
+CI / test (Python 3.11)
+CI / test (Python 3.12)
+CI / package
 ```
 
-Example:
+The daily release workflow does not run the test suite. It verifies that the
+push CI workflow completed successfully for the exact `main` SHA before it
+creates a tag. This keeps tests in the development gate while preventing an
+untested commit from entering the release path.
+
+## Daily tag workflow (`daily-release.yml`)
+
+The schedule runs at `06:00 UTC`. The release date is derived in
+`Europe/Berlin`; GitHub may delay scheduled jobs, so the date is always computed
+at runtime.
+
+The workflow:
+
+1. stops successfully when today's tag already exists
+2. compares `main` with the latest valid date tag
+3. stops successfully when no new `main` commit exists
+4. requires a successful `CI` push run for the current `main` SHA
+5. fetches `main` again and aborts if it advanced during the check
+6. creates one annotated, immutable `vYYYY.MM.DD` tag directly on that SHA
+
+Manual dispatch supports a date override and a dry run. A dry run is enabled
+by default and never creates a tag.
+
+## Tag publisher (`release.yml`)
+
+The tag workflow accepts the date-tag shape only. It then:
+
+1. verifies the successful merge CI run for the tagged SHA
+2. bundles `templates/personal` and builds an sdist and wheel
+3. uses the normalized files emitted by `setuptools-scm`
+4. uploads both files to Cloudflare R2 under `releases/ie-os/YYYY.M.D/`
+5. verifies the public tarball size, checksum, and immutable cache header
+6. creates the GitHub Release on `identity-engineering/os`
+7. updates `Formula/ie-os.rb` and pushes directly to `homebrew-tap/main`
+
+The public URLs are:
 
 ```text
-https://identity-engineering.org/releases/ie-os/0.1.0/ie_os-0.1.0.tar.gz
+https://identity-engineering.org/releases/ie-os/2026.8.2/ie_os-2026.8.2.tar.gz
+https://identity-engineering.org/releases/ie-os/2026.8.2/ie_os-2026.8.2-py3-none-any.whl
 ```
 
-Homebrew Formula `url` **must** use this host.
+Cloudflare R2 is the deployment target for CLI releases. The existing Pages
+Function serves the R2 objects under `identity-engineering.org`.
 
-**Storage:** Cloudflare R2 (preferred), served under the org domain.  
-Private `identity-engineering/os` is build source only. No separate public GitHub dist repo.
+## One-time GitHub setup
 
-## Versioning
+### Release token
 
-- `pyproject.toml` → `0.1.0`
-- Git tag → `v0.1.0`
-- URL path + Formula `version` → `0.1.0`
+Create a fine-grained token or GitHub App installation token and store it as
+the repository secret `IE_RELEASE_TOKEN` in `identity-engineering/os`:
 
-## Ship a release
+- repository access: `identity-engineering/os` and `identity-engineering/homebrew-tap`
+- `Contents: Read and write` on both repositories
+- `Actions: Read` on `identity-engineering/os`
 
-### A. Tag
+The token is used to create the date tag and to push the Homebrew formula
+commit. The workflow never force-pushes a tag or a tap branch.
+
+### R2 secrets
+
+The repository also needs these Actions secrets:
+
+```text
+CF_R2_ACCESS_KEY_ID
+CF_R2_SECRET_ACCESS_KEY
+```
+
+They must have write access to the `ie-os-releases` bucket. The R2 endpoint is
+kept as a non-secret account endpoint in the workflow.
+
+### Branch protection
+
+Protect `main` and require the four CI checks listed above for pull requests.
+Allow the release token to push only tags in `os` and the formula commit to
+`homebrew-tap/main`. If `homebrew-tap/main` is protected, grant the release bot
+the required bypass or the direct no-PR requirement cannot work.
+
+## First run
+
+After merging these workflow and packaging changes:
 
 ```bash
-git checkout main && git pull
-git tag -a v0.1.0 -m "ie-os 0.1.0"
-git push origin v0.1.0
+gh workflow run "Daily Release Tag" --repo identity-engineering/os --ref main
 ```
 
-### B. CI (`release.yml`)
+Leave the default `dry_run=true` for the first run. Then dispatch it again with
+`dry_run=false`. Since there is currently no date tag, the first successful run
+uses the current `Europe/Berlin` date and starts the tag publisher.
 
-On tag `v*`:
-
-1. Bundle templates into the package
-2. Build sdist + wheel
-3. Attach assets to the GitHub Release on **os** (team access)
-4. **Publish to org domain** via Cloudflare R2 (see dedicated issue) so the `.org` URLs resolve
-
-### C. Checksum + Formula
+Verify the GitHub Release, both R2 URLs, the Homebrew formula checksum, and:
 
 ```bash
-shasum -a 256 ie_os-0.1.0.tar.gz
+brew update
+brew upgrade ie-os
+ie --version
 ```
 
-Update [`homebrew-tap` Formula/ie-os.rb](https://github.com/identity-engineering/homebrew-tap):
-
-```ruby
-url "https://identity-engineering.org/releases/ie-os/0.1.0/ie_os-0.1.0.tar.gz"
-version "0.1.0"
-sha256 "<real hash>"
-```
-
-### D. Verify
-
-```bash
-curl -I https://identity-engineering.org/releases/ie-os/0.1.0/ie_os-0.1.0.tar.gz
-brew update && brew install ie-os
-ie --version && ie init
-```
+If CI is still running or failed for `main`, the daily workflow creates no tag;
+the next scheduled run can retry. If publishing fails after the tag exists,
+rerun the tag workflow for that immutable tag instead of moving the tag.
 
 ## Related
 
-- Issue: Cloudflare R2 releases under identity-engineering.org
 - `docs/distribution.md`
 - `docs/cli.md`
+- [Homebrew tap](https://github.com/identity-engineering/homebrew-tap)
