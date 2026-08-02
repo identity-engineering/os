@@ -55,9 +55,11 @@ CLI free personal / paid collective tiers later — after core contracts are sol
 
 - Biology-inspired *agents* (sensory, immunity, vitality, creativity, stability) and full Dynamic Governance until derivable from Surface, Geometry Receipt, Ownership, Emergence, and Damping without category error.
 
-## 8. Standard first, platform optional
+## 8. Standard first, platform optional (Open Core)
 
 Open Identity-Geometry standard + local-first runtime. Collective-intelligence ecosystem may grow on the contracts; a global social/attention platform is not the v0 goal.
+
+The local-first core is published under MIT (Open Core). Managed Pro infrastructure remains closed. See `docs/open-core.md`.
 
 ## 9. Python for core and CLI (v0–v1)
 

@@ -1,10 +1,13 @@
 # Ecosystem vision (orientation, not v0 product claim)
 
-Locked orientation 29.07.2026
+Locked orientation 29.07.2026  
+Open Core boundary clarified 02.08.2026
 
 ## One-sentence stance
 
 IE OS is an **open Identity-Geometry standard + local-first runtime** on which a collective-intelligence ecosystem *may* grow — not a mandate to build the next social network.
+
+The local-first core is published as Open Core (MIT). Managed Pro remains closed. See `docs/open-core.md`.
 
 ## Three layers we keep distinct
 
@@ -14,7 +17,7 @@ IE OS is an **open Identity-Geometry standard + local-first runtime** on which a
 | **2. Installable Runtime** | Free local OS + optional managed Surface (Pro) | Surface Runtime, CLI path, hooks, storage tiers | A mandatory global graph or attention feed |
 | **3. Ecosystem (horizon)** | Other systems speak the contracts; humans, agents, orgs, Physical AI, and existing networks dock in; collective gravitational fields emerge | Keep contracts open and implementable; bridges later | That we own or operate the entire social layer |
 
-## Why the social-network analogy is useful — and dangerous
+## Why the social-network analogy is useful - and dangerous
 
 **Useful**
 - Registry ≈ local follow / recognition list
@@ -54,6 +57,7 @@ That field can emerge if:
 2. **Public positioning**: name the social analogy, state the telos difference sharply, avoid platform rhetoric before the bidirectional sensor works.
 3. **Architecture decisions**: when choosing between "more platform" and "clearer contract", prefer the contract.
 4. **Vision storage**: this file is the durable orientation note inside `os`. Strategic echoes may appear in Notion Vision Manifest / History as Insight, not as a premature product roadmap item.
+5. **Open Core**: the local-first path is MIT-licensed and intended for public implementation. Managed infrastructure stays private.
 
 ## Non-goals (explicit)
 
@@ -64,6 +68,7 @@ That field can emerge if:
 
 ## Related
 
+- `docs/open-core.md`
 - `docs/bidirectional-gravitational-sensor.md`
 - `docs/principles.md`
 - `docs/next.md`

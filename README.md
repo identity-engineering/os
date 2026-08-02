@@ -7,6 +7,8 @@
 Practical, file-based runtime of the Identity Engineering framework.  
 Turns geometric + ownership primitives into living, agent-readable artifacts.
 
+**Open Core.** The local-first runtime, schemas and Free-tier CLI are open source (MIT). Managed Pro features remain closed. See [`docs/open-core.md`](docs/open-core.md).
+
 ## What this is (and is not)
 
 **This is**
@@ -14,7 +16,7 @@ Turns geometric + ownership primitives into living, agent-readable artifacts.
 - Core contracts: Stem, Trajectory, relative Mass, local Registry, Privacy defaults  
 - Local Surface Runtime: Interaction Signals → foreign-estimate zone, receipts, **always-on Geometry Extraction** on Interact  
 - **TIM cycle** (Think · Interact · Mature) as Probe phases under Relativity  
-- **Living-form lens**: Identity as operative form with membrane (Surface) and metabolism (Interaction → Geometry Receipt); agentic loop may be nuclear machinery inside — not the Identity itself  
+- **Living-form lens**: Identity as operative form with membrane (Surface) and metabolism (Interaction → Geometry Receipt); agentic loop may be nuclear machinery inside - not the Identity itself  
 - Foundation for environment adapters and free personal / paid collective CLI tiers
 
 **This is not (yet)**
@@ -38,6 +40,7 @@ os/
 ├── templates/personal/
 ├── docs/
 │   ├── principles.md
+│   ├── open-core.md
 │   ├── probes-as-bridge.md
 │   ├── tim-cycle.md
 │   ├── living-form.md
@@ -53,14 +56,15 @@ os/
 - Geometry Receipt + always-on Interact hook (local storage; Tensor feed **#8**)  
 - TIM grounded as Probe modes; living-form lens (cell nucleus article integrated)  
 - Emergent self-Mass + public card + bidirectional sensor  
-- Standard-first ecosystem orientation
+- Standard-first + Open Core ecosystem orientation
 
-See `docs/next.md`.
+See `docs/next.md` and `docs/open-core.md`.
 
 ## Key docs
 
 | Doc | Purpose |
 |-----|---------|
+| `docs/open-core.md` | Open Core vs Managed boundary |
 | `docs/principles.md` | Invariants |
 | `docs/probes-as-bridge.md` | Probes as continuous geometry process |
 | `docs/tim-cycle.md` | Think / Interact / Mature as Probe modes |
@@ -73,6 +77,10 @@ See `docs/next.md`.
 | `docs/bidirectional-gravitational-sensor.md` | Outbound signal + inbound request/inbox |
 | `docs/ecosystem-vision.md` | Standard vs platform horizon |
 | `docs/next.md` | Praxis order |
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 ## Related
 
