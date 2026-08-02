@@ -19,7 +19,8 @@ Turns geometric + ownership primitives into living, agent-readable artifacts.
 
 **This is not (yet)**
 - Full digital-organism agent system (sensory / immunity / vitality / … modules)  
-- Global social network or attention platform
+- Global social network or attention platform  
+- Automatic Tensor rewrite from Geometry Receipts (storage is live; feed is **#8**)
 
 ## Orientation
 
@@ -49,9 +50,9 @@ os/
 
 - Local Registry + Metric Stem + Interaction Signal  
 - Surface Runtime v0 (apply, receipts, thin HTTP)  
-- Geometry Receipt + always-on Interact hook (this branch)  
+- Geometry Receipt + always-on Interact hook (local storage; Tensor feed **#8**)  
 - TIM grounded as Probe modes; living-form lens (cell nucleus article integrated)  
-- Bidirectional gravitational sensor design  
+- Emergent self-Mass + public card + bidirectional sensor  
 - Standard-first ecosystem orientation
 
 See `docs/next.md`.
@@ -65,8 +66,12 @@ See `docs/next.md`.
 | `docs/tim-cycle.md` | Think / Interact / Mature as Probe modes |
 | `docs/living-form.md` | Identity as living form; cell/organism lens |
 | `docs/geometry-hook.md` | Always-on extraction after Interact |
+| `docs/mass.md` | Emergent self-Mass + public card |
 | `docs/identity-surface.md` | Membrane ops and policy |
 | `docs/interaction-signal.md` | Signal across the membrane |
+| `docs/surface-runtime-local.md` | How to run local apply / HTTP |
+| `docs/bidirectional-gravitational-sensor.md` | Outbound signal + inbound request/inbox |
+| `docs/ecosystem-vision.md` | Standard vs platform horizon |
 | `docs/next.md` | Praxis order |
 
 ## Related

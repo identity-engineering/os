@@ -20,7 +20,9 @@ There are always two kinds of information:
 
 The signal is only the second kind. Everything else remains local unless explicitly consented.
 
-After (or as part of) every Interaction the observer may also produce a local **Geometry Receipt** (see `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`). The Geometry Receipt is the relative geometry interpretation under the observer's Metric Stem. It is not part of the minimal cross-boundary signal; it is the local Probe process.
+After every non-rejected apply the observer **writes a local Geometry Receipt** (see `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`). The Geometry Receipt is the relative geometry interpretation under the observer's Metric Stem. It is not part of the minimal cross-boundary signal; it is the local Probe process. Continuous feed into Tensor / Tension is **OS #8** (not automatic in v0).
+
+`sender_emergent_mass` on this signal is the sender's **computed emergent self-Mass** (same process as local Self-Mass; also publishable on the public card). The Geometry Hook uses it as the primary source for `relative_mass_proxy` of the sender.
 
 ## Always-passed (minimal, no consent required)
 

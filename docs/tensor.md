@@ -25,13 +25,13 @@ The high-dimensional, open, contentful dimensional space that lives inside each 
 - Non-orthogonal relationships between dimensions are first-class via the Metric Stem (g_ij).
 - Full per-dimension dependency tensors remain out of scope for v0.
 
-## How the Tensor is updated (01.08.2026)
+## How the Tensor is updated (01.08.2026 · clarified 02.08.2026)
 
-The primary practical update path is the **Geometry Receipt** produced by the Probe process after every Interaction (Think / Interact / Mature). See `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`.
+The **intended** primary update path is the **Geometry Receipt** produced by the Probe process after every Interaction (Think / Interact / Mature). See `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`.
 
-- Geometry Receipts are local by default.
-- They feed Registry alloys, Metric Stem confidence, and live Tension aggregation.
-- They never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
+- Geometry Receipts are local by default and **written today** under `registry/_geometry_receipts/`.
+- **v0 does not yet** rewrite Registry alloys, Metric Stem confidence, or live Tension from those receipts. Continuous write-back is the open work on **OS #8** (Living Tension Tensor update protocol).
+- Receipts never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
 
 ## Storage implication
 

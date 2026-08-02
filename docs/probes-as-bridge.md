@@ -1,6 +1,7 @@
 # Probes as Bridge: Geometry from every Interaction
 
-Working definition · 01.08.2026
+Working definition · 01.08.2026  
+Updated 02.08.2026 — honest storage vs feed path; Mass source order
 
 ## Core claim
 
@@ -33,11 +34,13 @@ An agentic loop may be nuclear machinery *inside* that form — it is not the Id
 Geometry Extraction on every Interaction:
 
 1. Interaction Signal (or internal Think/Mature event) occurs.  
-2. Geometry Extraction produces a **Geometry Receipt**.  
-3. Receipt feeds the live Tensor / Metric Stem / foreign-estimate zone.  
-4. Local entry / Surface / Registry become readable geometry rather than static files.
+2. Geometry Extraction **writes a local Geometry Receipt** under `registry/_geometry_receipts/`.  
+3. Receipts are the **intended primary update path** into live Tensor / Tension / Metric Stem.  
+4. **v0 does not yet feed** Registry alloys, Metric Stem weights, or Tension aggregation from those files. That write-back is tracked as **OS #8** (Living Tension Tensor update protocol).  
+5. Local entry / Surface / Registry become readable geometry rather than static files once that feed lands.
 
-Probes = the bridge between "AI happening / human happening" and the IE Geometry OS.
+Probes = the bridge between "AI happening / human happening" and the IE Geometry OS.  
+Storage of the bridge artifact is shipped; continuous write-back into the Tensor is the next heartbeat.
 
 ## Concrete v0 shape (this branch)
 
@@ -47,11 +50,29 @@ Probes = the bridge between "AI happening / human happening" and the IE Geometry
 - Living form: `docs/living-form.md`  
 - Implementation: `runtime/geometry.py` + always-on path in `runtime/apply.py`
 
+### relative_mass_proxy (Interact, target = sender)
+
+The Mass the observer may treat as "real" for the **sender** is the sender's **emergent self-Mass**: the same normalized weighted process as local Self-Mass (`docs/mass.md`), derived only from *inbound estimates of them*.
+
+Sources (priority):
+
+1. `signal.sender_emergent_mass` — they attach their current readout on the signal  
+2. Last stored `sender_emergent_mass` in the foreign-estimate zone  
+3. `public_card.emergent_self_mass` — same number from their public card (`GET /ie/v0/card`)
+
+Never: `coarse_mass_estimate` (that is their estimate *of the observer*).  
+Never: Self-Mass of the observer from a self Geometry Receipt.
+
+### Membrane policy observation (stub)
+
+Consent applied/rejected is recorded as an observational note only.  
+It is **not** Access/Jurisdiction geometry. Full Ownership operationalization: **OS #40**.
+
 ## Relation to existing contracts
 
 - **Interaction Signal** — carrier across the membrane  
 - **Geometry Receipt** — local metabolic interpretation under the observer Metric Stem  
-- **Tensor** — live geometric reading of Registry alloys  
+- **Tensor** — live geometric reading of Registry alloys (feed from Receipts: **#8**)  
 - **Foreign-estimate zone** — bounded region where others' signals land  
 - **Self-Mass** — emerges only from foreign estimates; never from self Geometry Receipts
 
@@ -60,14 +81,17 @@ Probes = the bridge between "AI happening / human happening" and the IE Geometry
 - No full catalogue of "good questions"  
 - No high-fidelity Curvature/Frequency extraction in v0  
 - No TIM organism-agent layer in v0  
-- No Identity = LLM loop
+- No Identity = LLM loop  
+- No automatic Tensor/Registry rewrite from Geometry Receipts in v0 (see #8)  
+- No Access/Jurisdiction scores from membrane stubs in v0 (see #40)
 
 ## Next levers
 
 1. Dogfood Interact path (default on).  
 2. Think / Mature entry points (`target=self`).  
-3. Feed Geometry Receipt fields into Tension aggregation after emergent self-Mass (#15).  
-4. Optional public framework note: Probes as process; TIM as operational phase split; living-form as lens.  
-5. Richer extractors behind the same interface.
+3. **Feed Geometry Receipt into Tension / Tensor / Registry** — **#8**.  
+4. **Access & Jurisdiction probes / membrane policy** — **#40**.  
+5. Optional public framework note: Probes as process; TIM as operational phase split; living-form as lens.  
+6. Richer extractors behind the same interface.
 
 See `schemas/geometry-receipt/v0.yaml`, `docs/geometry-hook.md`, `docs/tim-cycle.md`, `docs/living-form.md`.

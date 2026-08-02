@@ -143,11 +143,16 @@ def apply_interaction_signal(
             pass
 
     # Geometry Hook (Probes-as-Bridge). Default on. Best-effort; never fails apply.
+    # Failures are recorded in receipt.reason when possible (not fully silent).
     if emit_geometry_receipt and receipt.status != ApplyStatus.REJECTED:
         try:
             from .geometry import GeometryReceiptStore, run_geometry_hook
 
             observer = observer_handle or signal.to_handle or expected_to_handle or "local"
+            # Prefer Mass published on this signal; else last stored value for sender.
+            stored_sender_mass = None
+            if record.sender_emergent_mass is not None:
+                stored_sender_mass = float(record.sender_emergent_mass)
             geo = run_geometry_hook(
                 signal,
                 receipt,
@@ -156,15 +161,26 @@ def apply_interaction_signal(
                 context={
                     "prior_signal_count": prior_signal_count,
                     "prior_accumulated_depth": prior_accumulated_depth,
+                    "sender_emergent_mass": (
+                        float(signal.sender_emergent_mass)
+                        if signal.sender_emergent_mass is not None
+                        else stored_sender_mass
+                    ),
+                    # Callers / future Surface adapters may inject a card read:
+                    # "public_card_emergent_self_mass": <float>
                 },
             )
             if geo is not None:
                 GeometryReceiptStore(registry_root).save(geo)
-                receipt.reason = (
-                    (receipt.reason or "") + f"; geometry_receipt={geo.receipt_id}"
-                ).strip("; ")
-        except Exception:
-            pass
+                extra = f"geometry_receipt={geo.receipt_id}"
+                if geo.notes and "extractor_errors=" in geo.notes:
+                    extra += " (geometry extractor errors; see receipt notes)"
+                receipt.reason = ((receipt.reason or "") + f"; {extra}").strip("; ")
+        except Exception as exc:  # noqa: BLE001 — apply must not fail on geometry
+            receipt.reason = (
+                (receipt.reason or "")
+                + f"; geometry_hook_error={type(exc).__name__}"
+            ).strip("; ")
 
     return receipt
 

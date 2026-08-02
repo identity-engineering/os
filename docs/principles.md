@@ -17,7 +17,7 @@ No pattern is imported just because it worked in an earlier product. Patterns en
 
 - Static layer = relative perception an Identity holds of itself and others.  
 - Local entry = always-on entry point for State Differential + Vision Gradient + tension signals.  
-- Every interaction updates geometry (Geometry Receipt) and can write back into static files.
+- Every interaction produces a local Geometry Receipt (Probe process). Continuous write-back into Registry / Tensor is the living-update path (**#8**).
 
 This turns dead documents into living identity artifacts.
 

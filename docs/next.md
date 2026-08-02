@@ -12,13 +12,15 @@
 ## Next
 
 1. **Geometry Receipt + Probes-as-Bridge + TIM + living-form** (this branch / PR)  
-   Always-on Geometry Hook; TIM as Probe phases; Identity as living operative form (cell lens, article-grounded).  
+   Always-on Geometry Hook (local storage); TIM as Probe phases; living-form lens.  
    Dogfood Interact; then Think/Mature entry points.
-2. **Emergent self-Mass (#15)**
-3. **Cloudflare R2** + first `v0.1.0` publish + brew dogfood
-4. Tension update protocol (Geometry Receipt feed)
+2. **Feed Geometry Receipt → Tension / Tensor / Registry** — **#8**  
+   (storage exists; continuous write-back is the heartbeat)
+3. **Access & Jurisdiction / membrane policy** — **#40**  
+   (v0 only records consent outcomes observationally)
+4. **Cloudflare R2** + first `v0.1.0` publish + brew dogfood
 5. MCP binding for Surface Runtime (remaining #29 exit criterion)
 
 ## Related issues
 
-#15 (self-Mass), #18 (CLI), #29 (Surface Runtime), #31 (request/inbox), Cloudflare R2 releases.
+#8 (Tensor feed), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime), #31 (request/inbox), #40 (Access/Jurisdiction), Cloudflare R2 releases.
