@@ -53,6 +53,15 @@ geometry_deltas:                    # sparse; only what was observed with confid
     vision_gradient_shift: string   # short observation on Vision Gradient clarity / direction
     coherence_note: string
 
+  optionality_delta:                # optional — local gradient of future option value
+    value: number                   # signed float; positive = opens future paths / optionality, negative = closes
+    confidence: float               # 0.0–1.0
+    notes: string                   # short justification: which paths or degrees of freedom opened or closed relative to the current Stem
+    # Relation: quantitative partner to stem_differential.vision_gradient_shift (text observation).
+    # Measures local ΔO_τ induced by this Interaction.
+    # Supports operationalization of the causal-entropy / future-optionality design telos.
+    # Still proposal-level until extractors and OS #8 feed are in place.
+
 ownership_move:                     # optional, Mature-mode typical
   commitment: string                # concrete next action (e.g. 72h)
   ownership_level_estimate: number  # 0–100, observer's own sense of claim strength
@@ -71,3 +80,7 @@ notes:
   - Tensor remains live (derived); Receipts are the intended primary update path (feed: OS #8).
   - relative_mass_proxy for a foreign target is their published emergent self-Mass, not Self-Mass of the observer.
   - jurisdiction_shift in v0 is observational membrane policy notes only (OS #40).
+  - optionality_delta is the local signed gradient of future option value (ΔO_τ).
+    It is the quantitative counterpart to vision_gradient_shift and a direct operational signal
+    for the maximisation of causal entropy / future optionality. Extraction quality and feed
+    into live geometry remain open (see OS #8).
