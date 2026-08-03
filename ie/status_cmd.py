@@ -42,7 +42,11 @@ def collect_status(root: Path) -> dict[str, Any]:
     foreign = []
     if fe_dir.is_dir():
         for p in sorted(fe_dir.glob("*.*")):
-            if p.name.startswith("_"):
+            if (
+                not p.is_file()
+                or p.name.startswith("_")
+                or p.suffix.lower() not in {".yaml", ".yml", ".json"}
+            ):
                 continue
             foreign.append(p.stem)
 

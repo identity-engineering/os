@@ -44,6 +44,36 @@ push CI workflow completed successfully for the exact `main` SHA before it
 creates a tag. This keeps tests in the development gate while preventing an
 untested commit from entering the release path.
 
+## Developer artifact (`dev-artifact.yml`)
+
+Use the manual Developer Artifact workflow to test a branch, tag, or SHA as an
+installed package without creating a release tag or publishing to R2, GitHub
+Releases, or Homebrew. It runs the full test suite, builds a dev-only PEP 440
+version, installs the wheel in a fresh virtual environment, and runs
+`scripts/dogfood_free.sh`. The resulting wheel, sdist, and dogfood script are
+uploaded as a GitHub Actions artifact for seven days.
+
+```bash
+gh workflow run dev-artifact.yml \
+	--repo identity-engineering/os \
+	--ref feature/my-change
+gh run list --repo identity-engineering/os --workflow dev-artifact.yml --limit 1
+gh run download <run-id> --repo identity-engineering/os -D /tmp/ie-os-dev
+```
+
+The downloaded artifact can be installed and tested locally:
+
+```bash
+python3 -m venv /tmp/ie-os-dev-venv
+/tmp/ie-os-dev-venv/bin/pip install /tmp/ie-os-dev/dist/ie_os-*.whl
+IE_BIN=/tmp/ie-os-dev-venv/bin/ie \
+	PYTHON_BIN=/tmp/ie-os-dev-venv/bin/python \
+	bash /tmp/ie-os-dev/scripts/dogfood_free.sh
+```
+
+This package path validates bundled templates and the installed `ie` entry
+point. `pip install -e .` remains useful for the faster source-tree loop.
+
 ## Daily tag workflow (`daily-release.yml`)
 
 The schedule runs at `01:00 UTC`. The release date is derived in

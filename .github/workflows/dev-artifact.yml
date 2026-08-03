@@ -1,0 +1,86 @@
+name: Developer Artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Optional branch, tag, or SHA to test (default: selected ref)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: developer-artifact-${{ inputs.source_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-artifact:
+    name: Build and dogfood developer artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build and test tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Bundle templates
+        run: |
+          mkdir -p ie/templates
+          rm -rf ie/templates/personal
+          cp -R templates/personal ie/templates/personal
+
+      - name: Resolve developer version
+        id: source
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          short_sha="$(git rev-parse --short=12 HEAD)"
+          version="0.0.0.dev${GITHUB_RUN_NUMBER}+g${short_sha}"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Building ${version} from ${sha}."
+
+      - name: Build distributions
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ steps.source.outputs.version }}
+        run: rm -rf dist && python -m build
+
+      - name: Install wheel and run Free dogfood
+        run: |
+          set -euo pipefail
+          test_root="$(mktemp -d)"
+          trap 'rm -rf "$test_root"' EXIT
+          python -m venv "$test_root/venv"
+          "$test_root/venv/bin/pip" install --upgrade pip
+          "$test_root/venv/bin/pip" install dist/*.whl
+          IE_BIN="$test_root/venv/bin/ie" \
+            PYTHON_BIN="$test_root/venv/bin/python" \
+            bash scripts/dogfood_free.sh
+          "$test_root/venv/bin/ie" --version
+
+      - name: Upload developer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ie-os-dev-${{ steps.source.outputs.short_sha }}
+          path: |
+            dist/*
+            scripts/dogfood_free.sh
+          if-no-files-found: error
+          retention-days: 7
