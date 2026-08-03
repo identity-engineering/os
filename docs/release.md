@@ -46,7 +46,7 @@ untested commit from entering the release path.
 
 ## Daily tag workflow (`daily-release.yml`)
 
-The schedule runs at `06:00 UTC`. The release date is derived in
+The schedule runs at `01:00 UTC`. The release date is derived in
 `Europe/Berlin`; GitHub may delay scheduled jobs, so the date is always computed
 at runtime.
 
