@@ -102,7 +102,7 @@ The tag workflow accepts the date-tag shape only. It then:
 4. uploads both files to Cloudflare R2 under `releases/ie-os/YYYY.M.D/`
 5. verifies the public tarball size, checksum, and immutable cache header
 6. creates the GitHub Release on `identity-engineering/os`
-7. updates `Formula/ie-os.rb` and pushes directly to `homebrew-tap/main`
+7. updates `Formula/ie-os.rb` and opens a pull request against `homebrew-tap/main`
 
 The public URLs are:
 
@@ -123,6 +123,7 @@ the repository secret `IE_RELEASE_TOKEN` in `identity-engineering/os`:
 
 - repository access: `identity-engineering/os` and `identity-engineering/homebrew-tap`
 - `Contents: Read and write` on both repositories
+- `Pull requests: Read and write` on `identity-engineering/homebrew-tap`
 - `Actions: Read` on `identity-engineering/os`
 
 The token is used to create the date tag and to push the Homebrew formula
@@ -143,9 +144,15 @@ kept as a non-secret account endpoint in the workflow.
 ### Branch protection
 
 Protect `main` and require the four CI checks listed above for pull requests.
-Allow the release token to push only tags in `os` and the formula commit to
-`homebrew-tap/main`. If `homebrew-tap/main` is protected, grant the release bot
-the required bypass or the direct no-PR requirement cannot work.
+Protect `v*` tags against updates and deletion. Protect `homebrew-tap/main` and
+require a pull request for formula changes. The release token creates a
+versioned formula branch and pull request; it does not need a bypass for the
+protected default branch.
+
+The repositories currently use solo-maintainer mode: a pull request is
+required, but no second-person approval is required because the organization
+has one active collaborator. Once a second maintainer is added, raise the
+required approval count to one and enable code-owner reviews.
 
 ## First run
 

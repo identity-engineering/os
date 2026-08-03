@@ -1,0 +1,12 @@
+# Security-sensitive repository controls are assigned to the maintainer.
+/.github/ @jonassiebler
+/.github/workflows/ @jonassiebler
+/.github/CODEOWNERS @jonassiebler
+/.github/dependabot.yml @jonassiebler
+/.github/SECURITY.md @jonassiebler
+
+# Release and package inputs affect published artifacts.
+/pyproject.toml @jonassiebler
+/scripts/update_homebrew_formula.py @jonassiebler
+/templates/ @jonassiebler
+/docs/release.md @jonassiebler

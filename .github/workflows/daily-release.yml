@@ -29,19 +29,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.IE_RELEASE_TOKEN || github.token }}
+      RELEASE_TOKEN: ${{ secrets.IE_RELEASE_TOKEN }}
       RELEASE_DATE: ${{ inputs.release_date || '' }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
     steps:
       - name: Require release token
         if: env.DRY_RUN != 'true'
         run: |
-          if [[ -z "$GH_TOKEN" ]]; then
+          if [[ -z "$RELEASE_TOKEN" ]]; then
             echo "Missing IE_RELEASE_TOKEN repository secret."
             exit 1
           fi
 
       - name: Checkout main with release token
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: main
           fetch-depth: 0
