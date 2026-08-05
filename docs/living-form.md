@@ -1,6 +1,6 @@
 # Living Form: Biology as Operational Lens on Identity
 
-Working definition · 01.08.2026
+Working definition · 01.08.2026 · Foundation lock 05.08.2026
 
 ## Status
 
@@ -52,9 +52,17 @@ Everything is Interaction under Relativity. TIM organizes Interaction by observe
 |-------|----------------------|---------|
 | **Think** | Inside | Self↔Self Interaction; construct relative worldview |
 | **Interact** | Across | Self↔Other via Interaction Signal |
-| **Mature** | Inside, directed | Integrate new reality into Stem/Registry; optional Ownership Move |
+| **Mature** | Inside, directed | Integrate new reality into the relative causal model of the Trajectory; optional Ownership Move that commits geometry under Jurisdiction |
 
-See `docs/tim-cycle.md`.
+Mature is the directed metabolic step that turns experience into updated Identity DNA. Closest biological readings (lens only):
+
+- Epigenetic marking: past signals leave marks that alter future expression without rewriting the base sequence.
+- Developmental maturation / differentiation: commitment of form based on accumulated signals; increases local fitness under constraint.
+- Homeostatic plasticity: update of the internal model of environmental causality so that future option space remains continuous with the organism.
+
+It is **not** backpropagation of the agentic loop. Backprop is nuclear machinery. Mature is membrane-relative update of the persistent Bauplan under Ownership.
+
+See `docs/tim-cycle.md` for purpose statements and write-path matrix.
 
 ## Higher scale (organism) — without premature agent import
 
@@ -81,6 +89,8 @@ An IE Identity, under the living-form lens, metabolizes Interaction so as to sus
 
 Causal Entropy remains the design telos of the geometry; the cell lens says how metabolism serves that telos over time.
 
+Mature is the critical phase for this bridge: it refines the relative causal model (what caused what in the Trajectory). Without it, expanded optionality can drift away from the Stem that owns the Identity. With it, future freedom stays continuous with Mass and Jurisdiction.
+
 ## Multi-substrate
 
 The same living-form contracts apply to:
@@ -97,13 +107,16 @@ Membrane and metabolism are substrate-symmetric; nuclear machinery is optional a
 - Not: LLM *is* the Identity.  
 - Not: immune/nerve/hormone agents are part of IE OS v0.  
 - Not: biology replaces physics-inspired geometry.  
-- Yes: biology supplies an operational lens on how geometry lives through Interaction.
+- Not: Mature is automatic gradient descent on the reasoning loop.  
+- Yes: biology supplies an operational lens on how geometry lives through Interaction.  
+- Yes: Mature is the ownership-gated causal-integration step that keeps Causal Entropy continuous with the Stem.
 
 ## Related
 
-- `docs/tim-cycle.md` — Probe modes  
+- `docs/tim-cycle.md` — Probe modes, purpose statements, write-path matrix  
 - `docs/probes-as-bridge.md` — continuous geometry from Interaction  
 - `docs/geometry-hook.md` — always-on Interact extraction  
 - `docs/identity-surface.md` — membrane  
 - `docs/interaction-signal.md` — signals across the membrane  
+- Issue #45 (TIM foundation lock)  
 - Framework Collective layer: Emergence, Damping  
