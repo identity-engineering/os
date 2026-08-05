@@ -76,9 +76,11 @@ Mature specifically bridges Causal Entropy (design telos) and Stem continuity: i
 
 | Mode | Entry point today | Geometry Hook |
 |------|-------------------|---------------|
-| Interact | `apply_interaction_signal` / Surface `receive_interaction_signal` | **Always on** after non-rejected apply |
-| Think | Not yet first-class CLI (`ie probe think` follow-up) | Same extractor interface, `target=self` |
-| Mature | Not yet first-class CLI (`ie probe mature` follow-up) | Same interface + optional `ownership_move` |
+| Interact | `apply_interaction_signal` / Surface `receive_interaction_signal` / `ie signal apply` | **Always on** after non-rejected apply |
+| Think | `ie probe think` → `create_self_probe(mode=think)` | Self Geometry Receipt, `target=self` |
+| Mature | `ie probe mature` → `create_self_probe(mode=mature)` | Self Geometry Receipt + optional `ownership_move` record |
+
+`ownership_move` is stored on the Geometry Receipt only. Applying it to Stem / Vision Gradient / access policy remains gated by Ownership design (#40).
 
 ## What stays out
 
