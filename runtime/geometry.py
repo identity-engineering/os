@@ -29,7 +29,7 @@ class GeometryReceipt:
     timestamp: str
     mode: str  # think | interact | mature
     observer: str
-    target: str  # "self" or foreign handle
+    source_refs: Optional[list[str]] = None,
     source_signal_ref: Optional[str] = None
     source_refs: list[str] = field(default_factory=list)
 
