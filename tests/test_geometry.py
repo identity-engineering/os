@@ -1,4 +1,4 @@
-"""Unit tests for Geometry Receipt extractors + always-on apply hook."""
+"""Unit tests for Geometry Receipt extractors + always-on apply hook + self probes."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 from runtime.apply import apply_from_dict
 from runtime.geometry import (
     GeometryReceiptStore,
+    create_self_probe,
     extract_depth_mass,
     extract_membrane_policy,
     run_geometry_hook,
@@ -221,6 +222,78 @@ class GeometryApplyHookTests(unittest.TestCase):
         assert data is not None
         self.assertEqual(data["jurisdiction_shift"]["access_delta"], 0.0)
         self.assertIn("#40", data["jurisdiction_shift"]["notes"])
+
+
+class SelfProbeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.registry = Path(self._tmp.name) / "registry"
+        self.registry.mkdir()
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_think_creates_self_receipt(self):
+        geo = create_self_probe(
+            mode="think",
+            observer="me",
+            notes="worldview note",
+            stem_differential={
+                "state_delta_summary": "clearer differential",
+                "vision_gradient_shift": "",
+                "coherence_note": "",
+            },
+        )
+        self.assertEqual(geo.mode, "think")
+        self.assertEqual(geo.target, "self")
+        self.assertEqual(geo.observer, "me")
+        self.assertIsNone(geo.source_signal_ref)
+        self.assertIsNone(geo.ownership_move)
+        self.assertIn("no Stem/Vision/Policy write", geo.notes)
+
+        path = GeometryReceiptStore(self.registry).save(geo)
+        self.assertTrue(path.exists())
+        data = GeometryReceiptStore(self.registry).load(geo.receipt_id)
+        assert data is not None
+        self.assertEqual(data["mode"], "think")
+        self.assertEqual(data["target"], "self")
+
+    def test_mature_records_ownership_move_without_applying(self):
+        geo = create_self_probe(
+            mode="mature",
+            observer="me",
+            notes="causal reconstruction",
+            ownership_move={
+                "commitment": "72h: ship Access probes",
+                "ownership_level_estimate": 88.0,
+            },
+            optionality_delta={
+                "value": 0.25,
+                "confidence": 0.6,
+                "notes": "opens Ownership path",
+            },
+        )
+        self.assertEqual(geo.mode, "mature")
+        self.assertEqual(geo.target, "self")
+        self.assertIsNotNone(geo.ownership_move)
+        self.assertEqual(geo.ownership_move["commitment"], "72h: ship Access probes")
+        self.assertAlmostEqual(geo.ownership_move["ownership_level_estimate"], 88.0)
+        self.assertIsNotNone(geo.optionality_delta)
+        # Still only a receipt — no side effect beyond store
+        GeometryReceiptStore(self.registry).save(geo)
+        self.assertEqual(len(GeometryReceiptStore(self.registry).list_ids()), 1)
+
+    def test_ownership_move_rejected_on_think(self):
+        with self.assertRaises(ValueError):
+            create_self_probe(
+                mode="think",
+                observer="me",
+                ownership_move={"commitment": "no", "ownership_level_estimate": 10},
+            )
+
+    def test_invalid_mode_rejected(self):
+        with self.assertRaises(ValueError):
+            create_self_probe(mode="interact", observer="me")
 
 
 if __name__ == "__main__":

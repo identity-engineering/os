@@ -63,9 +63,34 @@ precedence. The remembered path is stored at
 | `ie status` | Install summary |
 | `ie registry list` / `get` | Local registry |
 | `ie signal apply` | Apply signal + receipt |
+| `ie request …` | Inbound estimate-request inbox |
+| `ie probe think` | Think self Geometry Receipt |
+| `ie probe mature` | Mature self Geometry Receipt (+ optional ownership_move record) |
+| `ie mass` | Emergent self-Mass readout |
 | `ie catalogue` / `ie reindex` | Stubs |
+
+### TIM probes (self)
+
+```bash
+# Think — internal worldview / relative Stem perception
+ie probe think --notes "clarity on competing curvatures" \
+  --state-delta "State Differential sharpened" \
+  --vision-shift "Vision Gradient more continuous"
+
+# Mature — causal integration + optional Ownership Move *record*
+ie probe mature --notes "what caused the Mass dip last week" \
+  --state-delta "causal chain reconstructed" \
+  --commitment "72h: ship Access probes draft" \
+  --ownership-level 88 \
+  --optionality 0.3 --optionality-notes "opens Ownership path"
+```
+
+Both write a Geometry Receipt under `registry/_geometry_receipts/` with `target=self`.
+`ownership_move` is stored on the receipt only; it is **not** applied to Stem, Vision Gradient, or access policy (see #40 and the write-path matrix in `docs/tim-cycle.md`).
 
 ## See also
 
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`
+- `docs/tim-cycle.md`
+- `docs/living-form.md`
