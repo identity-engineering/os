@@ -93,6 +93,8 @@ Invariants:
 - **Interact** is the tool/signal membrane surface.  
 - **Mature** is the deliberate evolve step (`ie mature`).
 
+Mature specifically bridges Causal Entropy (design telos) and Stem continuity: it refines the relative causal model so that expanded future freedom remains continuous with who the Identity is.
+
 ## Operational mapping (v0)
 
 | Mode | Entry point today | Notes |
