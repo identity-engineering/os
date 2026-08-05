@@ -80,3 +80,5 @@ apply `ownership_move` to Stem/Vision/Policy (#40).
 - `docs/living-form.md`
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`
+- `docs/tim-cycle.md`
+- `docs/living-form.md`
