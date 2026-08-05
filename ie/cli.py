@@ -25,11 +25,9 @@ app = typer.Typer(
 registry_app = typer.Typer(help="Local Registry operations")
 signal_app = typer.Typer(help="Interaction Signal operations")
 request_app = typer.Typer(help="Inbound estimate-request inbox (bidirectional sensor)")
-probe_app = typer.Typer(help="TIM probe modes: Think / Mature (self Geometry Receipt)")
 app.add_typer(registry_app, name="registry")
 app.add_typer(signal_app, name="signal")
 app.add_typer(request_app, name="request")
-app.add_typer(probe_app, name="probe")
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
 
@@ -484,57 +482,8 @@ def _resolve_observer(root: Path, observer: Optional[str]) -> str:
     return handle
 
 
-@probe_app.command("think")
-def probe_think(
-    notes: Optional[str] = typer.Option(
-        None, "--notes", "-n", help="Short observation / worldview note"
-    ),
-    state_delta: Optional[str] = typer.Option(
-        None, "--state-delta", help="stem_differential.state_delta_summary"
-    ),
-    vision_shift: Optional[str] = typer.Option(
-        None, "--vision-shift", help="stem_differential.vision_gradient_shift"
-    ),
-    coherence: Optional[str] = typer.Option(
-        None, "--coherence", help="stem_differential.coherence_note"
-    ),
-    observer: Optional[str] = typer.Option(
-        None, "--observer", help="Observer handle (default: this install)"
-    ),
-    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
-) -> None:
-    """Think probe: self Geometry Receipt (internal worldview construction).
-
-    Local receipt only. No Stem / Vision / Policy write.
-    """
-    root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
-    if not registry.is_dir():
-        raise SystemExit(f"No registry/ under {root}")
-
-    obs = _resolve_observer(root, observer)
-    stem = None
-    if state_delta or vision_shift or coherence:
-        stem = {
-            "state_delta_summary": state_delta or "",
-            "vision_gradient_shift": vision_shift or "",
-            "coherence_note": coherence or "",
-        }
-
-    from runtime.geometry import GeometryReceiptStore, create_self_probe
-
-    geo = create_self_probe(
-        mode="think",
-        observer=obs,
-        notes=notes or "",
-        stem_differential=stem,
-    )
-    GeometryReceiptStore(registry).save(geo)
-    typer.echo(json.dumps(geo.to_dict(), indent=2, ensure_ascii=False))
-
-
-@probe_app.command("mature")
-def probe_mature(
+@app.command("mature")
+def mature(
     notes: Optional[str] = typer.Option(
         None, "--notes", "-n", help="Causal integration / learning note"
     ),
@@ -575,10 +524,14 @@ def probe_mature(
     ),
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
 ) -> None:
-    """Mature probe: self Geometry Receipt + optional Ownership Move record.
+    """Mature: directed causal integration — self Geometry Receipt / workspace evolve.
 
-    Directed causal integration. Receipt only — ownership_move is stored on the
-    receipt, never auto-applied to Stem / Vision / Policy (see #40).
+    The first-class Self-Probe for learning. Records relative causal structure of
+    the own Trajectory and optional ownership_move on a Geometry Receipt only.
+    Never auto-applies to Stem / Vision / Policy (see #40). Continuous feed is #8.
+
+    Think is not a CLI: it is a phase label (inward, non-emitting) provided by
+    substrate + prompts. Interact is tools/MCP/signals (see `ie signal apply`).
     """
     root = path.resolve() if path else require_ie_root()
     registry = root / "registry"
