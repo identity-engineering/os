@@ -25,9 +25,11 @@ app = typer.Typer(
 registry_app = typer.Typer(help="Local Registry operations")
 signal_app = typer.Typer(help="Interaction Signal operations")
 request_app = typer.Typer(help="Inbound estimate-request inbox (bidirectional sensor)")
+probe_app = typer.Typer(help="TIM probe modes: Think / Mature (self Geometry Receipt)")
 app.add_typer(registry_app, name="registry")
 app.add_typer(signal_app, name="signal")
 app.add_typer(request_app, name="request")
+app.add_typer(probe_app, name="probe")
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
 
@@ -470,6 +472,166 @@ def request_quarantine(
     except RequestError as e:
         raise SystemExit(str(e))
     typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
+
+
+def _resolve_observer(root: Path, observer: Optional[str]) -> str:
+    if observer:
+        return observer.strip()
+    st = collect_status(root)
+    handle = st.get("handle")
+    if not handle:
+        raise SystemExit("Could not resolve observer handle; pass --observer")
+    return handle
+
+
+@probe_app.command("think")
+def probe_think(
+    notes: Optional[str] = typer.Option(
+        None, "--notes", "-n", help="Short observation / worldview note"
+    ),
+    state_delta: Optional[str] = typer.Option(
+        None, "--state-delta", help="stem_differential.state_delta_summary"
+    ),
+    vision_shift: Optional[str] = typer.Option(
+        None, "--vision-shift", help="stem_differential.vision_gradient_shift"
+    ),
+    coherence: Optional[str] = typer.Option(
+        None, "--coherence", help="stem_differential.coherence_note"
+    ),
+    observer: Optional[str] = typer.Option(
+        None, "--observer", help="Observer handle (default: this install)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Think probe: self Geometry Receipt (internal worldview construction).
+
+    Local receipt only. No Stem / Vision / Policy write.
+    """
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+    if not registry.is_dir():
+        raise SystemExit(f"No registry/ under {root}")
+
+    obs = _resolve_observer(root, observer)
+    stem = None
+    if state_delta or vision_shift or coherence:
+        stem = {
+            "state_delta_summary": state_delta or "",
+            "vision_gradient_shift": vision_shift or "",
+            "coherence_note": coherence or "",
+        }
+
+    from runtime.geometry import GeometryReceiptStore, create_self_probe
+
+    geo = create_self_probe(
+        mode="think",
+        observer=obs,
+        notes=notes or "",
+        stem_differential=stem,
+    )
+    GeometryReceiptStore(registry).save(geo)
+    typer.echo(json.dumps(geo.to_dict(), indent=2, ensure_ascii=False))
+
+
+@probe_app.command("mature")
+def probe_mature(
+    notes: Optional[str] = typer.Option(
+        None, "--notes", "-n", help="Causal integration / learning note"
+    ),
+    state_delta: Optional[str] = typer.Option(
+        None, "--state-delta", help="stem_differential.state_delta_summary"
+    ),
+    vision_shift: Optional[str] = typer.Option(
+        None, "--vision-shift", help="stem_differential.vision_gradient_shift"
+    ),
+    coherence: Optional[str] = typer.Option(
+        None, "--coherence", help="stem_differential.coherence_note"
+    ),
+    commitment: Optional[str] = typer.Option(
+        None,
+        "--commitment",
+        help="ownership_move.commitment (concrete next action, e.g. 72h)",
+    ),
+    ownership_level: Optional[float] = typer.Option(
+        None,
+        "--ownership-level",
+        help="ownership_move.ownership_level_estimate (0–100)",
+    ),
+    optionality: Optional[float] = typer.Option(
+        None,
+        "--optionality",
+        help="optionality_delta.value (signed local ΔO_τ)",
+    ),
+    optionality_confidence: Optional[float] = typer.Option(
+        None,
+        "--optionality-confidence",
+        help="optionality_delta.confidence (0–1)",
+    ),
+    optionality_notes: Optional[str] = typer.Option(
+        None, "--optionality-notes", help="optionality_delta.notes"
+    ),
+    observer: Optional[str] = typer.Option(
+        None, "--observer", help="Observer handle (default: this install)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Mature probe: self Geometry Receipt + optional Ownership Move record.
+
+    Directed causal integration. Receipt only — ownership_move is stored on the
+    receipt, never auto-applied to Stem / Vision / Policy (see #40).
+    """
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+    if not registry.is_dir():
+        raise SystemExit(f"No registry/ under {root}")
+
+    obs = _resolve_observer(root, observer)
+    stem = None
+    if state_delta or vision_shift or coherence:
+        stem = {
+            "state_delta_summary": state_delta or "",
+            "vision_gradient_shift": vision_shift or "",
+            "coherence_note": coherence or "",
+        }
+
+    ownership = None
+    if commitment is not None or ownership_level is not None:
+        ownership = {
+            "commitment": commitment or "",
+            "ownership_level_estimate": (
+                float(ownership_level) if ownership_level is not None else 0.0
+            ),
+        }
+        if ownership_level is not None and not (0.0 <= float(ownership_level) <= 100.0):
+            raise SystemExit("--ownership-level must be in [0, 100]")
+
+    opt = None
+    if optionality is not None:
+        conf = (
+            float(optionality_confidence)
+            if optionality_confidence is not None
+            else 0.5
+        )
+        if not (0.0 <= conf <= 1.0):
+            raise SystemExit("--optionality-confidence must be in [0, 1]")
+        opt = {
+            "value": float(optionality),
+            "confidence": conf,
+            "notes": optionality_notes or "",
+        }
+
+    from runtime.geometry import GeometryReceiptStore, create_self_probe
+
+    geo = create_self_probe(
+        mode="mature",
+        observer=obs,
+        notes=notes or "",
+        stem_differential=stem,
+        ownership_move=ownership,
+        optionality_delta=opt,
+    )
+    GeometryReceiptStore(registry).save(geo)
+    typer.echo(json.dumps(geo.to_dict(), indent=2, ensure_ascii=False))
 
 
 @app.command("mass")

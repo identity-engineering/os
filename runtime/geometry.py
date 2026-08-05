@@ -38,6 +38,7 @@ class GeometryReceipt:
     jurisdiction_shift: Optional[dict[str, Any]] = None
     stem_differential: Optional[dict[str, Any]] = None
     ownership_move: Optional[dict[str, Any]] = None
+    optionality_delta: Optional[dict[str, Any]] = None
 
     notes: str = ""
 
@@ -263,6 +264,8 @@ def _merge_extractor_outputs(base: GeometryReceipt, partials: list[dict[str, Any
             base.degrees_of_freedom = p["degrees_of_freedom"]
         if "ownership_move" in p and base.ownership_move is None:
             base.ownership_move = p["ownership_move"]
+        if "optionality_delta" in p and base.optionality_delta is None:
+            base.optionality_delta = p["optionality_delta"]
         for tc in p.get("tension_components") or []:
             base.tension_components.append(tc)
 
@@ -311,6 +314,54 @@ def run_geometry_hook(
     if extractor_errors:
         notes.append("extractor_errors=" + " | ".join(extractor_errors))
     receipt.notes = "; ".join(notes)
+    return receipt
+
+
+def create_self_probe(
+    *,
+    mode: str,
+    observer: str,
+    notes: str = "",
+    stem_differential: Optional[dict[str, Any]] = None,
+    ownership_move: Optional[dict[str, Any]] = None,
+    optionality_delta: Optional[dict[str, Any]] = None,
+    tension_components: Optional[list[dict[str, Any]]] = None,
+) -> GeometryReceipt:
+    """Create a Think or Mature Geometry Receipt with target=self.
+
+    No Interaction Signal. No automatic write into Stem, Vision Gradient, or
+    access policy. ownership_move is recorded on the receipt only; applying it
+    to persistent geometry requires Ownership design (#40).
+
+    mode must be "think" or "mature".
+    """
+    mode = mode.strip().lower()
+    if mode not in {"think", "mature"}:
+        raise ValueError(f"mode must be think|mature, got {mode!r}")
+
+    receipt = GeometryReceipt.create(
+        mode=mode,
+        observer=observer,
+        target="self",
+        source_signal_ref=None,
+    )
+
+    if stem_differential:
+        receipt.stem_differential = stem_differential
+    if ownership_move:
+        if mode != "mature":
+            raise ValueError("ownership_move is only valid for mode=mature")
+        receipt.ownership_move = ownership_move
+    if optionality_delta:
+        receipt.optionality_delta = optionality_delta
+    if tension_components:
+        receipt.tension_components = list(tension_components)
+
+    base_note = (
+        f"v0 self-probe ({mode}) — local Geometry Receipt only; "
+        "no Stem/Vision/Policy write without Ownership (#40)"
+    )
+    receipt.notes = f"{base_note}; {notes}".strip("; ") if notes else base_note
     return receipt
 
 
