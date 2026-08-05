@@ -178,7 +178,7 @@ jobs:
             echo "Homebrew formula PR for ${VERSION} already exists."
             exit 0
           fi
-          git -C homebrew-tap push --force origin "HEAD:refs/heads/${branch}"
+          git -C homebrew-tap push origin "HEAD:refs/heads/${branch}"
           gh pr create \
             --repo identity-engineering/homebrew-tap \
             --base main \
