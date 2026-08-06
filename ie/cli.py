@@ -482,6 +482,37 @@ def _resolve_observer(root: Path, observer: Optional[str]) -> str:
     return handle
 
 
+def _resolve_source_refs(root: Path, source_paths: list[str]) -> list[str]:
+    """Resolve existing local Mature sources into root-relative references."""
+    if not source_paths:
+        raise SystemExit(
+            "Mature requires at least one --source file under the install root"
+        )
+
+    root = root.resolve()
+    resolved_refs: list[str] = []
+    for raw_path in source_paths:
+        raw_path = raw_path.strip()
+        if not raw_path:
+            raise SystemExit("--source must not be empty")
+
+        candidate = Path(raw_path).expanduser()
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        candidate = candidate.resolve()
+        try:
+            relative = candidate.relative_to(root)
+        except ValueError as exc:
+            raise SystemExit("--source must stay inside the install root") from exc
+        if not candidate.is_file():
+            raise SystemExit(f"Mature source does not exist or is not a file: {raw_path}")
+
+        ref = relative.as_posix()
+        if ref not in resolved_refs:
+            resolved_refs.append(ref)
+    return resolved_refs
+
+
 @app.command("mature")
 def mature(
     notes: Optional[str] = typer.Option(
@@ -519,6 +550,11 @@ def mature(
     optionality_notes: Optional[str] = typer.Option(
         None, "--optionality-notes", help="optionality_delta.notes"
     ),
+    sources: list[str] = typer.Option(
+        [],
+        "--source",
+        help="Existing trajectory or receipt file under the install root (repeatable)",
+    ),
     observer: Optional[str] = typer.Option(
         None, "--observer", help="Observer handle (default: this install)"
     ),
@@ -538,6 +574,7 @@ def mature(
     if not registry.is_dir():
         raise SystemExit(f"No registry/ under {root}")
 
+    source_refs = _resolve_source_refs(root, sources)
     obs = _resolve_observer(root, observer)
     stem = None
     if state_delta or vision_shift or coherence:
@@ -551,12 +588,8 @@ def mature(
     if commitment is not None or ownership_level is not None:
         ownership = {
             "commitment": commitment or "",
-            "ownership_level_estimate": (
-                float(ownership_level) if ownership_level is not None else 0.0
-            ),
+            "ownership_level_estimate": ownership_level,
         }
-        if ownership_level is not None and not (0.0 <= float(ownership_level) <= 100.0):
-            raise SystemExit("--ownership-level must be in [0, 100]")
 
     opt = None
     if optionality is not None:
@@ -575,14 +608,18 @@ def mature(
 
     from runtime.geometry import GeometryReceiptStore, create_self_probe
 
-    geo = create_self_probe(
-        mode="mature",
-        observer=obs,
-        notes=notes or "",
-        stem_differential=stem,
-        ownership_move=ownership,
-        optionality_delta=opt,
-    )
+    try:
+        geo = create_self_probe(
+            mode="mature",
+            observer=obs,
+            notes=notes or "",
+            source_refs=source_refs,
+            stem_differential=stem,
+            ownership_move=ownership,
+            optionality_delta=opt,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     GeometryReceiptStore(registry).save(geo)
     typer.echo(json.dumps(geo.to_dict(), indent=2, ensure_ascii=False))
 

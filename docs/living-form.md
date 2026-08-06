@@ -52,9 +52,11 @@ Everything is Interaction under Relativity. TIM organizes Interaction by observe
 |-------|----------------------|---------|
 | **Think** | Inside | Self↔Self phase *label*; no outbound signal — isolation is substrate + prompts, not an IE CLI |
 | **Interact** | Across | Signals, tools, APIs, CLIs, MCPs, deterministic scripts |
-| **Mature** | Inside, directed | Causal integration of the Trajectory; optional Ownership Move *record*; `ie mature` |
+| **Mature** | Inside, directed | Source-backed causal record about the Trajectory; optional Ownership Move *record*; `ie mature` |
 
-Mature is the directed metabolic step that turns experience into a Geometry Receipt toward updated Identity DNA. Closest biological readings (lens only):
+Mature is the directed metabolic step that records a source-backed reading of
+experience as a Geometry Receipt. In v0 it does not update Identity DNA or infer
+causality automatically. Closest biological readings (lens only):
 
 - Epigenetic marking: past signals leave marks that alter future expression without rewriting the base sequence.
 - Developmental maturation / differentiation: commitment of form based on accumulated signals; increases local fitness under constraint.
@@ -80,7 +82,10 @@ Regulatory systems from the article (Blut / Nerv / Immun / Hormon) are **inspira
 A biological cell sustains itself and its option space under constraint.  
 An IE Identity metabolizes Interaction so as to sustain **recognizable Stem continuity** while expanding **relative Causal Entropy** — without dissolving the membrane (Ownership / Jurisdiction over the Stem).
 
-Mature is the critical phase for this bridge: it records the relative causal model (what caused what in the Trajectory). Without it, expanded optionality can drift away from the Stem.
+Mature is the critical phase for this bridge: it gives an explicit, locally
+anchored place to record what caused what in the Trajectory. Without a later
+Trajectory feed and Ownership design, the receipt remains an auditable local
+observation rather than a Stem update.
 
 ## Multi-substrate
 
@@ -93,7 +98,9 @@ The same living-form contracts apply to human, runtime / Physical-AI, and idea/o
 - Not: Think is an IE isolation runtime or CLI.  
 - Not: Mature is automatic gradient descent on the reasoning loop.  
 - Yes: biology supplies an operational lens on how geometry lives through Interaction.  
-- Yes: Mature is the ownership-gated causal-integration *record* that keeps Causal Entropy continuous with the Stem.
+- Yes: Mature is a source-backed, ownership-gated causal-integration *record*;
+	keeping Causal Entropy continuous with the Stem remains an implementation goal,
+	not an automatic v0 effect.
 
 ## Related
 

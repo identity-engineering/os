@@ -10,7 +10,7 @@
 - Public installs path (Cloudflare R2 — open issue)
 - Emergent self-Mass aggregation (#15)
 - Geometry Receipt + Probes-as-Bridge + TIM living-form foundation
-- `ie mature` as the self-evolve Geometry Receipt entry point
+- `ie mature` as the source-backed self-review Geometry Receipt entry point
 - Think = concept only (substrate + prompts); no Think CLI
 
 ## Next

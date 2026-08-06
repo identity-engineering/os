@@ -49,7 +49,7 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 | `ie registry list` / `get` | Local registry |
 | `ie signal apply` | Interact: apply signal + Geometry Receipt |
 | `ie request …` | Inbound estimate-request inbox |
-| `ie mature` | Mature: self Geometry Receipt / workspace evolve |
+| `ie mature` | Mature: source-backed self Geometry Receipt |
 | `ie mass` | Emergent self-Mass readout |
 | `ie catalogue` / `ie reindex` | Stubs |
 
@@ -57,17 +57,22 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 
 - **Think** — no CLI. Phase label for inward, non-emitting work (plan-mode, private memory, prompts).
 - **Interact** — `ie signal apply` + tools/MCP/APIs/scripts (cross-membrane).
-- **Mature** — `ie mature` (directed causal integration; optional ownership_move *record* only).
+- **Mature** — `ie mature` (source-backed causal-integration record; optional ownership_move *record* only).
 
 ```bash
 ie mature --notes "what caused the Mass dip" \
+  --source trajectory/2026-08-05.yaml \
   --state-delta "causal chain reconstructed" \
   --commitment "72h: ship Access probes draft" \
   --ownership-level 88 \
   --optionality 0.3 --optionality-notes "opens Ownership path"
 ```
 
-Writes under `registry/_geometry_receipts/`. Does not apply ownership_move to Stem/Vision/Policy (#40).
+`--source` must point to at least one existing file inside the install root. The
+state, vision, ownership, and optionality values are explicit v0 observations;
+the command does not infer a trajectory or update live Stem/Vision/Policy.
+Writes the source-backed record under `registry/_geometry_receipts/` and does not
+apply `ownership_move` to Stem/Vision/Policy (#40).
 
 ## See also
 

@@ -231,6 +231,7 @@ class MatureSelfProbeTests(unittest.TestCase):
         geo = create_self_probe(
             mode="mature",
             observer="me",
+            source_refs=["trajectory/2026-08-05.yaml"],
             notes="causal reconstruction",
             ownership_move={
                 "commitment": "72h: ship Access probes",
@@ -245,6 +246,7 @@ class MatureSelfProbeTests(unittest.TestCase):
         self.assertEqual(geo.mode, "mature")
         self.assertEqual(geo.target, "self")
         self.assertIsNone(geo.source_signal_ref)
+        self.assertEqual(geo.source_refs, ["trajectory/2026-08-05.yaml"])
         self.assertIsNotNone(geo.ownership_move)
         self.assertEqual(geo.ownership_move["commitment"], "72h: ship Access probes")
         self.assertAlmostEqual(geo.ownership_move["ownership_level_estimate"], 88.0)
@@ -271,6 +273,50 @@ class MatureSelfProbeTests(unittest.TestCase):
     def test_invalid_mode_rejected(self):
         with self.assertRaises(ValueError):
             create_self_probe(mode="interact", observer="me")
+
+    def test_mature_requires_source_and_geometry_change(self):
+        with self.assertRaisesRegex(ValueError, "source_ref"):
+            create_self_probe(
+                mode="mature",
+                observer="me",
+                stem_differential={"state_delta_summary": "changed"},
+            )
+        with self.assertRaisesRegex(ValueError, "geometry change"):
+            create_self_probe(
+                mode="mature",
+                observer="me",
+                source_refs=["trajectory/change.yaml"],
+            )
+
+    def test_ownership_and_optionality_payloads_are_validated(self):
+        with self.assertRaisesRegex(ValueError, "ownership_level_estimate"):
+            create_self_probe(
+                mode="mature",
+                observer="me",
+                source_refs=["trajectory/change.yaml"],
+                ownership_move={
+                    "commitment": "ship",
+                    "ownership_level_estimate": 101,
+                },
+            )
+        with self.assertRaisesRegex(ValueError, "commitment"):
+            create_self_probe(
+                mode="mature",
+                observer="me",
+                source_refs=["trajectory/change.yaml"],
+                ownership_move={"ownership_level_estimate": 50},
+            )
+        with self.assertRaisesRegex(ValueError, "optionality_delta.notes"):
+            create_self_probe(
+                mode="mature",
+                observer="me",
+                source_refs=["trajectory/change.yaml"],
+                optionality_delta={
+                    "value": 0.2,
+                    "confidence": 0.5,
+                    "notes": "",
+                },
+            )
 
 
 if __name__ == "__main__":

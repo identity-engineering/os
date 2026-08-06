@@ -27,7 +27,7 @@ TIM names three **phases by observer-reference to the membrane**:
 |------|----------------------|-----------------|----------------|
 | **Think** | Inside | Internal Self-Probe (label) | Own Stem perception; no outbound signal — *substrate + prompt discipline* |
 | **Interact** | Across | Relational / tool Probe | Signals, APIs, CLIs, MCPs, deterministic scripts; Geometry Receipt on apply |
-| **Mature** | Inside, directed | Directed Self-Probe + causal integration | Integrate Trajectory into relative causal model; optional Ownership Move record |
+| **Mature** | Inside, directed | Directed Self-Probe + source-backed causal record | Record an operator-supplied Trajectory reading; optional Ownership Move record |
 
 ## Purpose statements (locked for v0)
 
@@ -51,15 +51,21 @@ Always-on Geometry Hook after non-rejected signal apply. May feed foreign-estima
 
 ### Mature (first-class CLI: `ie mature`)
 
-Directed causal integration — the workspace evolve step.
+Source-backed causal-integration record — the deliberate workspace review step.
 
-Measures and records the relative causal structure of the own Trajectory (past → State Differential → Vision Gradient). Precondition for Causal Entropy that stays continuous with the Stem: without an accurate internal causal model, future optionality drifts from who the Identity is.
+`ie mature` requires at least one existing local `--source` file under the install
+root and at least one explicit geometry change. It records the operator's current
+reading of the Trajectory (past → State Differential → Vision Gradient); v0 does
+not parse, infer, or automatically update the Trajectory, Stem, or Vision Gradient.
+This makes provenance explicit without pretending that a free-text note is already
+an accurate causal model.
 
 Biology lens (not isomorphism): directed metabolism that commits experience into the persistent Bauplan (Identity DNA). Closest readings: epigenetic marking, developmental maturation, homeostatic plasticity. Not backpropagation of the agentic loop (Identity ≠ Loop).
 
 Optional `ownership_move` on the Geometry Receipt (commitment + level). **Record only** — apply to Stem / Vision / Policy requires Ownership design (#40).
 
-Today: geometry step. Later: anchor for broader workspace learning beyond chat history.
+Today: provenance-backed geometry record. Later: anchor for broader workspace
+learning beyond chat history and a real Trajectory feed (#8).
 
 ## Write-path matrix (invariants)
 
@@ -67,12 +73,14 @@ Today: geometry step. Later: anchor for broader workspace learning beyond chat h
 |-------|------------------|---------------------------|-----------------|-----------------|------------------------------|
 | **Think** | Not a CLI product | — | Never | Never | Never |
 | **Interact** | Always (after apply) | Yes (hook or explicit feed) | Never | Never | Never (observational consent only) |
-| **Mature** | Always (`ie mature`) | Optional, observational | Only under explicit Ownership Move | Only under explicit Ownership Move | Only under explicit Ownership Move (#40) |
+| **Mature** | Source-backed (`ie mature --source ...`) | Receipt only; no live write in v0 | Never in v0 | Never in v0 | Never in v0 (#40) |
 
 Invariants:
 - No self-declared Mass.
 - No silent policy rewrite.
 - No automatic Vision Gradient write without Ownership design.
+- Every Mature receipt carries at least one local source reference.
+- Optionality is an explicit v0 estimate, not a computed gradient.
 - Geometry Receipt is the metabolic product; continuous feed remains #8.
 
 ## Discipline cross (short form)
@@ -91,7 +99,7 @@ Invariants:
 |------|-------------------|--------|
 | Interact | `ie signal apply` / Surface / MCP / tools / own scripts | Always-on Geometry Hook on signal apply |
 | Think | Substrate + system prompts / plan-mode | No IE CLI; not a separate Geometry command |
-| Mature | `ie mature` → `create_self_probe(mode=mature)` | Self Geometry Receipt + optional ownership_move record |
+| Mature | `ie mature --source <file>` → `create_self_probe(mode=mature)` | Source-backed Self Geometry Receipt + optional ownership_move record |
 
 ## What stays out
 

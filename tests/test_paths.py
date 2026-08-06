@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from ie.cli import app
+from ie.cli import _resolve_source_refs, app
 from ie.paths import find_ie_root
 
 
@@ -62,6 +62,23 @@ class PathDiscoveryTests(unittest.TestCase):
         env = {"XDG_CONFIG_HOME": str(self.config_home), "IE_ROOT": ""}
         with patch.dict(os.environ, env), patch("ie.paths.Path.home", return_value=Path(self._tmp.name)):
             self.assertEqual(find_ie_root(self.workdir), default_root.resolve())
+
+    def test_mature_sources_are_existing_root_relative_files(self):
+        trajectory = self.install / "trajectory"
+        trajectory.mkdir(parents=True)
+        source = trajectory / "2026-08-05.yaml"
+        source.write_text("state: changed\n", encoding="utf-8")
+
+        self.assertEqual(
+            _resolve_source_refs(
+                self.install,
+                ["trajectory/2026-08-05.yaml", str(source)],
+            ),
+            ["trajectory/2026-08-05.yaml"],
+        )
+
+        with self.assertRaisesRegex(SystemExit, "inside the install root"):
+            _resolve_source_refs(self.install, [str(self._tmp.name)])
 
 
 if __name__ == "__main__":
