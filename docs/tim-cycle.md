@@ -25,8 +25,8 @@ TIM names three **phases by observer-reference to the membrane**:
 
 | Mode | Relative to membrane | Probe character | Geometry focus |
 |------|----------------------|-----------------|----------------|
-| **Think** | Inside | Internal Self-Probe (label) | Own Stem perception; no outbound signal — *substrate + prompt discipline* |
-| **Interact** | Across | Relational / tool Probe | Signals, APIs, CLIs, MCPs, deterministic scripts; Geometry Receipt on apply |
+| **Think** | Inside | Internal Self-Probe (label) | Perception of its own Stem; no outbound signal — *substrate + prompt discipline* |
+| **Interact** | Across | Relational / tool Probe | Signals, APIs, CLIs, MCPs, deterministic scripts; produces a Geometry Receipt on apply |
 | **Mature** | Inside, directed | Directed Self-Probe + source-backed causal record | Record an operator-supplied Trajectory reading; optional Ownership Move record |
 
 ## Purpose statements (locked for v0)
@@ -47,7 +47,7 @@ Cross-membrane surface:
 - Tool interfaces: APIs, CLIs, MCPs, HTTP  
 - Deterministic building blocks: scripts and modules you stabilize instead of regenerating
 
-Always-on Geometry Hook after non-rejected signal apply. May feed foreign-estimate zone / emergent self-Mass under policy. Never touches Stem, Vision Gradient, or access policy.
+An always-on Geometry Hook runs after each non-rejected signal apply. It may feed the foreign-estimate zone / emergent self-Mass under policy. It never touches Stem, Vision Gradient, or access policy.
 
 ### Mature (first-class CLI: `ie mature`)
 
@@ -65,7 +65,7 @@ Biology lens (not isomorphism): directed metabolism that commits experience into
 Optional `ownership_move` on the Geometry Receipt (commitment + level). **Record only** — apply to Stem / Vision / Policy requires Ownership design (#40).
 
 Today: provenance-backed geometry record. Later: anchor for broader workspace
-learning beyond chat history and a real Trajectory feed (#8).
+learning beyond chat history and a real Trajectory feed (Issue #8).
 
 ## Write-path matrix (invariants)
 
@@ -81,7 +81,7 @@ Invariants:
 - No automatic Vision Gradient write without Ownership design.
 - Every Mature receipt carries at least one local source reference.
 - Optionality is an explicit v0 estimate, not a computed gradient.
-- Geometry Receipt is the metabolic product; continuous feed remains #8.
+- Geometry Receipt is the metabolic product; continuous feed remains Issue #8.
 
 ## Discipline cross (short form)
 
