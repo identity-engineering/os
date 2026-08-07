@@ -472,6 +472,158 @@ def request_quarantine(
     typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
 
 
+def _resolve_observer(root: Path, observer: Optional[str]) -> str:
+    if observer:
+        return observer.strip()
+    st = collect_status(root)
+    handle = st.get("handle")
+    if not handle:
+        raise SystemExit("Could not resolve observer handle; pass --observer")
+    return handle
+
+
+def _resolve_source_refs(root: Path, source_paths: list[str]) -> list[str]:
+    """Resolve existing local Mature sources into root-relative references."""
+    if not source_paths:
+        raise SystemExit(
+            "Mature requires at least one --source file under the install root"
+        )
+
+    root = root.resolve()
+    resolved_refs: list[str] = []
+    for raw_path in source_paths:
+        raw_path = raw_path.strip()
+        if not raw_path:
+            raise SystemExit("--source must not be empty")
+
+        candidate = Path(raw_path).expanduser()
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        candidate = candidate.resolve()
+        try:
+            relative = candidate.relative_to(root)
+        except ValueError as exc:
+            raise SystemExit("--source must stay inside the install root") from exc
+        if not candidate.is_file():
+            raise SystemExit(f"Mature source does not exist or is not a file: {raw_path}")
+
+        ref = relative.as_posix()
+        if ref not in resolved_refs:
+            resolved_refs.append(ref)
+    return resolved_refs
+
+
+@app.command("mature")
+def mature(
+    notes: Optional[str] = typer.Option(
+        None, "--notes", "-n", help="Causal integration / learning note"
+    ),
+    state_delta: Optional[str] = typer.Option(
+        None, "--state-delta", help="stem_differential.state_delta_summary"
+    ),
+    vision_shift: Optional[str] = typer.Option(
+        None, "--vision-shift", help="stem_differential.vision_gradient_shift"
+    ),
+    coherence: Optional[str] = typer.Option(
+        None, "--coherence", help="stem_differential.coherence_note"
+    ),
+    commitment: Optional[str] = typer.Option(
+        None,
+        "--commitment",
+        help="ownership_move.commitment (concrete next action, e.g. 72h)",
+    ),
+    ownership_level: Optional[float] = typer.Option(
+        None,
+        "--ownership-level",
+        help="ownership_move.ownership_level_estimate (0–100)",
+    ),
+    optionality: Optional[float] = typer.Option(
+        None,
+        "--optionality",
+        help="optionality_delta.value (signed local ΔO_τ)",
+    ),
+    optionality_confidence: Optional[float] = typer.Option(
+        None,
+        "--optionality-confidence",
+        help="optionality_delta.confidence (0–1)",
+    ),
+    optionality_notes: Optional[str] = typer.Option(
+        None, "--optionality-notes", help="optionality_delta.notes"
+    ),
+    sources: list[str] = typer.Option(
+        [],
+        "--source",
+        help="Existing trajectory or receipt file under the install root (repeatable)",
+    ),
+    observer: Optional[str] = typer.Option(
+        None, "--observer", help="Observer handle (default: this install)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Mature: directed causal integration — self Geometry Receipt / workspace evolve.
+
+    The first-class Self-Probe for learning. Records relative causal structure of
+    the own Trajectory and optional ownership_move on a Geometry Receipt only.
+    Never auto-applies to Stem / Vision / Policy (see #40). Continuous feed is #8.
+
+    Think is not a CLI: it is a phase label (inward, non-emitting) provided by
+    substrate + prompts. Interact is tools/MCP/signals (see `ie signal apply`).
+    """
+    root = path.resolve() if path else require_ie_root()
+    registry = root / "registry"
+    if not registry.is_dir():
+        raise SystemExit(f"No registry/ under {root}")
+
+    source_refs = _resolve_source_refs(root, sources)
+    obs = _resolve_observer(root, observer)
+    stem = None
+    if state_delta or vision_shift or coherence:
+        stem = {
+            "state_delta_summary": state_delta or "",
+            "vision_gradient_shift": vision_shift or "",
+            "coherence_note": coherence or "",
+        }
+
+    ownership = None
+    if commitment is not None or ownership_level is not None:
+        ownership = {
+            "commitment": commitment or "",
+            "ownership_level_estimate": ownership_level,
+        }
+
+    opt = None
+    if optionality is not None:
+        conf = (
+            float(optionality_confidence)
+            if optionality_confidence is not None
+            else 0.5
+        )
+        if not (0.0 <= conf <= 1.0):
+            raise SystemExit("--optionality-confidence must be in [0, 1]")
+        opt = {
+            "value": float(optionality),
+            "confidence": conf,
+            "notes": optionality_notes or "",
+        }
+
+    from runtime.geometry import GeometryReceiptStore, create_self_probe
+
+    try:
+        geo = create_self_probe(
+            mode="mature",
+            observer=obs,
+            notes=notes or "",
+            source_refs=source_refs,
+            stem_differential=stem,
+            ownership_move=ownership,
+            optionality_delta=opt,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    GeometryReceiptStore(registry).save(geo)
+    typer.echo(json.dumps(geo.to_dict(), indent=2, ensure_ascii=False))
+
+
 @app.command("mass")
 def mass(
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),

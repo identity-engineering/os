@@ -1,18 +1,17 @@
 # TIM Cycle as IE Probe Modes (Discipline Cross)
 
-Working definition · 01.08.2026
+Working definition · 01.08.2026 · Foundation lock 05.08.2026 · Recalibrated same day
 
 ## Status
 
-TIM (Think · Interact · Mature) entered IE OS only as an installability lesson and was held back from deeper import until Framework-grounded.
+TIM (Think · Interact · Mature) organizes Interaction under Relativity relative to the Identity membrane (Surface). Biology supplies the operational lens; it does not replace geometric primitives.
 
-**Probes-as-Bridge + living-form lens change that.**  
-Under Relativity every act is Interaction. TIM is the phase organization of that Interaction relative to the Identity membrane (Surface). Biology supplies the operational lens; it does not replace geometric primitives.
+**Recalibration:** Think is a phase *label* (substrate + prompts), not a first-class CLI. Mature is the single self-evolve entry point. Interact is the cross-membrane tool/signal surface.
 
 This doc defines the **discipline cross**:
 
 - **Layer A — Geometry (IE Core):** Mass, Curvature, Stem, Relativity, Causal Entropy, …  
-- **Layer B — Operational cycle (TIM):** Think / Interact / Mature as Probe phases  
+- **Layer B — Operational cycle (TIM):** Think / Interact / Mature as phase organization  
 - **Layer C — Living-form perspective:** Cell / organism as *lens* on how B metabolizes A  
 
 See `docs/living-form.md` for the cell mapping and the June 2026 article grounding.
@@ -26,49 +25,105 @@ TIM names three **phases by observer-reference to the membrane**:
 
 | Mode | Relative to membrane | Probe character | Geometry focus |
 |------|----------------------|-----------------|----------------|
-| **Think** | Inside | Internal Self-Probe | Own Stem (State Differential + Vision Gradient), relative worldview |
-| **Interact** | Across | Relational Probe | Foreign geometry via Interaction Signal; own estimates of the other |
-| **Mature** | Inside, directed | Directed Self-Probe + learning | Integrate new reality; optional Ownership Move |
+| **Think** | Inside | Internal Self-Probe (label) | Perception of its own Stem; no outbound signal — *substrate + prompt discipline* |
+| **Interact** | Across | Relational / tool Probe | Signals, APIs, CLIs, MCPs, deterministic scripts; produces a Geometry Receipt on apply |
+| **Mature** | Inside, directed | Directed Self-Probe + source-backed causal record | Record an operator-supplied Trajectory reading; optional Ownership Move record |
 
-Mature is Think with a clear Vision Gradient and an Ownership Move (commitment, jurisdiction claim).
+## Purpose statements (locked for v0)
+
+### Think (concept only — no CLI)
+
+Internal, non-emitting phase. Worldview construction under Relativity without cross-boundary Interaction Signal.
+
+Isolation is **substrate-provided** (agent plan-mode, private memory, no-tool turns, human silence, chip policy). Most coding agents already offer this. IE does **not** invent a protected chat runtime.
+
+Think appears in workflows and system prompts as a deliberate first step ("clarify inward before tools"). It is **not** a Geometry Receipt command: evaluating and writing geometry is Mature.
+
+### Interact
+
+Cross-membrane surface:
+
+- Interaction Signals (peer Identities) via `ie signal apply` / Surface Runtime  
+- Tool interfaces: APIs, CLIs, MCPs, HTTP  
+- Deterministic building blocks: scripts and modules you stabilize instead of regenerating
+
+An always-on Geometry Hook runs after each non-rejected signal apply. It may feed the foreign-estimate zone / emergent self-Mass under policy. It never touches Stem, Vision Gradient, or access policy.
+
+### Mature (first-class CLI: `ie mature`)
+
+Source-backed causal-integration record — the deliberate workspace review step.
+
+`ie mature` requires at least one existing local `--source` file under the install
+root and at least one explicit geometry change. It records the operator's current
+reading of the Trajectory (past → State Differential → Vision Gradient); v0 does
+not parse, infer, or automatically update the Trajectory, Stem, or Vision Gradient.
+This makes provenance explicit without pretending that a free-text note is already
+an accurate causal model.
+
+Biology lens (not isomorphism): directed metabolism that commits experience into the persistent Bauplan (Identity DNA). Closest readings: epigenetic marking, developmental maturation, homeostatic plasticity. Not backpropagation of the agentic loop (Identity ≠ Loop).
+
+Optional `ownership_move` on the Geometry Receipt (commitment + level). **Record only** — apply to Stem / Vision / Policy requires Ownership design (#40).
+
+Today: provenance-backed geometry record. Later: anchor for broader workspace
+learning beyond chat history and a real Trajectory feed (Issue #8).
+
+## Write-path matrix (invariants)
+
+| Phase | Geometry Receipt | Alloy / Tension / Tensor | Stem / Registry | Vision Gradient | Access Policy / Jurisdiction |
+|-------|------------------|---------------------------|-----------------|-----------------|------------------------------|
+| **Think** | Not a CLI product | — | Never | Never | Never |
+| **Interact** | Always (after apply) | Yes (hook or explicit feed) | Never | Never | Never (observational consent only) |
+| **Mature** | Source-backed (`ie mature --source ...`) | Receipt only; no live write in v0 | Never in v0 | Never in v0 | Never in v0 (#40) |
+
+Invariants:
+- No self-declared Mass.
+- No silent policy rewrite.
+- No automatic Vision Gradient write without Ownership design.
+- Every Mature receipt carries at least one local source reference.
+- Optionality is an explicit v0 estimate, not a computed gradient.
+- Geometry Receipt is the metabolic product; continuous feed remains Issue #8.
 
 ## Discipline cross (short form)
 
 > **TIM is the biology-inspired operations discipline of Identity Engineering.**  
-> It organizes Interaction (under Relativity) into Self- and Other-phases and treats Identity as a living operative form (cell → organism as perspective).  
-> It does not introduce new geometric primitives. It specifies how geometry *lives*, metabolizes, and scales to collective form through continuous Probes.
+> It organizes Interaction (under Relativity) into Self- and Other-phases and treats Identity as a living operative form.  
+> It does not introduce new geometric primitives. It specifies how geometry *lives* and metabolizes through continuous Probes.
 
-Physics-inspired layer describes the shape of identity space.  
-Living-form layer describes the metabolism of that shape through time.
+- **Think** names the inward phase (substrate + prompts).  
+- **Interact** is the tool/signal membrane surface.  
+- **Mature** is the deliberate evolve step (`ie mature`).
 
 ## Operational mapping (v0)
 
-| Mode | Entry point today | Geometry Hook |
-|------|-------------------|---------------|
-| Interact | `apply_interaction_signal` / Surface `receive_interaction_signal` | **Always on** after non-rejected apply |
-| Think | Not yet first-class CLI (`ie probe think` follow-up) | Same extractor interface, `target=self` |
-| Mature | Not yet first-class CLI (`ie probe mature` follow-up) | Same interface + optional `ownership_move` |
+| Mode | Entry point today | Notes |
+|------|-------------------|--------|
+| Interact | `ie signal apply` / Surface / MCP / tools / own scripts | Always-on Geometry Hook on signal apply |
+| Think | Substrate + system prompts / plan-mode | No IE CLI; not a separate Geometry command |
+| Mature | `ie mature --source <file>` → `create_self_probe(mode=mature)` | Source-backed Self Geometry Receipt + optional ownership_move record |
 
 ## What stays out
 
 - TIM as a product brand  
-- Sensory / immunity / vitality / creativity / stability **agents** as shipped modules  
-- Claim that TIM is empirically proven biology  
-- Identity = agentic loop (explicitly rejected; see `docs/living-form.md`)
-
-Regulatory vocabulary from the cell-nucleus article (shared context, fast coordination, governance, long-term priority) may inform later design. It is not v0 implementation.
+- `ie probe think` / Think as isolation runtime  
+- Sensory / immunity / organism **agents** as shipped modules  
+- Claim that TIM is empirical biology  
+- Identity = agentic loop  
+- Mature as automatic backprop of the reasoning loop
 
 ## Why this is safe to pull in now
 
-1. **Framework-grounded:** Relativity + Questions as Probes already imply continuous geometry from Interaction. TIM only names the self/other/learning phase split.  
-2. **Membrane-first:** Surface + foreign-estimate zone give the cell boundary that the June article required.  
-3. **Minimal surface:** Mode labels on Geometry Receipt + documentation. No organism runtime.  
-4. **Installability:** Files that live on the next interaction remain the practical ambition; Geometry Receipt strengthens that.
+1. **Framework-grounded:** Relativity + Probes already imply continuous geometry from Interaction.  
+2. **No overbuild:** Think is not reinvented; Mature is the missing personal evolve surface.  
+3. **Membrane-first:** Surface + foreign-estimate zone remain the cell boundary.  
+4. **Causal Entropy honesty:** Mature records the causal-model update ownership-gated.  
+5. **Installability:** Receipts live on disk; feed is #8.
 
 ## Related
 
-- `docs/living-form.md` — cell / organism lens, article mapping  
+- `docs/living-form.md`  
 - `docs/probes-as-bridge.md`  
 - `docs/geometry-hook.md`  
 - `schemas/geometry-receipt/v0.yaml`  
+- Issue #45  
+- Issue #8 (Tensor feed), #40 (Access & Jurisdiction)  
 - LinkedIn: *KI ist nicht das neue Gehirn. Sie ist der Zellkern.* (Jonas Siebler, 15.06.2026)  

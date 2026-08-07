@@ -32,28 +32,13 @@ Prompt order:
 3. **Preferred name**
 4. **local_handle** — default = preferred name lowercased (spaces → hyphens)
 
-### Account model (product)
-
-| Mode | Tier baseline | Capabilities |
-|------|---------------|--------------|
-| No account | Free | Local files only; no public registry metadata of others |
-| Account (free entitlement) | Free | Basic account metadata; can read **public** registry metadata of others |
-| Account (pro entitlement) | Pro | IE central identity hosting / managed surface |
-
-Tier is determined by the **account**, not a separate “tier” prompt. Browser login/create returns an `account_id` to the CLI (v0: stub, local install still completes).
-
 Non-interactive example:
 
 ```bash
 ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 ```
 
-`ie init` remembers the created install as the active local root. Later commands
-can therefore be run from any directory without manually exporting `IE_ROOT`.
-The default install at `~/ie` is also discovered automatically. An explicit
-`IE_ROOT`, `--path`, or an install found in the current directory still takes
-precedence. The remembered path is stored at
-`$XDG_CONFIG_HOME/ie-os/active-root` (or `~/.config/ie-os/active-root`).
+`ie init` remembers the created install as the active local root (`$XDG_CONFIG_HOME/ie-os/active-root` or `~/.config/ie-os/active-root`).
 
 ## Commands (v0)
 
@@ -62,10 +47,36 @@ precedence. The remembered path is stored at
 | `ie init` | Interactive setup |
 | `ie status` | Install summary |
 | `ie registry list` / `get` | Local registry |
-| `ie signal apply` | Apply signal + receipt |
+| `ie signal apply` | Interact: apply signal + Geometry Receipt |
+| `ie request …` | Inbound estimate-request inbox |
+| `ie mature` | Mature: source-backed self Geometry Receipt |
+| `ie mass` | Emergent self-Mass readout |
 | `ie catalogue` / `ie reindex` | Stubs |
+
+### TIM mapping (short)
+
+- **Think** — no CLI. Phase label for inward, non-emitting work (plan-mode, private memory, prompts).
+- **Interact** — `ie signal apply` + tools/MCP/APIs/scripts (cross-membrane).
+- **Mature** — `ie mature` (source-backed causal-integration record; optional ownership_move *record* only).
+
+```bash
+ie mature --notes "what caused the Mass dip" \
+  --source trajectory/2026-08-05.yaml \
+  --state-delta "causal chain reconstructed" \
+  --commitment "72h: ship Access probes draft" \
+  --ownership-level 88 \
+  --optionality 0.3 --optionality-notes "opens Ownership path"
+```
+
+`--source` must point to at least one existing file inside the install root. The
+state, vision, ownership, and optionality values are explicit v0 observations;
+the command does not infer a trajectory or update live Stem/Vision/Policy.
+Writes the source-backed record under `registry/_geometry_receipts/` and does not
+apply `ownership_move` to Stem/Vision/Policy (#40).
 
 ## See also
 
+- `docs/tim-cycle.md`
+- `docs/living-form.md`
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`

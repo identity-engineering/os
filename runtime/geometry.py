@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from math import isfinite
 from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from uuid import uuid4
@@ -30,6 +31,7 @@ class GeometryReceipt:
     observer: str
     target: str  # "self" or foreign handle
     source_signal_ref: Optional[str] = None
+    source_refs: list[str] = field(default_factory=list)
 
     # Sparse geometry deltas (only populated fields matter)
     relative_mass_proxy: Optional[dict[str, Any]] = None
@@ -38,6 +40,7 @@ class GeometryReceipt:
     jurisdiction_shift: Optional[dict[str, Any]] = None
     stem_differential: Optional[dict[str, Any]] = None
     ownership_move: Optional[dict[str, Any]] = None
+    optionality_delta: Optional[dict[str, Any]] = None
 
     notes: str = ""
 
@@ -52,6 +55,7 @@ class GeometryReceipt:
         observer: str,
         target: str,
         source_signal_ref: Optional[str] = None,
+        source_refs: Optional[list[str]] = None,
     ) -> "GeometryReceipt":
         return cls(
             receipt_id=str(uuid4()),
@@ -60,6 +64,7 @@ class GeometryReceipt:
             observer=observer,
             target=target,
             source_signal_ref=source_signal_ref,
+            source_refs=list(source_refs or []),
         )
 
 
@@ -263,6 +268,8 @@ def _merge_extractor_outputs(base: GeometryReceipt, partials: list[dict[str, Any
             base.degrees_of_freedom = p["degrees_of_freedom"]
         if "ownership_move" in p and base.ownership_move is None:
             base.ownership_move = p["ownership_move"]
+        if "optionality_delta" in p and base.optionality_delta is None:
+            base.optionality_delta = p["optionality_delta"]
         for tc in p.get("tension_components") or []:
             base.tension_components.append(tc)
 
@@ -311,6 +318,155 @@ def run_geometry_hook(
     if extractor_errors:
         notes.append("extractor_errors=" + " | ".join(extractor_errors))
     receipt.notes = "; ".join(notes)
+    return receipt
+
+
+def create_self_probe(
+    *,
+    mode: str,
+    observer: str,
+    notes: str = "",
+    source_refs: Optional[list[str]] = None,
+    stem_differential: Optional[dict[str, Any]] = None,
+    ownership_move: Optional[dict[str, Any]] = None,
+    optionality_delta: Optional[dict[str, Any]] = None,
+    tension_components: Optional[list[dict[str, Any]]] = None,
+) -> GeometryReceipt:
+    """Create a Think or Mature Geometry Receipt with target=self.
+
+    No Interaction Signal. No automatic write into Stem, Vision Gradient, or
+    access policy. Mature requires at least one local source reference and one
+    recorded geometry change; ownership_move is recorded on the receipt only.
+    Applying it to persistent geometry requires Ownership design (#40).
+
+    mode must be "think" or "mature".
+    """
+    mode = mode.strip().lower()
+    if mode not in {"think", "mature"}:
+        raise ValueError(f"mode must be think|mature, got {mode!r}")
+    observer = observer.strip()
+    if not observer:
+        raise ValueError("observer must not be empty")
+
+    if source_refs is not None and not isinstance(source_refs, (list, tuple)):
+        raise ValueError("source_refs must be a list of strings")
+
+    normalized_sources: list[str] = []
+    for source_ref in source_refs or []:
+        if not isinstance(source_ref, str) or not source_ref.strip():
+            raise ValueError("source_refs must contain non-empty strings")
+        source_ref = source_ref.strip()
+        if source_ref not in normalized_sources:
+            normalized_sources.append(source_ref)
+    if mode == "mature" and not normalized_sources:
+        raise ValueError(
+            "mature self-probe requires at least one source_ref"
+        )
+
+    validated_stem: Optional[dict[str, str]] = None
+    if stem_differential is not None:
+        if not isinstance(stem_differential, dict):
+            raise ValueError("stem_differential must be an object")
+        validated_stem = {}
+        for field_name in (
+            "state_delta_summary",
+            "vision_gradient_shift",
+            "coherence_note",
+        ):
+            value = stem_differential.get(field_name, "")
+            if not isinstance(value, str):
+                raise ValueError(f"stem_differential.{field_name} must be a string")
+            if value.strip():
+                validated_stem[field_name] = value.strip()
+
+    validated_ownership: Optional[dict[str, Any]] = None
+    if ownership_move is not None:
+        if mode != "mature":
+            raise ValueError("ownership_move is only valid for mode=mature")
+        if not isinstance(ownership_move, dict):
+            raise ValueError("ownership_move must be an object")
+        commitment = ownership_move.get("commitment")
+        ownership_level = ownership_move.get("ownership_level_estimate")
+        if not isinstance(commitment, str) or not commitment.strip():
+            raise ValueError("ownership_move.commitment must not be empty")
+        if (
+            isinstance(ownership_level, bool)
+            or not isinstance(ownership_level, (int, float))
+            or not isfinite(float(ownership_level))
+            or not 0.0 <= float(ownership_level) <= 100.0
+        ):
+            raise ValueError(
+                "ownership_move.ownership_level_estimate must be in [0, 100]"
+            )
+        validated_ownership = {
+            "commitment": commitment.strip(),
+            "ownership_level_estimate": float(ownership_level),
+        }
+
+    validated_optionality: Optional[dict[str, Any]] = None
+    if optionality_delta is not None:
+        if not isinstance(optionality_delta, dict):
+            raise ValueError("optionality_delta must be an object")
+        value = optionality_delta.get("value")
+        confidence = optionality_delta.get("confidence")
+        justification = optionality_delta.get("notes")
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not isfinite(float(value))
+        ):
+            raise ValueError("optionality_delta.value must be a finite number")
+        if (
+            isinstance(confidence, bool)
+            or not isinstance(confidence, (int, float))
+            or not isfinite(float(confidence))
+            or not 0.0 <= float(confidence) <= 1.0
+        ):
+            raise ValueError(
+                "optionality_delta.confidence must be in [0, 1]"
+            )
+        if not isinstance(justification, str) or not justification.strip():
+            raise ValueError("optionality_delta.notes must not be empty")
+        validated_optionality = {
+            "value": float(value),
+            "confidence": float(confidence),
+            "notes": justification.strip(),
+        }
+
+    if mode == "mature" and not any(
+        (
+            validated_stem,
+            validated_ownership,
+            validated_optionality,
+            tension_components,
+        )
+    ):
+        raise ValueError(
+            "mature self-probe requires at least one geometry change"
+        )
+
+    receipt = GeometryReceipt.create(
+        mode=mode,
+        observer=observer,
+        target="self",
+        source_signal_ref=None,
+        source_refs=normalized_sources,
+    )
+
+    if validated_stem:
+        receipt.stem_differential = validated_stem
+    if validated_ownership:
+        receipt.ownership_move = validated_ownership
+    if validated_optionality:
+        receipt.optionality_delta = validated_optionality
+    if tension_components:
+        receipt.tension_components = list(tension_components)
+
+    base_note = (
+        f"v0 self-probe ({mode}) — local Geometry Receipt only; "
+        "no Stem/Vision/Policy write without Ownership (#40)"
+    )
+    receipt.notes = f"{base_note}; {notes}".strip("; ") if notes else base_note
     return receipt
 
 

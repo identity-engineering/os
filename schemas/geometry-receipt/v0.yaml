@@ -23,6 +23,7 @@ always_local:                       # never auto-exported; stays in observer fra
   - observer                        # local handle / session that performed the extraction
   - target                          # self | foreign handle (as known in observer Registry)
   - source_signal_ref               # optional link to Interaction Signal id / receipt
+  - source_refs                     # root-relative local evidence files for self-probes
 
 geometry_deltas:                    # sparse; only what was observed with confidence
   relative_mass_proxy:              # optional — for Interact target=sender: their emergent self-Mass
@@ -62,7 +63,7 @@ geometry_deltas:                    # sparse; only what was observed with confid
     # Supports operationalization of the causal-entropy / future-optionality design telos.
     # Still proposal-level until extractors and OS #8 feed are in place.
 
-ownership_move:                     # optional, Mature-mode typical
+  ownership_move:                     # optional, Mature-mode typical
   commitment: string                # concrete next action (e.g. 72h)
   ownership_level_estimate: number  # 0–100, observer's own sense of claim strength
 
@@ -81,6 +82,9 @@ notes:
   - relative_mass_proxy for a foreign target is their published emergent self-Mass, not Self-Mass of the observer.
   - jurisdiction_shift in v0 is observational membrane policy notes only (OS #40).
   - optionality_delta is the local signed gradient of future option value (ΔO_τ).
-    It is the quantitative counterpart to vision_gradient_shift and a direct operational signal
-    for the maximisation of causal entropy / future optionality. Extraction quality and feed
+    In v0 it is an operator-supplied estimate, not a computed gradient. It is the
+    quantitative counterpart to vision_gradient_shift and a proposed operational signal
+    for the maximisation of causal entropy / future optionality. Source evidence and feed
     into live geometry remain open (see OS #8).
+  - Mature self-probes require at least one existing root-relative source_refs entry and
+    at least one recorded geometry change. They do not infer or apply trajectory updates.

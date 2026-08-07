@@ -1,6 +1,6 @@
 # Living Form: Biology as Operational Lens on Identity
 
-Working definition · 01.08.2026
+Working definition · 01.08.2026 · Foundation lock 05.08.2026 · Recalibrated same day
 
 ## Status
 
@@ -50,11 +50,21 @@ Everything is Interaction under Relativity. TIM organizes Interaction by observe
 
 | Phase | Relative to membrane | Meaning |
 |-------|----------------------|---------|
-| **Think** | Inside | Self↔Self Interaction; construct relative worldview |
-| **Interact** | Across | Self↔Other via Interaction Signal |
-| **Mature** | Inside, directed | Integrate new reality into Stem/Registry; optional Ownership Move |
+| **Think** | Inside | Self↔Self phase *label*; no outbound signal — isolation is substrate + prompts, not an IE CLI |
+| **Interact** | Across | Signals, tools, APIs, CLIs, MCPs, deterministic scripts |
+| **Mature** | Inside, directed | Source-backed causal record about the Trajectory; optional Ownership Move *record*; `ie mature` |
 
-See `docs/tim-cycle.md`.
+Mature is the directed metabolic step that records a source-backed reading of
+experience as a Geometry Receipt. In v0 it does not update Identity DNA or infer
+causality automatically. Closest biological readings (lens only):
+
+- Epigenetic marking: past signals leave marks that alter future expression without rewriting the base sequence.
+- Developmental maturation / differentiation: commitment of form based on accumulated signals; increases local fitness under constraint.
+- Homeostatic plasticity: update of the internal model of environmental causality so that future option space remains continuous with the organism.
+
+It is **not** backpropagation of the agentic loop. Backprop is nuclear machinery. Mature is membrane-relative recording of the persistent Bauplan under Ownership discipline.
+
+See `docs/tim-cycle.md` for purpose statements and write-path matrix.
 
 ## Higher scale (organism) — without premature agent import
 
@@ -65,45 +75,36 @@ See `docs/tim-cycle.md`.
 | Organe | Specialized clusters of Surfaces with clearer functional roles |
 | Agentischer Organismus | Collective **Emergence** + **Damping** across Surfaces |
 
-Regulatory systems from the article (Blut / Nerv / Immun / Hormon) are **inspirational** for later work:
-
-- shared context & slow global regulation  
-- fast targeted coordination  
-- governance / error correction / protection  
-- long-term priority regulation  
-
-They are **not** v0 OS modules. They enter only when derivable from Surface, Geometry Receipt, Ownership, Emergence, and Damping without category error. Until then they stay design vocabulary, not shipped agents.
+Regulatory systems from the article (Blut / Nerv / Immun / Hormon) are **inspirational** for later work. They are **not** v0 OS modules.
 
 ## Telos bridge
 
 A biological cell sustains itself and its option space under constraint.  
-An IE Identity, under the living-form lens, metabolizes Interaction so as to sustain **recognizable Stem continuity** while expanding **relative Causal Entropy** — without dissolving the membrane (Ownership / Jurisdiction over the Stem).
+An IE Identity metabolizes Interaction so as to sustain **recognizable Stem continuity** while expanding **relative Causal Entropy** — without dissolving the membrane (Ownership / Jurisdiction over the Stem).
 
-Causal Entropy remains the design telos of the geometry; the cell lens says how metabolism serves that telos over time.
+Mature is the critical phase for this bridge: it gives an explicit, locally
+anchored place to record what caused what in the Trajectory. Without a later
+Trajectory feed and Ownership design, the receipt remains an auditable local
+observation rather than a Stem update.
 
 ## Multi-substrate
 
-The same living-form contracts apply to:
-
-- human Identities (body + social + digital surfaces)  
-- runtime / Physical-AI Identities  
-- idea or org Identities (often narrower Surfaces)  
-
-Membrane and metabolism are substrate-symmetric; nuclear machinery is optional and substrate-specific.
+The same living-form contracts apply to human, runtime / Physical-AI, and idea/org Identities. Membrane and metabolism are substrate-symmetric; nuclear machinery is optional.
 
 ## Non-claims
 
 - Not: Identity *is* a biological cell.  
 - Not: LLM *is* the Identity.  
-- Not: immune/nerve/hormone agents are part of IE OS v0.  
-- Not: biology replaces physics-inspired geometry.  
-- Yes: biology supplies an operational lens on how geometry lives through Interaction.
+- Not: Think is an IE isolation runtime or CLI.  
+- Not: Mature is automatic gradient descent on the reasoning loop.  
+- Yes: biology supplies an operational lens on how geometry lives through Interaction.  
+- Yes: Mature is a source-backed, ownership-gated causal-integration *record*;
+	keeping Causal Entropy continuous with the Stem remains an implementation goal,
+	not an automatic v0 effect.
 
 ## Related
 
-- `docs/tim-cycle.md` — Probe modes  
-- `docs/probes-as-bridge.md` — continuous geometry from Interaction  
-- `docs/geometry-hook.md` — always-on Interact extraction  
-- `docs/identity-surface.md` — membrane  
-- `docs/interaction-signal.md` — signals across the membrane  
-- Framework Collective layer: Emergence, Damping  
+- `docs/tim-cycle.md`  
+- `docs/probes-as-bridge.md`  
+- `docs/geometry-hook.md`  
+- Issue #45  
