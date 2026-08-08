@@ -38,14 +38,23 @@ class PathDiscoveryTests(unittest.TestCase):
                     "--account",
                     "no_account",
                     "--name",
-                    "Jonas",
+                    "First User",
                     "--handle",
-                    "jonas",
+                    "first-user",
                     "--yes",
                 ],
             )
 
             self.assertEqual(result.exit_code, 0, result.output)
+            self.assertRegex(
+                (self.install / "dimension-catalogue.yaml").read_text(
+                    encoding="utf-8"
+                ),
+                r"(?m)^observer:\s+['\"]?first-user['\"]?\s*$",
+            )
+            readme = (self.install / "README.md").read_text(encoding="utf-8")
+            self.assertIn("## First local loop", readme)
+            self.assertIn('"to":"first-user"', readme)
             self.assertEqual(find_ie_root(self.workdir), self.install.resolve())
             self.assertEqual(
                 (self.config_home / "ie-os" / "active-root").read_text(

@@ -38,6 +38,8 @@ test -f "$root/STEM.yaml"
 test -f "$root/dimension-catalogue.yaml"
 test -d "$root/registry/_foreign_estimates"
 test -d "$root/registry/_inbound_requests"
+grep -F "observer: free-dogfood" "$root/dimension-catalogue.yaml" >/dev/null
+grep -F "## First local loop" "$root/README.md" >/dev/null
 
 status_before="$(run_ie status)"
 grep -F "handle:     free-dogfood" <<<"$status_before" >/dev/null
