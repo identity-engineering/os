@@ -3,6 +3,9 @@
 This contract describes how CLI users, coding agents, and runtime adapters use
 the local database without bypassing Identity Engineering semantics.
 
+An agent process is typically bound to an **Identity** (its own substrate),
+not to an anonymous account root. See `docs/account-identity-model.md`.
+
 ## Discovery
 
 An agent should discover an install in this order:
@@ -16,6 +19,10 @@ An agent should discover an install in this order:
 for mutable state. The database is authoritative. A legacy `HEADER.yaml` may
 be reported as a legacy install, but it is not silently treated as the V1
 database.
+
+When multiple Identities exist under one account or install, the agent must
+know which `identity_id` (or local handle) it is bound to. Context switch is
+explicit.
 
 ## Read path
 
@@ -43,11 +50,12 @@ updated.
 ## Write path
 
 Agents do not write SQLite directly and do not edit database files. They use
-the CLI, runtime API, HTTP surface, or a future MCP adapter. A write operation
-must return a structured result containing:
+the CLI, runtime API, HTTP surface, or MCP adapter. A write operation must
+return a structured result containing:
 
 - status;
 - stable ID(s);
+- **actor_identity_id** (or equivalent handle resolved to that Identity);
 - changed fields or revision markers;
 - rejected fields and reasons, when applicable; and
 - the next recoverable action, when the operation failed.
@@ -55,6 +63,10 @@ must return a structured result containing:
 The runtime owns transaction boundaries. A caller must not emulate a multi-step
 write by updating projections in separate commands when the operation has a
 single transactional command.
+
+Write capability is not reduced for agents as a class. An agent authenticated
+as Identity I may write I's geometry under the same rules as a human using the
+CLI as I. Writing another Identity's geometry requires an explicit grant.
 
 ## Interact rules
 
@@ -69,11 +81,18 @@ single transactional command.
 
 ## Mature rules
 
-Mature is an owned learning operation. An agent may propose a change set, but
-the owner or the configured ownership policy decides whether it is committed.
+Mature is an owned learning operation on **a specific Identity**.
+
+- When the agent is bound to Identity I, it may commit Mature on I subject to
+  I's policy and evidence rules (same as CLI).
+- When the agent proposes Mature on Identity J ≠ I, the runtime enforces grants;
+  default is refuse.
+- Critical policy or Surface changes still follow the critical-approval path in
+  `docs/identity-surface.md`.
 
 A Mature request should include:
 
+- the target Identity (default: bound Identity);
 - source references and the intended evidence mode;
 - a short causal explanation;
 - requested Stem, Workspace, and Registry changes;
