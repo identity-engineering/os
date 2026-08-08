@@ -38,6 +38,8 @@ Encoded in Stem, local entry, Mass ratings, Registry, and Surface policy.
 
 Same Stem / Trajectory / Surface contracts for human Identities and substrate-free / Physical AI runtimes without undermining human agency.
 
+**Account ≠ Identity.** An IE Account is auth, plan, and a multi-identity container. Geometry lives only on Identities. Agents, ideas, and cloud runtimes are Identities under an account (or local without an account), not modes of the human. See `docs/account-identity-model.md`.
+
 ## 6. Practical installability
 
 Clonable / copyable so that "IE is installed" and the next interaction already lives via local entry + Geometry Receipt + Tension update.  
