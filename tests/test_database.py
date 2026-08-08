@@ -92,6 +92,131 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ],
             )
 
+    def test_v1_projection_history_survives_v2_migration(self):
+        db_path = self.root / ".ie" / "ie.sqlite3"
+        db_path.parent.mkdir(parents=True)
+        connection = sqlite3.connect(str(db_path))
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.executescript(
+            """
+            CREATE TABLE registry_entries (
+                entry_id TEXT PRIMARY KEY
+            );
+            CREATE TABLE workspace_items (
+                item_id TEXT PRIMARY KEY
+            );
+            CREATE TABLE registry_entry_revisions (
+                revision_id TEXT PRIMARY KEY,
+                entry_id TEXT NOT NULL REFERENCES registry_entries(entry_id) ON DELETE CASCADE,
+                revision INTEGER NOT NULL,
+                actor TEXT NOT NULL,
+                event_id TEXT,
+                mature_id TEXT,
+                snapshot_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(entry_id, revision)
+            );
+            CREATE TABLE workspace_item_revisions (
+                revision_id TEXT PRIMARY KEY,
+                item_id TEXT NOT NULL REFERENCES workspace_items(item_id) ON DELETE CASCADE,
+                revision INTEGER NOT NULL,
+                operation TEXT NOT NULL CHECK (operation IN ('create', 'update', 'complete', 'archive')),
+                actor TEXT NOT NULL,
+                mature_id TEXT,
+                snapshot_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(item_id, revision)
+            );
+            CREATE TABLE schema_migrations (
+                version INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                checksum TEXT NOT NULL,
+                applied_at TEXT NOT NULL
+            );
+            """
+        )
+        connection.execute("PRAGMA user_version = 1")
+        connection.execute(
+            "INSERT INTO registry_entries(entry_id) VALUES (?)", ("entry-1",)
+        )
+        connection.execute(
+            "INSERT INTO workspace_items(item_id) VALUES (?)", ("item-1",)
+        )
+        connection.execute(
+            """
+            INSERT INTO registry_entry_revisions(
+                revision_id, entry_id, revision, actor, snapshot_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "registry-revision-1",
+                "entry-1",
+                1,
+                "legacy",
+                '{"peer_handle":"alice"}',
+                "2026-08-08T00:00:00+00:00",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO workspace_item_revisions(
+                revision_id, item_id, revision, operation, actor, snapshot_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "workspace-revision-1",
+                "item-1",
+                1,
+                "create",
+                "legacy",
+                '{"title":"A"}',
+                "2026-08-08T00:00:00+00:00",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO schema_migrations(version, name, checksum, applied_at) VALUES (?, ?, ?, ?)",
+            (1, "initial_db_only_v1", "legacy", "2026-08-08T00:00:00+00:00"),
+        )
+        connection.commit()
+        connection.close()
+
+        with Database(db_path) as database:
+            registry_revision = database.conn.execute(
+                "SELECT revision_id, entry_id, snapshot_json FROM registry_entry_revisions"
+            ).fetchone()
+            workspace_revision = database.conn.execute(
+                "SELECT revision_id, item_id, snapshot_json FROM workspace_item_revisions"
+            ).fetchone()
+            self.assertEqual(
+                tuple(registry_revision),
+                ("registry-revision-1", "entry-1", '{"peer_handle":"alice"}'),
+            )
+            self.assertEqual(
+                tuple(workspace_revision),
+                ("workspace-revision-1", "item-1", '{"title":"A"}'),
+            )
+            for table in ("registry_entry_revisions", "workspace_item_revisions"):
+                self.assertEqual(
+                    database.conn.execute(f"PRAGMA foreign_key_list({table})").fetchall(),
+                    [],
+                )
+
+            database.conn.execute("DELETE FROM registry_entries WHERE entry_id = 'entry-1'")
+            database.conn.execute("DELETE FROM workspace_items WHERE item_id = 'item-1'")
+            self.assertEqual(
+                database.conn.execute(
+                    "SELECT COUNT(*) FROM registry_entry_revisions"
+                ).fetchone()[0],
+                1,
+            )
+            self.assertEqual(
+                database.conn.execute(
+                    "SELECT COUNT(*) FROM workspace_item_revisions"
+                ).fetchone()[0],
+                1,
+            )
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 2)
+
     def test_existing_database_is_not_overwritten(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
         with self.assertRaisesRegex(RuntimeError, "already exists"):
