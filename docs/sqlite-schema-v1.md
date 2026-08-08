@@ -26,6 +26,26 @@ canonical source of mutable state in V1.
 - No canonical mutable state is stored in YAML. YAML contract files in the
   repository are documentation only and are not read by the local runtime.
 
+## Identity-space export
+
+The runtime can export one local identity space with `ie db export`. The
+format is `identity-engineering.identity-space` version `1` and contains the
+installation and identity metadata, all current projections, and the
+append-only event, revision, and evidence tables needed for a later rebuild.
+
+The envelope has a `payload`, `payload_sha256`, and `export_id`. Both checksum
+values are the lowercase SHA-256 of the payload's canonical UTF-8 JSON. The
+payload uses sorted object keys and compact separators; integral numeric values
+are normalized so Python and Managed Node consumers hash the same document.
+Pretty-printing the outer JSON file does not change the checksum.
+
+The export intentionally does not contain a computed `emergent_self_mass`.
+The `foreign_estimates` inputs and their published `sender_emergent_mass`
+values are preserved, because the receiving runtime can recompute Self-Mass
+from the foreign-estimate zone. The export is checksummed, not encrypted or
+key-signed; transport authentication and future signing-key management belong
+to the Managed boundary.
+
 ## Semantic boundaries
 
 There are three different kinds of state:

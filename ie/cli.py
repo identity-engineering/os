@@ -352,6 +352,25 @@ def db_backup(
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
+@db_app.command("export")
+def db_export(
+    destination: Path = typer.Option(..., "--to", "--destination", help="Export JSON path"),
+    force: bool = typer.Option(False, "--force", help="Replace an existing export"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Export the local identity space with a deterministic checksum."""
+    from runtime.database import DatabaseError
+    from runtime.export import write_identity_export
+
+    try:
+        result = write_identity_export(
+            _database_root(path), destination, overwrite=force
+        )
+    except DatabaseError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
 @db_app.command("rebuild-projections")
 def db_rebuild_projections(
     yes: bool = typer.Option(
