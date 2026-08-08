@@ -34,15 +34,21 @@ An agentic loop may be nuclear machinery *inside* that form — it is not the Id
 Geometry Extraction on every Interaction:
 
 1. Interaction Signal (or internal Think/Mature event) occurs.  
-2. Geometry Extraction **writes a local Geometry Receipt** under `registry/_geometry_receipts/`.  
-3. Receipts are the **intended primary update path** into live Tensor / Tension / Metric Stem.  
-4. **v0 does not yet feed** Registry alloys, Metric Stem weights, or Tension aggregation from those files. That write-back is tracked as **OS #8** (Living Tension Tensor update protocol).  
-5. Local entry / Surface / Registry become readable geometry rather than static files once that feed lands.
+2. Geometry Extraction **writes a local Geometry Receipt** into the SQLite table
+	`geometry_receipts`, linked to `geometry_receipt_sources`.
+3. Interact also updates the accepted Registry continuity projection in the same
+	transaction; Geometry remains an audit/probe interpretation, not a silent
+	rewrite of owned estimates.
+4. Mature is the explicit owner-controlled path for Stem, Workspace, Registry,
+	and Trajectory learning changes. Continuous derived Tensor/Tension feed is
+	still tracked as **OS #8**.
+5. Local entry / Surface / Registry are projections over the DB, not mutable
+	YAML files.
 
 Probes = the bridge between "AI happening / human happening" and the IE Geometry OS.  
 Storage of the bridge artifact is shipped; continuous write-back into the Tensor is the next heartbeat.
 
-## Concrete v0 shape (this branch)
+## Concrete V1 shape (this branch)
 
 - Schema: `schemas/geometry-receipt/v0.yaml`  
 - Hook: `docs/geometry-hook.md` (default **on** after Interact)  

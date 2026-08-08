@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from runtime.database import database_path
+
 HEADER_NAME = "HEADER.yaml"
 CONFIG_DIR_NAME = "ie-os"
 ACTIVE_ROOT_NAME = "active-root"
@@ -24,8 +26,8 @@ def active_root_config_path() -> Path:
 def remember_ie_root(root: Path) -> None:
     """Persist a valid install root for commands run outside that directory."""
     root = root.expanduser().resolve()
-    if not (root / HEADER_NAME).is_file():
-        raise ValueError(f"Cannot remember IE root without {HEADER_NAME}: {root}")
+    if not database_path(root).is_file():
+        raise ValueError(f"Cannot remember IE root without .ie/ie.sqlite3: {root}")
 
     config_path = active_root_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -43,7 +45,7 @@ def remembered_ie_root() -> Optional[Path]:
         return None
 
     root = Path(raw).expanduser().resolve()
-    return root if (root / HEADER_NAME).is_file() else None
+    return root if database_path(root).is_file() else None
 
 
 def package_root() -> Path:
@@ -77,18 +79,18 @@ def find_ie_root(start: Optional[Path] = None) -> Optional[Path]:
     env = os.environ.get("IE_ROOT")
     if env:
         p = Path(env).expanduser().resolve()
-        if (p / HEADER_NAME).is_file():
+        if database_path(p).is_file():
             return p
     cur = (start or Path.cwd()).resolve()
     for candidate in [cur, *cur.parents]:
-        if (candidate / HEADER_NAME).is_file():
+        if database_path(candidate).is_file():
             return candidate
     remembered = remembered_ie_root()
     if remembered is not None:
         return remembered
 
     default_root = (Path.home() / "ie").resolve()
-    if (default_root / HEADER_NAME).is_file():
+    if database_path(default_root).is_file():
         return default_root
     return None
 
@@ -97,7 +99,7 @@ def require_ie_root(start: Optional[Path] = None) -> Path:
     root = find_ie_root(start)
     if root is None:
         raise SystemExit(
-            "No IE install found (HEADER.yaml). Run `ie init` in a directory, "
+            "No IE install found (.ie/ie.sqlite3). Run `ie init` in a directory, "
             "or set IE_ROOT, or cd into an existing install."
         )
     return root

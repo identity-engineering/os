@@ -86,12 +86,12 @@ This is the local analogue of "follow / connect", without a global social graph 
 | Registry | My local list of recognized identities (gravitational sensor) |
 | **Request / inbox** | How I *ask* without forcing an answer — `schemas/estimate-request/v0.yaml`, `docs/estimate-request.md` |
 
-## Implementation status (v0)
+## Implementation status (SQLite-first V1)
 
 Local path for **#31** is implemented:
 
 - Schema: `schemas/estimate-request/v0.yaml`
-- File store: `registry/_inbound_requests/`
+- SQLite store: `estimate_requests` in `<install-root>/.ie/ie.sqlite3`
 - Ops + CLI: `runtime/request.py`, `ie request …`
 - Reply linkage: optional `in_reply_to_request_id` on Interaction Signal
 - Docs: `docs/estimate-request.md`

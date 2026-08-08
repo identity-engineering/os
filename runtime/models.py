@@ -41,6 +41,8 @@ class InteractionSignal:
     # Public geometry of the sender (always-passed when known)
     # Their computed emergent self-Mass — never a self-declared rating.
     sender_emergent_mass: Optional[float] = None
+    # Public freshness marker for the sender's latest committed Mature step.
+    sender_last_mature_at: Optional[str] = None
 
     # Consent-based (optional)
     coarse_mass_estimate: Optional[float] = None
@@ -72,12 +74,15 @@ class InteractionSignal:
                     errors.append("sender_emergent_mass must be in [0.0, 100.0]")
             except (TypeError, ValueError):
                 errors.append("sender_emergent_mass must be a number")
+        if self.sender_last_mature_at is not None and not str(self.sender_last_mature_at).strip():
+            errors.append("sender_last_mature_at must not be empty")
         return errors
 
 
 @dataclass
 class Receipt:
     receipt_id: str
+    event_id: Optional[str]
     status: ApplyStatus
     timestamp: str
     from_handle: str
@@ -94,6 +99,7 @@ class Receipt:
         from_handle: str,
         to_handle: str,
         *,
+        event_id: Optional[str] = None,
         applied: Optional[list[str]] = None,
         rejected: Optional[list[dict[str, str]]] = None,
         reason: str = "",
@@ -101,6 +107,7 @@ class Receipt:
     ) -> "Receipt":
         return cls(
             receipt_id=str(uuid4()),
+            event_id=event_id,
             status=status,
             timestamp=_utcnow(),
             from_handle=from_handle,
@@ -138,6 +145,8 @@ class ForeignEstimateRecord:
     # Last known emergent self-Mass of the *sender* (from their signal / card)
     sender_emergent_mass: Optional[float] = None
     sender_emergent_mass_at: Optional[str] = None
+    sender_last_mature_at: Optional[str] = None
+    sender_last_mature_seen_at: Optional[str] = None
     last_receipt_id: Optional[str] = None
     quarantine: bool = False
     notes: Optional[str] = None
@@ -161,6 +170,7 @@ class EstimateRequest:
     target_handle: str
     timestamp: str
     status: RequestStatus = RequestStatus.PENDING
+    direction: str = "inbound"
     requested_fields: list[str] = field(default_factory=list)
     note: Optional[str] = None
     schema_version: str = "0"
@@ -196,6 +206,7 @@ class EstimateRequest:
         requested_fields: Optional[list[str]] = None,
         note: Optional[str] = None,
         transport: str = "cli",
+        direction: str = "inbound",
         request_id: Optional[str] = None,
         timestamp: Optional[str] = None,
     ) -> "EstimateRequest":
@@ -205,6 +216,7 @@ class EstimateRequest:
             target_handle=target_handle,
             timestamp=timestamp or _utcnow(),
             status=RequestStatus.PENDING,
+            direction=direction,
             requested_fields=list(requested_fields or []),
             note=note,
             transport=transport,

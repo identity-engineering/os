@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from runtime.apply import apply_from_dict
+from runtime.database import initialize_database
 from runtime.geometry import (
     GeometryReceiptStore,
     create_self_probe,
@@ -140,8 +141,9 @@ class GeometryExtractorTests(unittest.TestCase):
 class GeometryApplyHookTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
-        self.registry = Path(self._tmp.name) / "registry"
-        self.registry.mkdir()
+        self.install = Path(self._tmp.name) / "install"
+        initialize_database(self.install, handle="me", preferred_name="Me")
+        self.registry = self.install
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -221,8 +223,9 @@ class GeometryApplyHookTests(unittest.TestCase):
 class MatureSelfProbeTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
-        self.registry = Path(self._tmp.name) / "registry"
-        self.registry.mkdir()
+        self.install = Path(self._tmp.name) / "install"
+        initialize_database(self.install, handle="me", preferred_name="Me")
+        self.registry = self.install
 
     def tearDown(self) -> None:
         self._tmp.cleanup()

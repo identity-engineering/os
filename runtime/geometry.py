@@ -471,45 +471,114 @@ def create_self_probe(
 
 
 class GeometryReceiptStore:
-    """Minimal file store for Geometry Receipts under registry/_geometry_receipts/."""
+    """SQLite store for local Geometry Receipts."""
 
     def __init__(self, registry_root: Union[str, Path]):
-        self.root = Path(registry_root) / "_geometry_receipts"
-        self.root.mkdir(parents=True, exist_ok=True)
+        from .sqlite_store import SQLiteStore
+
+        self.store = SQLiteStore.from_registry_root(registry_root)
 
     def save(self, receipt: GeometryReceipt) -> Path:
-        path = self.root / f"{receipt.receipt_id}.yaml"
         data = receipt.to_dict()
-        try:
-            import yaml  # type: ignore
+        from .database import canonical_json
 
-            path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-        except Exception:
-            import json
-
-            path = path.with_suffix(".json")
-            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        return path
+        identity = self.store.identity()
+        with self.store.open() as database:
+            with database.transaction() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO geometry_receipts(
+                        receipt_id, install_id, timestamp, mode, observer, target,
+                        source_apply_receipt_id, relative_mass_proxy_json,
+                        tension_components_json, degrees_of_freedom_json,
+                        jurisdiction_shift_json, stem_differential_json,
+                        ownership_move_json, optionality_delta_json, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        data["receipt_id"],
+                        identity["install_id"],
+                        data["timestamp"],
+                        data["mode"],
+                        data["observer"],
+                        data["target"],
+                        data.get("source_signal_ref"),
+                        canonical_json(data["relative_mass_proxy"])
+                        if data.get("relative_mass_proxy") is not None
+                        else None,
+                        canonical_json(data.get("tension_components") or []),
+                        canonical_json(data["degrees_of_freedom"])
+                        if data.get("degrees_of_freedom") is not None
+                        else None,
+                        canonical_json(data["jurisdiction_shift"])
+                        if data.get("jurisdiction_shift") is not None
+                        else None,
+                        canonical_json(data["stem_differential"])
+                        if data.get("stem_differential") is not None
+                        else None,
+                        canonical_json(data["ownership_move"])
+                        if data.get("ownership_move") is not None
+                        else None,
+                        canonical_json(data["optionality_delta"])
+                        if data.get("optionality_delta") is not None
+                        else None,
+                        data.get("notes") or "",
+                    ),
+                )
+                for source_ref in data.get("source_refs") or []:
+                    conn.execute(
+                        """
+                        INSERT INTO geometry_receipt_sources(receipt_id, source_kind, source_id)
+                        VALUES (?, 'source_ref', ?)
+                        """,
+                        (data["receipt_id"], source_ref),
+                    )
+        return self.store.path
 
     def load(self, receipt_id: str) -> Optional[dict[str, Any]]:
-        yaml_path = self.root / f"{receipt_id}.yaml"
-        json_path = self.root / f"{receipt_id}.json"
-        if yaml_path.exists():
-            try:
-                import yaml  # type: ignore
+        import json
 
-                return yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
-            except Exception:
+        with self.store.open() as database:
+            row = database.conn.execute(
+                "SELECT * FROM geometry_receipts WHERE receipt_id = ?",
+                (receipt_id,),
+            ).fetchone()
+            if row is None:
                 return None
-        if json_path.exists():
-            import json
+            sources = database.conn.execute(
+                """
+                SELECT source_id FROM geometry_receipt_sources
+                WHERE receipt_id = ? AND source_kind = 'source_ref'
+                ORDER BY source_id
+                """,
+                (receipt_id,),
+            ).fetchall()
 
-            return json.loads(json_path.read_text(encoding="utf-8"))
-        return None
+        def decode(column: str, default: Any = None) -> Any:
+            raw = row[column]
+            return default if raw is None else json.loads(raw)
+
+        return {
+            "receipt_id": row["receipt_id"],
+            "timestamp": row["timestamp"],
+            "mode": row["mode"],
+            "observer": row["observer"],
+            "target": row["target"],
+            "source_signal_ref": row["source_apply_receipt_id"],
+            "source_refs": [source[0] for source in sources],
+            "relative_mass_proxy": decode("relative_mass_proxy_json"),
+            "tension_components": decode("tension_components_json", []),
+            "degrees_of_freedom": decode("degrees_of_freedom_json"),
+            "jurisdiction_shift": decode("jurisdiction_shift_json"),
+            "stem_differential": decode("stem_differential_json"),
+            "ownership_move": decode("ownership_move_json"),
+            "optionality_delta": decode("optionality_delta_json"),
+            "notes": row["notes"],
+        }
 
     def list_ids(self) -> list[str]:
-        ids: list[str] = []
-        for p in self.root.iterdir():
-            if p.suffix in {".yaml", ".json"}:
-                ids.append(p.stem)
-        return sorted(ids)
+        with self.store.open() as database:
+            rows = database.conn.execute(
+                "SELECT receipt_id FROM geometry_receipts ORDER BY receipt_id"
+            ).fetchall()
+        return [row[0] for row in rows]

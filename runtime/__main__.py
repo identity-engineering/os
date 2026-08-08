@@ -23,7 +23,13 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     apply_p = sub.add_parser("apply", help="Apply an Interaction Signal from JSON file or stdin")
-    apply_p.add_argument("--registry", required=True, help="Path to registry/ directory")
+    apply_p.add_argument(
+        "--install",
+        "--registry",
+        dest="install_root",
+        required=True,
+        help="Path to the IE install root (legacy alias: --registry)",
+    )
     apply_p.add_argument("--to", help="Expected to_handle (surface identity check)")
     apply_p.add_argument("--open-consent", action="store_true", help="Apply consent fields without grants (dogfood)")
     apply_p.add_argument("--payload", help="Path to JSON payload (default: stdin)")
@@ -37,10 +43,10 @@ def main(argv: list[str] | None = None) -> int:
             raw = sys.stdin.read()
         payload = json.loads(raw)
 
-        policy = LocalPolicy(open_consent=args.open_consent)
+        policy = LocalPolicy(open_consent=True) if args.open_consent else None
         receipt = apply_from_dict(
             payload,
-            registry_root=args.registry,
+            registry_root=args.install_root,
             policy=policy,
             expected_to_handle=args.to,
         )

@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional, Union
 
 from .models import (
     ApplyStatus,
-    ForeignEstimateRecord,
     InteractionSignal,
     Receipt,
     _utcnow,
 )
 from .policy import LocalPolicy
-from .storage import ForeignEstimateStore
+from .sqlite_store import SQLiteStore
 
 
 def apply_interaction_signal(
@@ -31,8 +29,8 @@ def apply_interaction_signal(
     Extraction is best-effort and never fails the Interaction apply itself.
     Pass emit_geometry_receipt=False only for tests or explicit opt-out.
     """
-    policy = policy or LocalPolicy()
-    store = ForeignEstimateStore(Path(registry_root))
+    store = SQLiteStore.from_registry_root(registry_root)
+    policy = policy or store.load_policy()
 
     errors = signal.validate_required()
     if errors:
@@ -43,104 +41,89 @@ def apply_interaction_signal(
             reason="; ".join(errors),
         )
 
+    event_id = str(__import__("uuid").uuid4())
+
     if expected_to_handle and signal.to_handle != expected_to_handle:
-        return Receipt.create(
+        receipt = Receipt.create(
             ApplyStatus.REJECTED,
             signal.from_handle,
             signal.to_handle,
+            event_id=event_id,
             reason=f"to_handle mismatch: expected {expected_to_handle}",
         )
+        store.persist_signal(
+            signal,
+            receipt,
+            fields_to_apply=[],
+            quarantine=False,
+            geometry=None,
+            prior_record=None,
+        )
+        return receipt
 
     fields_to_apply, rejected, quarantine = policy.evaluate(signal)
 
     if not fields_to_apply and rejected:
-        return Receipt.create(
+        receipt = Receipt.create(
             ApplyStatus.REJECTED,
             signal.from_handle,
             signal.to_handle,
+            event_id=event_id,
             rejected=rejected,
             reason="policy refused all fields",
             quarantine=quarantine,
         )
+        store.persist_signal(
+            signal,
+            receipt,
+            fields_to_apply=[],
+            quarantine=quarantine,
+            geometry=None,
+            prior_record=None,
+        )
+        return receipt
 
-    record = store.load(signal.from_handle)
+    record = store.load_foreign(signal.from_handle)
     now = signal.timestamp or _utcnow()
     prior_signal_count = int(record.signal_count) if record is not None else 0
     prior_accumulated_depth = float(record.accumulated_depth) if record is not None else 0.0
 
-    if record is None:
-        record = ForeignEstimateRecord(
-            sender_handle=signal.from_handle,
-            first_signal_at=now,
-            last_signal_at=now,
-            signal_count=0,
-            existence_confirmed=False,
-        )
-
     applied: list[str] = []
 
     if "existence" in fields_to_apply:
-        record.existence_confirmed = True
         applied.append("existence")
 
     if "interaction_depth_delta" in fields_to_apply:
-        delta = float(signal.interaction_depth_delta)
-        record.last_depth_delta = delta
-        record.accumulated_depth = float(record.accumulated_depth) + delta
         applied.append("interaction_depth_delta")
 
     if "sender_emergent_mass" in fields_to_apply and signal.sender_emergent_mass is not None:
-        record.sender_emergent_mass = float(signal.sender_emergent_mass)
-        record.sender_emergent_mass_at = now
         applied.append("sender_emergent_mass")
 
+    if "sender_last_mature_at" in fields_to_apply and signal.sender_last_mature_at is not None:
+        applied.append("sender_last_mature_at")
+
     if "coarse_mass_estimate" in fields_to_apply and signal.coarse_mass_estimate is not None:
-        record.coarse_mass_estimate = float(signal.coarse_mass_estimate)
-        record.mass_estimate_at = now
         applied.append("coarse_mass_estimate")
 
     if "mass_confidence" in fields_to_apply and signal.mass_confidence is not None:
-        record.mass_confidence = float(signal.mass_confidence)
         applied.append("mass_confidence")
 
     if "dimensions_delta" in fields_to_apply and signal.dimensions_delta is not None:
-        record.dimensions_delta = signal.dimensions_delta
         applied.append("dimensions_delta")
 
     if "relation_pull" in fields_to_apply and signal.relation_pull is not None:
-        record.relation_pull = float(signal.relation_pull)
         applied.append("relation_pull")
-
-    record.last_signal_at = now
-    record.signal_count = int(record.signal_count) + 1
-    record.quarantine = quarantine
 
     receipt = Receipt.create(
         ApplyStatus.APPLIED if not rejected else ApplyStatus.PARTIAL,
         signal.from_handle,
         signal.to_handle,
+        event_id=event_id,
         applied=applied,
         rejected=rejected,
         reason="applied to foreign-estimate zone" if applied else "no fields applied",
         quarantine=quarantine,
     )
-    record.last_receipt_id = receipt.receipt_id
-    store.save(record)
-
-    if signal.in_reply_to_request_id and receipt.status in (
-        ApplyStatus.APPLIED,
-        ApplyStatus.PARTIAL,
-    ):
-        try:
-            from .request import mark_request_answered
-
-            mark_request_answered(
-                registry_root,
-                signal.in_reply_to_request_id,
-                receipt.receipt_id,
-            )
-        except Exception:
-            pass
 
     # Geometry Hook (Probes-as-Bridge). Default on. Best-effort; never fails apply.
     # Failures are recorded in receipt.reason when possible (not fully silent).
@@ -151,7 +134,7 @@ def apply_interaction_signal(
             observer = observer_handle or signal.to_handle or expected_to_handle or "local"
             # Prefer Mass published on this signal; else last stored value for sender.
             stored_sender_mass = None
-            if record.sender_emergent_mass is not None:
+            if record is not None and record.sender_emergent_mass is not None:
                 stored_sender_mass = float(record.sender_emergent_mass)
             geo = run_geometry_hook(
                 signal,
@@ -166,12 +149,16 @@ def apply_interaction_signal(
                         if signal.sender_emergent_mass is not None
                         else stored_sender_mass
                     ),
+                    "sender_last_mature_at": (
+                        signal.sender_last_mature_at
+                        if signal.sender_last_mature_at is not None
+                        else (record.sender_last_mature_at if record is not None else None)
+                    ),
                     # Callers / future Surface adapters may inject a card read:
                     # "public_card_emergent_self_mass": <float>
                 },
             )
             if geo is not None:
-                GeometryReceiptStore(registry_root).save(geo)
                 extra = f"geometry_receipt={geo.receipt_id}"
                 if geo.notes and "extractor_errors=" in geo.notes:
                     extra += " (geometry extractor errors; see receipt notes)"
@@ -181,6 +168,15 @@ def apply_interaction_signal(
                 (receipt.reason or "")
                 + f"; geometry_hook_error={type(exc).__name__}"
             ).strip("; ")
+
+    store.persist_signal(
+        signal,
+        receipt,
+        fields_to_apply=applied,
+        quarantine=quarantine,
+        geometry=geo if "geo" in locals() else None,
+        prior_record=record,
+    )
 
     return receipt
 
@@ -206,6 +202,11 @@ def apply_from_dict(
         existence=bool(payload.get("existence", True)),
         interaction_depth_delta=float(payload.get("interaction_depth_delta", 0.0)),
         sender_emergent_mass=float(sem) if sem is not None else None,
+        sender_last_mature_at=(
+            str(payload["sender_last_mature_at"])
+            if payload.get("sender_last_mature_at")
+            else None
+        ),
         coarse_mass_estimate=payload.get("coarse_mass_estimate"),
         mass_confidence=payload.get("mass_confidence"),
         dimensions_delta=payload.get("dimensions_delta"),

@@ -15,11 +15,11 @@ Receivers use that value as the sender's weight — not their own private
 | Number | Who computes it | Where it lives | Role |
 |--------|-----------------|----------------|------|
 | **Emergent self-Mass** | The Identity, from *inbound* estimates of them | Derived readout; public card; outbound signals | "What the field attributes to me" |
-| **my_mass_estimate of peer** | Observer, local judgment | `registry/{peer}.yaml` | Local alloy density of *them* — not used as weight for self-Mass |
+| **my_mass_estimate of peer** | Observer, local judgment | SQLite `registry_entries` | Local alloy density of *them* — not used as weight for self-Mass |
 
 ## Inputs (per sender) for *my* self-Mass
 
-From `registry/_foreign_estimates/{sender}.yaml`:
+From SQLite table `foreign_estimates` in `<install-root>/.ie/ie.sqlite3`:
 
 | Symbol | Field | Meaning |
 |--------|-------|--------|
@@ -122,7 +122,7 @@ about the receiver.
 ## Non-goals
 
 - Using local `my_mass_estimate` of the sender as M_i
-- Writing self_Mass into Stem / HEADER as owned identity claim
+- Writing self_Mass into Stem / Registry / `IE.md` as an owned identity claim
 - Hiding mass from the public card (v0: public by design for gravitational sensing)
 
 ## Related

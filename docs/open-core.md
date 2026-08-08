@@ -15,7 +15,7 @@ This matches the ecosystem orientation already stated in `docs/ecosystem-vision.
 
 | Layer | Contents | Visibility |
 |-------|----------|------------|
-| **Open Core** | Schemas, local Surface Runtime, Geometry Receipt, Registry contracts, Interaction Signal, TIM as Probe phases, living-form lens, Free local storage (YAML/SQLite), `ie` CLI for local operations, personal templates, tests | Public (this repository) |
+| **Open Core** | Schemas, local Surface Runtime, Geometry Receipt, Registry contracts, Interaction Signal, TIM as Probe phases, living-form lens, Free local SQLite storage, `ie` CLI for local operations, contract templates, tests | Public (this repository) |
 | **Managed / Pro** | Hosted SQL adapters, multi-device sync, account auth beyond stub, billing, SLA, collective/organisational governance modules, Pro Surface features | Private (separate repository or private modules) |
 
 ## Why this cut

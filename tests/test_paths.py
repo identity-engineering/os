@@ -46,15 +46,11 @@ class PathDiscoveryTests(unittest.TestCase):
             )
 
             self.assertEqual(result.exit_code, 0, result.output)
-            self.assertRegex(
-                (self.install / "dimension-catalogue.yaml").read_text(
-                    encoding="utf-8"
-                ),
-                r"(?m)^observer:\s+['\"]?first-user['\"]?\s*$",
-            )
-            readme = (self.install / "README.md").read_text(encoding="utf-8")
-            self.assertIn("## First local loop", readme)
-            self.assertIn('"to":"first-user"', readme)
+            self.assertTrue((self.install / ".ie" / "ie.sqlite3").is_file())
+            self.assertTrue((self.install / "README.md").is_file())
+            self.assertTrue((self.install / "IE.md").is_file())
+            self.assertFalse((self.install / "HEADER.yaml").exists())
+            self.assertFalse((self.install / "registry").exists())
             self.assertEqual(find_ie_root(self.workdir), self.install.resolve())
             self.assertEqual(
                 (self.config_home / "ie-os" / "active-root").read_text(
@@ -65,8 +61,8 @@ class PathDiscoveryTests(unittest.TestCase):
 
     def test_default_home_root_is_discovered_without_registration(self):
         default_root = Path(self._tmp.name) / "ie"
-        default_root.mkdir()
-        (default_root / "HEADER.yaml").write_text("identity: {}\n", encoding="utf-8")
+        (default_root / ".ie").mkdir(parents=True)
+        (default_root / ".ie" / "ie.sqlite3").touch()
 
         env = {"XDG_CONFIG_HOME": str(self.config_home), "IE_ROOT": ""}
         with patch.dict(os.environ, env), patch("ie.paths.Path.home", return_value=Path(self._tmp.name)):

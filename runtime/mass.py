@@ -12,10 +12,9 @@ See docs/mass.md.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 from typing import Any, Optional, Union
 
-from .storage import ForeignEstimateStore
+from .sqlite_store import SQLiteStore
 
 # Cold-start when sender never published sender_emergent_mass (0–100 scale).
 M_UNKNOWN = 10.0
@@ -93,8 +92,7 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
     Pure function of files under registry/. No network. No Stem writes.
     M_i = last sender_emergent_mass stored from their signals (else M_UNKNOWN).
     """
-    root = Path(registry_root)
-    store = ForeignEstimateStore(root)
+    store = SQLiteStore.from_registry_root(registry_root)
     contributors: list[Contributor] = []
     weighted_sum = 0.0
     total_weight = 0.0
@@ -102,8 +100,8 @@ def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
     volume_weighted = 0.0
     notes: list[str] = []
 
-    for handle in store.list_senders():
-        rec = store.load(handle)
+    for handle in store.list_foreign_handles():
+        rec = store.load_foreign(handle)
         if rec is None:
             continue
 
@@ -223,6 +221,7 @@ def build_public_card(
 ) -> dict[str, Any]:
     """Public card payload including live emergent self-Mass (always readable)."""
     readout = compute_mass_readout(registry_root)
+    identity = SQLiteStore.from_registry_root(registry_root).identity()
     return {
         "local_handle": local_handle,
         "preferred_name": preferred_name,
@@ -234,4 +233,5 @@ def build_public_card(
         "volume_count": readout.volume_count,
         "estimator_count": readout.estimator_count,
         "mass_formula_version": readout.formula_version,
+        "last_mature_at": identity["last_mature_at"],
     }

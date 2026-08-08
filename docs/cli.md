@@ -1,4 +1,4 @@
-# IE CLI (v0 skeleton)
+# IE CLI (SQLite-first V1)
 
 Issue #18 — installable `ie` command.
 
@@ -40,7 +40,7 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 
 `ie init` remembers the created install as the active local root (`$XDG_CONFIG_HOME/ie-os/active-root` or `~/.config/ie-os/active-root`).
 
-## Commands (v0)
+## Commands (SQLite-first V1)
 
 | Command | Purpose |
 |---------|---------|
@@ -49,30 +49,68 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 | `ie registry list` / `get` | Local registry |
 | `ie signal apply` | Interact: apply signal + Geometry Receipt |
 | `ie request …` | Inbound estimate-request inbox |
-| `ie mature` | Mature: source-backed self Geometry Receipt |
+| `ie policy …` | Persistent consent and sender quarantine |
+| `ie mature` | Mature: atomic source-backed learning commit |
 | `ie mass` | Emergent self-Mass readout |
-| `ie catalogue` / `ie reindex` | Stubs |
+| `ie db info` / `integrity-check` / `backup` | Database diagnostics and recovery |
+
+All mutable runtime state is in `<install-root>/.ie/ie.sqlite3`. `README.md` and
+`IE.md` are orientation documents only; the YAML files under `schemas/` and
+`templates/` are contracts/examples and are not runtime storage.
 
 ### TIM mapping (short)
 
 - **Think** — no CLI. Phase label for inward, non-emitting work (plan-mode, private memory, prompts).
 - **Interact** — `ie signal apply` + tools/MCP/APIs/scripts (cross-membrane).
-- **Mature** — `ie mature` (source-backed causal-integration record; optional ownership_move *record* only).
+- **Mature** — `ie mature` (source-backed atomic commit to Stem, Workspace,
+  Registry, Trajectory, evidence, Geometry, and explicit reassessment requests).
 
 ```bash
 ie mature --notes "what caused the Mass dip" \
-  --source trajectory/2026-08-05.yaml \
+  --source evidence/2026-08-05.txt \
   --state-delta "causal chain reconstructed" \
   --commitment "72h: ship Access probes draft" \
   --ownership-level 88 \
   --optionality 0.3 --optionality-notes "opens Ownership path"
 ```
 
-`--source` must point to at least one existing file inside the install root. The
-state, vision, ownership, and optionality values are explicit v0 observations;
-the command does not infer a trajectory or update live Stem/Vision/Policy.
-Writes the source-backed record under `registry/_geometry_receipts/` and does not
-apply `ownership_move` to Stem/Vision/Policy (#40).
+For structured changes, pass a JSON object with `--changes`:
+
+```json
+{
+  "substance": {"current_focus": "ownership probe"},
+  "workspace_changes": [
+    {"kind": "commitment", "title": "Run probe", "content": "Prepare evidence."}
+  ],
+  "registry_changes": [
+    {"peer_handle": "alice", "my_mass_estimate": 62, "mass_confidence": 0.8}
+  ],
+  "reassessment_targets": ["alice"]
+}
+```
+
+`--source` must point to at least one existing file inside the install root.
+The source path and SHA-256 are retained; `--snapshot-sources` opts into a
+UTF-8 content snapshot. All Mature writes commit or roll back together. Mature
+never writes an owned numeric Self-Mass.
+
+Persistent policy is explicit and auditable:
+
+```bash
+ie policy grant --from alice --field coarse_mass_estimate
+ie policy revoke --from alice --field coarse_mass_estimate
+ie policy quarantine --from alice --reason "boundary test"
+ie policy release --from alice
+ie policy show
+```
+
+Database recovery is explicit:
+
+```bash
+ie db info
+ie db integrity-check
+ie db backup --to ~/ie-backups/ie.sqlite3
+```
 
 ## See also
 

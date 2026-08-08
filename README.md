@@ -4,17 +4,18 @@
 
 > "Hast du schon Identity Engineering? Setz dir das einfach auf."
 
-Practical, file-based runtime of the Identity Engineering framework.  
-Turns geometric + ownership primitives into living, agent-readable artifacts.
+Practical, SQLite-first local runtime of the Identity Engineering framework.
+Turns geometric + ownership primitives into living, agent-readable projections
+with a single transactional database per install.
 
 **Open Core.** The local-first runtime, schemas and Free-tier CLI are open source (MIT). Managed Pro features remain closed. See [`docs/open-core.md`](docs/open-core.md).
 
 ## What this is (and is not)
 
 **This is**
-- Minimal, personal-first structure: clone/copy and the next interaction already updates geometry  
+- Minimal, personal-first structure: initialize one local DB and the next interaction already updates geometry
 - Core contracts: Stem, Trajectory, relative Mass, local Registry, Privacy defaults  
-- Local Surface Runtime: Interaction Signals → foreign-estimate zone, receipts, **always-on Geometry Extraction** on Interact  
+- Local Surface Runtime: Interaction Signals → Foreign Estimates, Registry continuity, receipts, **always-on Geometry Extraction** on Interact
 - **TIM cycle** (Think · Interact · Mature) as Probe phases under Relativity  
 - **Living-form lens**: Identity as operative form with membrane (Surface) and metabolism (Interaction → Geometry Receipt); agentic loop may be nuclear machinery inside - not the Identity itself  
 - Foundation for environment adapters and free personal / paid collective CLI tiers
@@ -26,7 +27,8 @@ Turns geometric + ownership primitives into living, agent-readable artifacts.
 
 ## Orientation
 
-Installability (files that live on the next interaction) remains.  
+Installability remains, but mutable runtime state is DB-only in V1 (`.ie/ie.sqlite3`).
+`README.md` and `IE.md` in an install are orientation documents, not state.
 Everything starts from Identity Engineering: relative Mass, living Tensor, Geometry Receipt as continuous Probe bridge, Stem, Surface as membrane, Ownership as relative degrees of freedom, multi-substrate symmetry, Privacy by design.
 
 See `docs/probes-as-bridge.md`, `docs/tim-cycle.md`, `docs/living-form.md`.
@@ -35,7 +37,7 @@ See `docs/probes-as-bridge.md`, `docs/tim-cycle.md`, `docs/living-form.md`.
 
 ```
 os/
-├── runtime/          # Surface Runtime v0 + geometry hook
+├── runtime/          # SQLite-first Surface Runtime + geometry hook
 ├── schemas/
 ├── templates/personal/
 ├── docs/
@@ -52,10 +54,11 @@ os/
 ## Current status
 
 - Local Registry + Metric Stem + Interaction Signal  
-- Surface Runtime v0 (apply, receipts, thin HTTP)  
+- SQLite-first V1 Surface Runtime (apply, receipts, thin HTTP)
 - Geometry Receipt + always-on Interact hook (local storage; Tensor feed **#8**)  
 - TIM grounded as Probe modes; living-form lens (cell nucleus article integrated)  
 - Emergent self-Mass + public card + bidirectional sensor  
+- Atomic Mature learning, persistent policy, DB integrity and backup commands
 - Standard-first + Open Core ecosystem orientation
 
 See `docs/next.md` and `docs/open-core.md`.

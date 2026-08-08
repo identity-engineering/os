@@ -24,14 +24,14 @@ Derivation rule: **`docs/mass.md`** (weighted mean of `coarse_mass_estimate` by 
 
 Logical model is store-agnostic:
 
-| Store | Example layout |
-|-------|----------------|
-| Files | `registry/_foreign_estimates/{sender_handle}.yaml` |
-| SQLite / Supabase | table `foreign_estimates` keyed by (owner_id, sender_handle) |
+V1 stores the projection in the local database table
+`foreign_estimates`, keyed by `(identity_id, sender_handle)`, inside
+`<install-root>/.ie/ie.sqlite3`. The YAML schema under `schemas/` documents the
+wire contract; it is not a mutable runtime store.
 
 It is **not** mixed into the observer's alloy dimensions about *others* without an explicit local process. Inbound writes are "what they claim about the relation / about me", not "my full judgment of them".
 
-## Apply algorithm (v0)
+## Apply algorithm (V1)
 
 1. Authenticate caller; resolve `from`.
 2. Check rate limits and quarantine status.
@@ -40,15 +40,19 @@ It is **not** mixed into the observer's alloy dimensions about *others* without 
    - always-passed + policy allows → apply
    - consent field + grant allows → apply
    - else → mark rejected on receipt
-5. Update `last_signal_at`, `signal_count`, depth accumulation.
-6. Persist audit + issue **receipt** (`applied` / `partial` / `rejected`).
-7. Derived volume / self-Mass are recomputed on read (`ie mass` / `compute_mass_readout`); no mandatory cache in v0.
+5. Update Foreign Estimates and the local Registry continuity projection for an
+   accepted signal; a first contact creates a minimal Registry entry.
+6. Persist the canonical event, receipt, and Registry revision atomically.
+7. A fully policy-rejected valid signal is still retained as an audit event and
+   rejected receipt, without a domain projection.
+8. Derived volume / self-Mass are recomputed on read (`ie mass` /
+   `compute_mass_readout`); no owned numeric Self-Mass cache is written.
 
 ## Relation to my Registry entries about others
 
 | Direction | Store |
 |-----------|--------|
-| What **I** estimate about **them** | my `registry/{their_handle}.yaml` (local, not foreign-written) |
+| What **I** estimate about **them** | `registry_entries` in my SQLite database (local, not foreign-written) |
 | What **they** wrote **into me** about me / the relation | **foreign-estimate zone** |
 
 Both feed geometry; only the second is surface-writable by them.

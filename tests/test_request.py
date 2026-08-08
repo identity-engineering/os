@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from runtime.apply import apply_from_dict
+from runtime.database import initialize_database
 from runtime.models import ApplyStatus, RequestStatus
 from runtime.policy import LocalPolicy
 from runtime.request import (
@@ -16,14 +17,14 @@ from runtime.request import (
     list_inbound_requests,
     set_request_status,
 )
-from runtime.storage import InboundRequestStore
 
 
 class RequestTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
-        self.registry = Path(self._tmp.name) / "registry"
-        self.registry.mkdir()
+        self.install = Path(self._tmp.name) / "install"
+        initialize_database(self.install, handle="me", preferred_name="Me")
+        self.registry = self.install
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -124,16 +125,13 @@ class RequestTests(unittest.TestCase):
         self.assertEqual(updated.reply_receipt_id, receipt.receipt_id)
         self.assertIsNotNone(updated.answered_at)
 
-    def test_store_roundtrip_yaml_or_json(self):
-        store = InboundRequestStore(self.registry)
+    def test_store_roundtrip_sqlite(self):
         req = create_inbound_request(
             registry_root=self.registry,
             requester_handle="dave",
             target_handle="me",
         )
-        path = store.save(req)
-        self.assertTrue(path.exists())
-        again = store.load(req.request_id)
+        again = get_inbound_request(self.registry, req.request_id)
         self.assertIsNotNone(again)
         assert again is not None
         self.assertEqual(again.requester_handle, "dave")
