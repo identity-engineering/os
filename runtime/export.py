@@ -146,7 +146,6 @@ def _payload_for_database(conn) -> dict[str, Any]:
         table: _query_rows(conn, table, identity_id, install_id)
         for table in TABLE_QUERIES
     }
-
     # Membrane export filter (Space Boundary).
     space_row = conn.execute(
         """
@@ -161,7 +160,6 @@ def _payload_for_database(conn) -> dict[str, Any]:
     policy = load_space_policy_from_row(space_row)
     membrane = filter_export_tables(list(tables.keys()), policy)
     filtered = {name: tables[name] for name in membrane.allowed_tables if name in tables}
-
     return {
         "format": EXPORT_FORMAT,
         "format_version": EXPORT_FORMAT_VERSION,
