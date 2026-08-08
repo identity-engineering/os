@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import json
 from pathlib import Path
 from typing import Any, Optional
 
@@ -68,6 +69,29 @@ def _patch_header(
     header_path.write_text("".join(lines), encoding="utf-8")
 
 
+def _patch_catalogue(catalogue_path: Path, observer: str) -> None:
+    if not catalogue_path.is_file():
+        return
+
+    text = catalogue_path.read_text(encoding="utf-8")
+    if yaml is not None:
+        data = yaml.safe_load(text) or {}
+        data["observer"] = observer
+        catalogue_path.write_text(
+            yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
+        return
+
+    lines = []
+    for line in text.splitlines(keepends=True):
+        if line.startswith("observer:"):
+            lines.append(f'observer: "{observer}"\n')
+        else:
+            lines.append(line)
+    catalogue_path.write_text("".join(lines), encoding="utf-8")
+
+
 def init_install(
     target: Path,
     *,
@@ -88,6 +112,8 @@ def init_install(
 
     src = bundled_templates_dir()
     target.mkdir(parents=True, exist_ok=True)
+    readme = target / "README.md"
+    readme_existed = readme.exists()
 
     for item in src.iterdir():
         dest = target / item.name
@@ -113,18 +139,42 @@ def init_install(
         preferred_name=preferred_name,
         account_info=account_info,
     )
+    _patch_catalogue(target / "dimension-catalogue.yaml", observer=handle)
 
     tier = (account_info or {}).get("tier") or "free"
-    readme = target / "README.md"
-    if not readme.exists() or force:
+    if not readme_existed or force:
+        demo_signal = json.dumps(
+            {
+                "from": "example-peer",
+                "to": handle,
+                "timestamp": "2026-08-08T12:00:00+00:00",
+                "existence": True,
+                "interaction_depth_delta": 0.1,
+                "sender_emergent_mass": 70,
+                "coarse_mass_estimate": 55,
+                "mass_confidence": 0.8,
+            },
+            separators=(",", ":"),
+        )
         readme.write_text(
-            f"# IE install — `{handle}`\n\n"
+            f"# IE install - `{handle}`\n\n"
             f"Created by `ie init` (tier: {tier}).\n\n"
-            f"- Header: `{HEADER_NAME}`\n"
-            f"- Registry: `registry/`\n"
-            f"- Foreign estimates: `registry/_foreign_estimates/`\n"
-            f"- Inbound estimate requests: `registry/_inbound_requests/`\n\n"
-            f"Commands: `ie status`, `ie signal apply`, `ie request list`, `ie registry list`\n",
+            "## First local loop\n\n"
+            "This synthetic signal stays on this machine and demonstrates the "
+            "local geometry path. Replace it with a real peer signal later.\n\n"
+            "```bash\n"
+            "ie status\n"
+            f"printf '%s\\n' '{demo_signal}' | ie signal apply --open-consent\n"
+            "ie mass --detail\n"
+            "ie mature --source HEADER.yaml \\\n+  --notes \"What did the interaction make visible?\" \\\n+  --state-delta \"First local interaction recorded\"\n"
+            "```\n\n"
+            "The signal creates a local Geometry Receipt. Self-Mass remains "
+            "relative: it is derived from received estimates, never declared "
+            "by this install. Mature records a source-backed self-review and "
+            "does not rewrite Stem, Vision, or Policy in v0.\n\n"
+            f"Files: `{HEADER_NAME}`, `STEM.yaml`, `dimension-catalogue.yaml`, "
+            "`registry/`, `registry/_foreign_estimates/`, and "
+            "`registry/_inbound_requests/`.\n",
             encoding="utf-8",
         )
 
