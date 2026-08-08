@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 from .apply import apply_from_dict
 from .mass import build_public_card
 from .policy import LocalPolicy
+from .sqlite_store import SQLiteStore
 
 
 class SurfaceHTTPServer(HTTPServer):
@@ -113,7 +114,11 @@ def serve(
     preferred_name: Optional[str] = None,
     substrate: str = "human",
 ) -> None:
-    policy = LocalPolicy(open_consent=True) if open_consent else None
+    policy = (
+        SQLiteStore.from_registry_root(install_root).load_policy(open_consent=True)
+        if open_consent
+        else None
+    )
     httpd = SurfaceHTTPServer(
         (host, port),
         registry_root=install_root,

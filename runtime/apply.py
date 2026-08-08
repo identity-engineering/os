@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional, Union
+from uuid import uuid4
 
 from .models import (
     ApplyStatus,
@@ -42,7 +43,7 @@ def apply_interaction_signal(
             reason="; ".join(errors),
         )
 
-    event_id = str(__import__("uuid").uuid4())
+    event_id = str(uuid4())
 
     if expected_to_handle and signal.to_handle != expected_to_handle:
         receipt = Receipt.create(

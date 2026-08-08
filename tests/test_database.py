@@ -255,6 +255,20 @@ class DatabaseLifecycleTests(unittest.TestCase):
         self.assertEqual(integrity.exit_code, 0, integrity.output)
         self.assertTrue(json.loads(integrity.output)["ok"])
 
+        info_text = runner.invoke(
+            app, ["db", "info", "--path", str(self.root), "--no-json"]
+        )
+        self.assertEqual(info_text.exit_code, 0, info_text.output)
+        self.assertIn("schema_version: 2", info_text.output)
+        self.assertFalse(info_text.output.lstrip().startswith("{"))
+
+        integrity_text = runner.invoke(
+            app,
+            ["db", "integrity-check", "--path", str(self.root), "--no-json"],
+        )
+        self.assertEqual(integrity_text.exit_code, 0, integrity_text.output)
+        self.assertIn("ok: True", integrity_text.output)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,6 +16,7 @@ from ie.paths import remember_ie_root, require_ie_root
 from ie.registry_cmd import get_peer, list_peers
 from ie.status_cmd import collect_status, format_status, status_json
 from runtime.database import database_path
+from runtime.sqlite_store import SQLiteStore
 
 app = typer.Typer(
     name="ie",
@@ -294,27 +295,41 @@ def _database_root(path: Optional[Path]) -> Path:
     return root
 
 
+def _echo_data(data: dict, *, json_out: bool) -> None:
+    if json_out:
+        typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
+        return
+    for key, value in data.items():
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        typer.echo(f"{key}: {value}")
+
+
 @db_app.command("info")
 def db_info(
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
-    json_out: bool = typer.Option(True, "--json", help="Output is JSON (default)"),
+    json_out: bool = typer.Option(
+        True, "--json/--no-json", help="Output as JSON (default)"
+    ),
 ) -> None:
     """Show SQLite path, schema, migration, and connection metadata."""
     from runtime.database import database_info
 
-    typer.echo(json.dumps(database_info(_database_root(path)), indent=2, ensure_ascii=False))
+    _echo_data(database_info(_database_root(path)), json_out=json_out)
 
 
 @db_app.command("integrity-check")
 def db_integrity_check(
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
-    json_out: bool = typer.Option(True, "--json", help="Output is JSON (default)"),
+    json_out: bool = typer.Option(
+        True, "--json/--no-json", help="Output as JSON (default)"
+    ),
 ) -> None:
     """Run SQLite integrity and foreign-key checks."""
     from runtime.database import database_integrity_check
 
     result = database_integrity_check(_database_root(path))
-    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+    _echo_data(result, json_out=json_out)
     if not result["ok"]:
         raise typer.Exit(code=1)
 
@@ -544,9 +559,11 @@ def signal_apply(
 
     from runtime.apply import apply_from_dict
     from runtime.models import ApplyStatus
-    from runtime.policy import LocalPolicy
-
-    policy = LocalPolicy(open_consent=True) if open_consent else None
+    policy = (
+        SQLiteStore.from_registry_root(root).load_policy(open_consent=True)
+        if open_consent
+        else None
+    )
     receipt = apply_from_dict(
         data,
         registry_root=root,

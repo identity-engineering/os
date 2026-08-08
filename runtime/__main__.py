@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .apply import apply_from_dict
 from .models import ApplyStatus
-from .policy import LocalPolicy
+from .sqlite_store import SQLiteStore
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,7 +43,13 @@ def main(argv: list[str] | None = None) -> int:
             raw = sys.stdin.read()
         payload = json.loads(raw)
 
-        policy = LocalPolicy(open_consent=True) if args.open_consent else None
+        policy = (
+            SQLiteStore.from_registry_root(args.install_root).load_policy(
+                open_consent=True
+            )
+            if args.open_consent
+            else None
+        )
         receipt = apply_from_dict(
             payload,
             registry_root=args.install_root,

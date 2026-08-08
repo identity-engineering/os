@@ -5,13 +5,18 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from typer.testing import CliRunner
 
 from ie.cli import app
 from runtime.apply import apply_from_dict
+from runtime.__main__ import main as runtime_main
 from runtime.database import initialize_database
+from runtime.http_handler import serve
 from runtime.models import ApplyStatus
 from runtime.policy_store import (
     grant_consent,
@@ -91,6 +96,108 @@ class PolicyStoreTests(unittest.TestCase):
         self.assertEqual(snapshot["grants"], [])
         self.assertEqual(snapshot["quarantines"], [])
         self.assertEqual(snapshot["policy_event_count"], 4)
+
+    def test_open_consent_override_preserves_persisted_quarantine(self):
+        quarantine_sender(
+            self.install,
+            sender_handle="alice",
+            reason="boundary test",
+        )
+
+        policy = SQLiteStore(self.install).load_policy(open_consent=True)
+        self.assertTrue(policy.open_consent)
+        self.assertIn("alice", policy.quarantined_handles)
+
+        receipt = apply_from_dict(
+            self._payload(coarse_mass_estimate=70),
+            registry_root=self.install,
+            policy=policy,
+            expected_to_handle="me",
+        )
+        self.assertTrue(receipt.quarantine)
+        self.assertNotIn("coarse_mass_estimate", receipt.applied_fields)
+
+    def test_typer_cli_open_consent_uses_persisted_quarantine(self):
+        quarantine_sender(
+            self.install,
+            sender_handle="alice",
+            reason="boundary test",
+        )
+        payload = self.install / "signal.json"
+        payload.write_text(
+            json.dumps(self._payload(coarse_mass_estimate=70)),
+            encoding="utf-8",
+        )
+
+        result = CliRunner().invoke(
+            app,
+            [
+                "signal",
+                "apply",
+                "--path",
+                str(self.install),
+                "--payload",
+                str(payload),
+                "--open-consent",
+            ],
+        )
+
+        self.assertEqual(result.exit_code, 0, result.output)
+        receipt = json.loads(result.output)
+        self.assertTrue(receipt["quarantine"])
+        self.assertNotIn("coarse_mass_estimate", receipt["applied_fields"])
+
+    def test_runtime_cli_open_consent_uses_persisted_quarantine(self):
+        quarantine_sender(
+            self.install,
+            sender_handle="alice",
+            reason="boundary test",
+        )
+        payload = self.install / "signal.json"
+        payload.write_text(
+            json.dumps(self._payload(coarse_mass_estimate=70)),
+            encoding="utf-8",
+        )
+        output = StringIO()
+
+        with redirect_stdout(output):
+            exit_code = runtime_main(
+                [
+                    "apply",
+                    "--install",
+                    str(self.install),
+                    "--payload",
+                    str(payload),
+                    "--open-consent",
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        receipt = json.loads(output.getvalue())
+        self.assertTrue(receipt["quarantine"])
+        self.assertNotIn("coarse_mass_estimate", receipt["applied_fields"])
+
+    def test_http_open_consent_uses_persisted_quarantine(self):
+        quarantine_sender(
+            self.install,
+            sender_handle="alice",
+            reason="boundary test",
+        )
+        captured = {}
+
+        class FakeHTTPServer:
+            def __init__(self, *args, **kwargs):
+                captured["policy"] = kwargs["policy"]
+
+            def serve_forever(self):
+                return None
+
+        with patch("runtime.http_handler.SurfaceHTTPServer", FakeHTTPServer):
+            serve(self.install, "me", open_consent=True)
+
+        policy = captured["policy"]
+        self.assertTrue(policy.open_consent)
+        self.assertIn("alice", policy.quarantined_handles)
 
     def test_policy_commands_mutate_sqlite_and_emit_json(self):
         runner = CliRunner()

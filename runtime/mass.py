@@ -89,7 +89,7 @@ class MassReadout:
 def compute_mass_readout(registry_root: Union[str, Path]) -> MassReadout:
     """Compute volume + emergent self-Mass from the foreign-estimate zone.
 
-    Pure function of files under registry/. No network. No Stem writes.
+    Pure function of SQLite foreign-estimate projections. No network. No Stem writes.
     M_i = last sender_emergent_mass stored from their signals (else M_UNKNOWN).
     """
     store = SQLiteStore.from_registry_root(registry_root)
