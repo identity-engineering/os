@@ -51,21 +51,22 @@ An always-on Geometry Hook runs after each non-rejected signal apply. It may fee
 
 ### Mature (first-class CLI: `ie mature`)
 
-Source-backed causal-integration record — the deliberate workspace review step.
+Source-backed causal-integration commit — the deliberate workspace review step.
 
 `ie mature` requires at least one existing local `--source` file under the install
-root and at least one explicit geometry change. It records the operator's current
-reading of the Trajectory (past → State Differential → Vision Gradient); v0 does
-not parse, infer, or automatically update the Trajectory, Stem, or Vision Gradient.
-This makes provenance explicit without pretending that a free-text note is already
-an accurate causal model.
+root and at least one learning change. It records the operator's current reading
+of the Trajectory and atomically applies the supplied Stem, Workspace, Registry,
+evidence, Geometry, and explicit reassessment changes. It validates the change set
+but does not infer changes that the owner did not supply.
 
 Biology lens (not isomorphism): directed metabolism that commits experience into the persistent Bauplan (Identity DNA). Closest readings: epigenetic marking, developmental maturation, homeostatic plasticity. Not backpropagation of the agentic loop (Identity ≠ Loop).
 
-Optional `ownership_move` on the Geometry Receipt (commitment + level). **Record only** — apply to Stem / Vision / Policy requires Ownership design (#40).
+`ownership_move` and `optionality_delta` are explicit local inputs. Policy changes
+remain separate audited operations (`ie policy ...`); Mature never writes a
+self-declared numeric Self-Mass.
 
-Today: provenance-backed geometry record. Later: anchor for broader workspace
-learning beyond chat history and a real Trajectory feed (Issue #8).
+Today: provenance-backed atomic learning commit. Later: broader derived feeds
+from the committed Trajectory and Geometry history (Issue #8).
 
 ## Write-path matrix (invariants)
 
@@ -73,12 +74,12 @@ learning beyond chat history and a real Trajectory feed (Issue #8).
 |-------|------------------|---------------------------|-----------------|-----------------|------------------------------|
 | **Think** | Not a CLI product | — | Never | Never | Never |
 | **Interact** | Always (after apply) | Yes (hook or explicit feed) | Never | Never | Never (observational consent only) |
-| **Mature** | Source-backed (`ie mature --source ...`) | Receipt only; no live write in v0 | Never in v0 | Never in v0 | Never in v0 (#40) |
+| **Mature** | Source-backed atomic commit | Geometry + Trajectory history | Supplied Stem / Registry / Workspace changes | Supplied Stem vision differential | No implicit policy mutation |
 
 Invariants:
 - No self-declared Mass.
 - No silent policy rewrite.
-- No automatic Vision Gradient write without Ownership design.
+- No inferred Stem, Vision, Registry, or Workspace write beyond the submitted change set.
 - Every Mature receipt carries at least one local source reference.
 - Optionality is an explicit v0 estimate, not a computed gradient.
 - Geometry Receipt is the metabolic product; continuous feed remains Issue #8.
@@ -93,13 +94,15 @@ Invariants:
 - **Interact** is the tool/signal membrane surface.  
 - **Mature** is the deliberate evolve step (`ie mature`).
 
+Mature specifically bridges Causal Entropy (design telos) and Stem continuity: it refines the relative causal model so that expanded future freedom remains continuous with who the Identity is.
+
 ## Operational mapping (v0)
 
 | Mode | Entry point today | Notes |
 |------|-------------------|--------|
 | Interact | `ie signal apply` / Surface / MCP / tools / own scripts | Always-on Geometry Hook on signal apply |
 | Think | Substrate + system prompts / plan-mode | No IE CLI; not a separate Geometry command |
-| Mature | `ie mature --source <file>` → `create_self_probe(mode=mature)` | Source-backed Self Geometry Receipt + optional ownership_move record |
+| Mature | `ie mature --source <file>` → transactional Mature service | Source-backed atomic learning commit + optional reassessment requests |
 
 ## What stays out
 

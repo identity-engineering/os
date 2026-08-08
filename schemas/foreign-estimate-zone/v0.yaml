@@ -26,6 +26,8 @@ optional_fields_per_sender:
   - mass_estimate_at
   - sender_emergent_mass       # sender's own computed emergent Mass (public geometry)
   - sender_emergent_mass_at
+  - sender_last_mature_at      # latest public freshness marker from the sender
+  - sender_last_mature_seen_at # when the observer last saw that marker
   - dimensions_delta
   - relation_pull
   - last_receipt_id

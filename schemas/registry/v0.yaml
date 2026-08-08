@@ -34,6 +34,10 @@ required_fields:
 optional_fields:
   - interaction_count     # integer (contributes to volume candidate when I am the estimated one)
   - mass_confidence       # float 0.0–1.0 (overall)
+  - estimate_updated_at   # when I last changed my estimate of this Identity
+  - estimate_as_of_peer_mature_at  # peer Mature timestamp known at that estimate
+  - peer_last_mature_at   # latest public freshness marker received from the peer
+  - peer_last_mature_seen_at  # when I last saw peer_last_mature_at
   - relation              # first-class relational properties (pull, resonance, frame_distance, ...)
   - effect_on_me          # how this recognized Mass currently affects my tension / Spec
   - perceived_ownership   # degrees of freedom / jurisdiction I attribute to this Identity

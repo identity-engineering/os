@@ -15,6 +15,8 @@ always_passed_when_known:
   - sender_emergent_mass     # 0–100 — sender's *computed* emergent self-Mass
                              # (mean of estimates they received). Public geometry.
                              # Not a self-declared rating. Omit only if unobserved.
+  - sender_last_mature_at     # ISO datetime of sender's latest committed Mature step
+                              # Public freshness metadata only; no Mature content.
 
 consent_based:
   - coarse_mass_estimate     # number 0–100, sender's current estimate of *receiver*
@@ -31,6 +33,7 @@ privacy_defaults:
   share_existence: true
   share_interaction_depth_delta: true
   share_sender_emergent_mass: true     # public gravitational weight of the sender
+  share_sender_last_mature_at: true    # public freshness marker, no content
   share_coarse_mass_estimate: false
   share_dimensions_delta: false
   share_relation_pull: false

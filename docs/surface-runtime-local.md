@@ -1,4 +1,4 @@
-# Surface Runtime – Local deterministic apply (v0)
+# Surface Runtime – Local deterministic apply (SQLite-first V1)
 
 First implementation slice of issue #29 / `docs/realization-surface-runtime.md`.
 
@@ -7,13 +7,13 @@ First implementation slice of issue #29 / `docs/realization-surface-runtime.md`.
 A pure local apply path with **no external network dependency required for the core**:
 
 ```
-payload → validate → policy check → write foreign-estimate zone → receipt
+payload → validate → canonical event → policy check → SQLite projections → receipt
 ```
 
 Plus the inbound **estimate request** path (issue #31):
 
 ```
-request → validate → soft rate limit → write registry/_inbound_requests/ → pending
+request → validate → soft rate limit → write `estimate_requests` → pending
 ```
 
 Location of code: `runtime/`
@@ -22,7 +22,8 @@ Location of code: `runtime/`
 |--------|------|
 | `models.py` | InteractionSignal, Receipt, ForeignEstimateRecord, EstimateRequest |
 | `policy.py` | LocalPolicy (always-passed vs consent, quarantine) |
-| `storage.py` | File stores under `_foreign_estimates/` and `_inbound_requests/` |
+| `database.py` | SQLite lifecycle, schema, migrations, integrity, backup |
+| `sqlite_store.py` | Foreign Estimate, policy, signal, Registry and receipt persistence |
 | `apply.py` | `apply_interaction_signal` / `apply_from_dict` (+ reply linkage) |
 | `request.py` | create / list / status / mark_answered for estimate requests |
 | `__main__.py` | Minimal CLI: `python -m runtime apply ...` |
@@ -35,7 +36,7 @@ Tests: `tests/test_apply.py`, `tests/test_request.py` (stdlib unittest).
 ```bash
 # From repo root
 python -m runtime apply \
-  --registry templates/personal/registry \
+  --install /path/to/ie-install \
   --to my-handle \
   --open-consent \
   --payload /tmp/signal.json
@@ -105,7 +106,7 @@ See `docs/estimate-request.md`.
 
 ```bash
 python -m runtime.http_handler \
-  --registry templates/personal/registry \
+  --install /path/to/ie-install \
   --to my-handle \
   --open-consent \
   --port 8787
@@ -132,14 +133,15 @@ curl -s -X POST http://127.0.0.1:8787/ie/v0/signals \
 ## Storage layout
 
 ```
-registry/
-  _foreign_estimates/
-    peer-alice.yaml   # or .json if PyYAML missing
-  _inbound_requests/
-    <request_id>.yaml
+<install-root>/
+  .ie/
+    ie.sqlite3
+  README.md        # orientation only
+  IE.md             # agent discovery only
 ```
 
-See `schemas/foreign-estimate-zone/v0.yaml` and `schemas/estimate-request/v0.yaml`.
+See `docs/sqlite-schema-v1.md`. The YAML files under `schemas/` remain wire
+contracts and are not read as mutable runtime storage.
 
 ## Policy defaults (v0)
 

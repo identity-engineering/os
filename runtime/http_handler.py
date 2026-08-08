@@ -2,7 +2,7 @@
 
 Stdlib only. Suitable for Free-tier dogfood:
 
-    python -m runtime.http_handler --registry path/to/registry --to my-handle --port 8787
+    python -m runtime.http_handler --install path/to/install --to my-handle --port 8787
 
 Routes:
 
@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 from .apply import apply_from_dict
 from .mass import build_public_card
 from .policy import LocalPolicy
+from .sqlite_store import SQLiteStore
 
 
 class SurfaceHTTPServer(HTTPServer):
@@ -31,7 +32,7 @@ class SurfaceHTTPServer(HTTPServer):
         server_address,
         registry_root: Path,
         to_handle: str,
-        policy: LocalPolicy,
+        policy: Optional[LocalPolicy],
         preferred_name: Optional[str] = None,
         substrate: str = "human",
     ):
@@ -104,7 +105,7 @@ def _make_handler():
 
 
 def serve(
-    registry_root: Path,
+    install_root: Path,
     to_handle: str,
     *,
     host: str = "127.0.0.1",
@@ -113,10 +114,14 @@ def serve(
     preferred_name: Optional[str] = None,
     substrate: str = "human",
 ) -> None:
-    policy = LocalPolicy(open_consent=open_consent)
+    policy = (
+        SQLiteStore.from_registry_root(install_root).load_policy(open_consent=True)
+        if open_consent
+        else None
+    )
     httpd = SurfaceHTTPServer(
         (host, port),
-        registry_root=registry_root,
+        registry_root=install_root,
         to_handle=to_handle,
         policy=policy,
         preferred_name=preferred_name,
@@ -126,7 +131,7 @@ def serve(
     print(f"  POST /ie/v0/signals   (receive_interaction_signal)")
     print(f"  GET  /ie/v0/card      (public card + emergent_self_mass)")
     print(f"  GET  /ie/v0/health")
-    print(f"  registry: {registry_root}")
+    print(f"  install: {install_root}")
     print(f"  to_handle: {to_handle}")
     try:
         httpd.serve_forever()
@@ -137,7 +142,13 @@ def serve(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="IE OS local HTTP surface (v0)")
-    parser.add_argument("--registry", required=True, help="Path to registry/ directory")
+    parser.add_argument(
+        "--install",
+        "--registry",
+        dest="install_root",
+        required=True,
+        help="Path to the IE install root (legacy alias: --registry)",
+    )
     parser.add_argument("--to", required=True, help="This surface's handle")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8787)
@@ -147,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     serve(
-        Path(args.registry),
+        Path(args.install_root),
         args.to,
         host=args.host,
         port=args.port,

@@ -13,8 +13,9 @@ from runtime.mass import (
     depth_factor,
     weight_for,
 )
+from runtime.database import initialize_database
 from runtime.models import ForeignEstimateRecord
-from runtime.storage import ForeignEstimateStore
+from runtime.sqlite_store import SQLiteStore
 
 
 class MassFormulaTests(unittest.TestCase):
@@ -33,9 +34,10 @@ class MassFormulaTests(unittest.TestCase):
 class MassReadoutTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
-        self.registry = Path(self._tmp.name) / "registry"
-        self.registry.mkdir()
-        self.store = ForeignEstimateStore(self.registry)
+        self.install = Path(self._tmp.name) / "install"
+        initialize_database(self.install, handle="me", preferred_name="Me")
+        self.registry = self.install
+        self.store = SQLiteStore(self.install)
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -67,7 +69,7 @@ class MassReadoutTests(unittest.TestCase):
                 "2026-07-31T00:00:00+00:00" if sender_emergent_mass is not None else None
             ),
         )
-        self.store.save(rec)
+        self.store.save_foreign(rec)
 
     def test_empty_zone_unobserved(self):
         out = compute_mass_readout(self.registry)

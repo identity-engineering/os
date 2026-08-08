@@ -19,6 +19,7 @@
    (storage exists; continuous write-back is the heartbeat)
 2. **Access & Jurisdiction / membrane policy** — **#40**  
    (ownership_move on receipt only until apply path exists)
+   (v0 only records consent outcomes + ownership_move on receipt; apply to Stem still gated)
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 4. MCP binding for Surface Runtime (remaining #29 exit criterion)
 

@@ -1,4 +1,4 @@
-"""ie — Identity Engineering OS CLI (v0 skeleton)."""
+"""ie — Identity Engineering OS CLI (SQLite-first V1)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,9 @@ from ie import __version__
 from ie.init_cmd import init_install
 from ie.paths import remember_ie_root, require_ie_root
 from ie.registry_cmd import get_peer, list_peers
-from ie.status_cmd import collect_status, format_status
+from ie.status_cmd import collect_status, format_status, status_json
+from runtime.database import database_path
+from runtime.sqlite_store import SQLiteStore
 
 app = typer.Typer(
     name="ie",
@@ -25,9 +27,13 @@ app = typer.Typer(
 registry_app = typer.Typer(help="Local Registry operations")
 signal_app = typer.Typer(help="Interaction Signal operations")
 request_app = typer.Typer(help="Inbound estimate-request inbox (bidirectional sensor)")
+policy_app = typer.Typer(help="Persistent consent and sender policy")
+db_app = typer.Typer(help="SQLite database diagnostics, recovery, and backup")
 app.add_typer(registry_app, name="registry")
 app.add_typer(signal_app, name="signal")
 app.add_typer(request_app, name="request")
+app.add_typer(policy_app, name="policy")
+app.add_typer(db_app, name="db")
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
 
@@ -178,7 +184,17 @@ def init(
         "-h",
         help="local_handle (default: lowercased preferred name)",
     ),
-    force: bool = typer.Option(False, "--force", help="Overwrite existing template files"),
+    force: bool = typer.Option(
+        False, "--force", help="Allow replacing generated orientation documents"
+    ),
+    reset: bool = typer.Option(
+        False,
+        "--reset",
+        help=(
+            "Destructively replace existing DB/YAML state; V1 does not migrate "
+            "legacy YAML automatically"
+        ),
+    ),
     yes: bool = typer.Option(
         False,
         "--yes",
@@ -216,15 +232,21 @@ def init(
         typer.echo(f"  handle:  {handle}")
         typer.echo(f"  account: {account_info['account_mode']}")
         typer.echo(f"  tier:    {account_info['tier']}")
+        if reset:
+            typer.echo("  reset:   DELETE existing local install state")
         if not typer.confirm("Continue?", default=True):
             raise SystemExit("aborted")
+    if reset and not interactive and not yes:
+        raise SystemExit("--reset is destructive; pass --yes to confirm in non-interactive mode")
 
     root = init_install(
         path,
         handle=handle,
         preferred_name=name,
         force=force,
+        reset=reset,
         account_info=account_info,
+        app_version=__version__,
     )
     remember_ie_root(root)
     typer.echo(f"\nIE install created at {root}")
@@ -241,35 +263,242 @@ def status(
     path: Optional[Path] = typer.Option(
         None, "--path", help="IE install root (default: walk from cwd / IE_ROOT)"
     ),
+    json_out: bool = typer.Option(False, "--json", help="Print machine-readable status"),
 ) -> None:
-    """Show handle, registry peers, foreign-estimate senders, mass readout summary."""
+    """Show the SQLite-backed install and current local projections."""
     root = path.resolve() if path else require_ie_root()
-    if path and not (root / "HEADER.yaml").is_file():
-        raise SystemExit(f"No HEADER.yaml under {root}")
-    typer.echo(format_status(collect_status(root)))
-    registry = root / "registry"
-    if registry.is_dir():
-        from runtime.mass import compute_mass_readout
+    if path and not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
+    info = collect_status(root)
+    if json_out:
+        typer.echo(status_json(info))
+        return
+    typer.echo(format_status(info))
+    from runtime.mass import compute_mass_readout
 
-        readout = compute_mass_readout(registry)
-        mass_s = (
-            f"{readout.emergent_self_mass:.2f}"
-            if readout.emergent_self_mass is not None
-            else "unobserved"
+    readout = compute_mass_readout(root)
+    mass_s = (
+        f"{readout.emergent_self_mass:.2f}"
+        if readout.emergent_self_mass is not None
+        else "unobserved"
+    )
+    typer.echo(
+        f"  self-Mass:  {mass_s}  "
+        f"(estimators={readout.estimator_count}, volume={readout.volume_count})"
+    )
+
+
+def _database_root(path: Optional[Path]) -> Path:
+    root = path.resolve() if path else require_ie_root()
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
+    return root
+
+
+def _echo_data(data: dict, *, json_out: bool) -> None:
+    if json_out:
+        typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
+        return
+    for key, value in data.items():
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        typer.echo(f"{key}: {value}")
+
+
+@db_app.command("info")
+def db_info(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(
+        True, "--json/--no-json", help="Output as JSON (default)"
+    ),
+) -> None:
+    """Show SQLite path, schema, migration, and connection metadata."""
+    from runtime.database import database_info
+
+    _echo_data(database_info(_database_root(path)), json_out=json_out)
+
+
+@db_app.command("integrity-check")
+def db_integrity_check(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(
+        True, "--json/--no-json", help="Output as JSON (default)"
+    ),
+) -> None:
+    """Run SQLite integrity and foreign-key checks."""
+    from runtime.database import database_integrity_check
+
+    result = database_integrity_check(_database_root(path))
+    _echo_data(result, json_out=json_out)
+    if not result["ok"]:
+        raise typer.Exit(code=1)
+
+
+@db_app.command("backup")
+def db_backup(
+    destination: Path = typer.Option(..., "--to", "--destination", help="Backup file path"),
+    force: bool = typer.Option(False, "--force", help="Replace an existing backup"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Create a consistent online backup of the local SQLite database."""
+    from runtime.database import DatabaseError, backup_database
+
+    try:
+        result = backup_database(
+            _database_root(path), destination, overwrite=force
         )
-        typer.echo(
-            f"  self-Mass:  {mass_s}  "
-            f"(estimators={readout.estimator_count}, volume={readout.volume_count})"
+    except DatabaseError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@db_app.command("rebuild-projections")
+def db_rebuild_projections(
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        help="Confirm rebuilding mutable projections from append-only history",
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Rebuild current projections without rewriting audit history."""
+    if not yes:
+        raise SystemExit(
+            "rebuild-projections rewrites current projections; pass --yes after a backup"
         )
+    from runtime.database import DatabaseError
+    from runtime.rebuild import rebuild_projections
+
+    try:
+        result = rebuild_projections(_database_root(path))
+    except DatabaseError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+def _policy_root(path: Optional[Path]) -> Path:
+    return _database_root(path)
+
+
+def _policy_result(result: dict) -> None:
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@policy_app.command("grant")
+def policy_grant(
+    sender_handle: str = typer.Option(..., "--from", "--sender", help="Sender handle"),
+    field_name: str = typer.Option(..., "--field", help="Consent-gated signal field"),
+    note: Optional[str] = typer.Option(None, "--note"),
+    reason: Optional[str] = typer.Option(None, "--reason"),
+    actor: Optional[str] = typer.Option(None, "--actor"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Persist consent for one sender and signal field."""
+    from runtime.policy_store import PolicyError, grant_consent
+
+    try:
+        result = grant_consent(
+            _policy_root(path),
+            sender_handle=sender_handle,
+            field_name=field_name,
+            note=note,
+            reason=reason,
+            actor=actor,
+        )
+    except PolicyError as exc:
+        raise SystemExit(str(exc)) from exc
+    _policy_result(result)
+
+
+@policy_app.command("revoke")
+def policy_revoke(
+    sender_handle: str = typer.Option(..., "--from", "--sender", help="Sender handle"),
+    field_name: str = typer.Option(..., "--field", help="Consent-gated signal field"),
+    reason: Optional[str] = typer.Option(None, "--reason"),
+    actor: Optional[str] = typer.Option(None, "--actor"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Revoke consent while retaining its audit history."""
+    from runtime.policy_store import PolicyError, revoke_consent
+
+    try:
+        result = revoke_consent(
+            _policy_root(path),
+            sender_handle=sender_handle,
+            field_name=field_name,
+            reason=reason,
+            actor=actor,
+        )
+    except PolicyError as exc:
+        raise SystemExit(str(exc)) from exc
+    _policy_result(result)
+
+
+@policy_app.command("quarantine")
+def policy_quarantine(
+    sender_handle: str = typer.Option(..., "--from", "--sender", help="Sender handle"),
+    reason: str = typer.Option(..., "--reason", help="Why this sender is quarantined"),
+    actor: Optional[str] = typer.Option(None, "--actor"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Persistently quarantine a sender from depth and consent aggregation."""
+    from runtime.policy_store import PolicyError, quarantine_sender
+
+    try:
+        result = quarantine_sender(
+            _policy_root(path),
+            sender_handle=sender_handle,
+            reason=reason,
+            actor=actor,
+        )
+    except PolicyError as exc:
+        raise SystemExit(str(exc)) from exc
+    _policy_result(result)
+
+
+@policy_app.command("release")
+def policy_release(
+    sender_handle: str = typer.Option(..., "--from", "--sender", help="Sender handle"),
+    reason: Optional[str] = typer.Option(None, "--reason"),
+    actor: Optional[str] = typer.Option(None, "--actor"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Release a sender from quarantine without deleting the history."""
+    from runtime.policy_store import PolicyError, release_quarantine
+
+    try:
+        result = release_quarantine(
+            _policy_root(path),
+            sender_handle=sender_handle,
+            reason=reason,
+            actor=actor,
+        )
+    except PolicyError as exc:
+        raise SystemExit(str(exc)) from exc
+    _policy_result(result)
+
+
+@policy_app.command("show")
+def policy_show(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Show active persistent policy and audit count."""
+    from runtime.policy_store import policy_snapshot
+
+    _policy_result(policy_snapshot(_policy_root(path)))
 
 
 @registry_app.command("list")
 def registry_list(
     path: Optional[Path] = typer.Option(None, "--path"),
+    json_out: bool = typer.Option(False, "--json", help="Print handles as JSON"),
 ) -> None:
     """List local Registry peer handles."""
     root = path.resolve() if path else require_ie_root()
     peers = list_peers(root)
+    if json_out:
+        typer.echo(json.dumps({"schema_version": "1", "peers": peers}, indent=2))
+        return
     if not peers:
         typer.echo("(empty registry)")
         return
@@ -281,12 +510,16 @@ def registry_list(
 def registry_get(
     handle: str = typer.Argument(..., help="Peer local_handle"),
     path: Optional[Path] = typer.Option(None, "--path"),
+    json_out: bool = typer.Option(False, "--json", help="Print the entry as JSON"),
 ) -> None:
     """Print one Registry entry as YAML/JSON."""
     root = path.resolve() if path else require_ie_root()
     data = get_peer(root, handle)
     if data is None:
         raise SystemExit(f"No registry entry for {handle!r}")
+    if json_out:
+        typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
+        return
     try:
         import yaml  # type: ignore
 
@@ -310,9 +543,8 @@ def signal_apply(
 ) -> None:
     """Apply an Interaction Signal into this install's foreign-estimate zone."""
     root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
-    if not registry.is_dir():
-        raise SystemExit(f"No registry/ under {root}")
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
     if payload:
         raw = payload.read_text(encoding="utf-8")
@@ -327,12 +559,14 @@ def signal_apply(
 
     from runtime.apply import apply_from_dict
     from runtime.models import ApplyStatus
-    from runtime.policy import LocalPolicy
-
-    policy = LocalPolicy(open_consent=open_consent)
+    policy = (
+        SQLiteStore.from_registry_root(root).load_policy(open_consent=True)
+        if open_consent
+        else None
+    )
     receipt = apply_from_dict(
         data,
-        registry_root=registry,
+        registry_root=root,
         policy=policy,
         expected_to_handle=expected,
     )
@@ -357,9 +591,8 @@ def request_create(
 ) -> None:
     """Land an estimate request in this install's inbound inbox (local receive)."""
     root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
-    if not registry.is_dir():
-        raise SystemExit(f"No registry/ under {root}")
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
     if target is None:
         st = collect_status(root)
@@ -373,7 +606,7 @@ def request_create(
 
     try:
         req = create_inbound_request(
-            registry_root=registry,
+            registry_root=root,
             requester_handle=requester,
             target_handle=target,
             requested_fields=fields,
@@ -392,10 +625,12 @@ def request_list(
         None, "--status", help="Filter: pending|ignored|quarantined|answered|expired"
     ),
     path: Optional[Path] = typer.Option(None, "--path"),
+    json_out: bool = typer.Option(False, "--json", help="Print requests as JSON"),
 ) -> None:
     """List inbound estimate requests."""
     root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
     from runtime.models import RequestStatus
     from runtime.request import list_inbound_requests
@@ -409,7 +644,16 @@ def request_list(
                 "--status must be one of: pending|ignored|quarantined|answered|expired"
             )
 
-    rows = list_inbound_requests(registry, status=st_filter)
+    rows = list_inbound_requests(root, status=st_filter)
+    if json_out:
+        typer.echo(
+            json.dumps(
+                {"schema_version": "1", "requests": [row.to_dict() for row in rows]},
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+        return
     if not rows:
         typer.echo("(no requests)")
         return
@@ -430,7 +674,7 @@ def request_show(
     root = path.resolve() if path else require_ie_root()
     from runtime.request import get_inbound_request
 
-    req = get_inbound_request(root / "registry", request_id)
+    req = get_inbound_request(root, request_id)
     if req is None:
         raise SystemExit(f"No request {request_id!r}")
     typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
@@ -447,7 +691,7 @@ def request_ignore(
     from runtime.request import RequestError, set_request_status
 
     try:
-        req = set_request_status(root / "registry", request_id, RequestStatus.IGNORED)
+        req = set_request_status(root, request_id, RequestStatus.IGNORED)
     except RequestError as e:
         raise SystemExit(str(e))
     typer.echo(json.dumps(req.to_dict(), indent=2, ensure_ascii=False))
@@ -465,7 +709,7 @@ def request_quarantine(
 
     try:
         req = set_request_status(
-            root / "registry", request_id, RequestStatus.QUARANTINED
+            root, request_id, RequestStatus.QUARANTINED
         )
     except RequestError as e:
         raise SystemExit(str(e))
@@ -550,31 +794,62 @@ def mature(
     optionality_notes: Optional[str] = typer.Option(
         None, "--optionality-notes", help="optionality_delta.notes"
     ),
+    changes: Optional[Path] = typer.Option(
+        None,
+        "--changes",
+        help="JSON change-set with substance, workspace, registry, or reassessment changes",
+    ),
     sources: list[str] = typer.Option(
         [],
         "--source",
-        help="Existing trajectory or receipt file under the install root (repeatable)",
+        help="Existing evidence file under the install root (repeatable)",
+    ),
+    snapshot_sources: bool = typer.Option(
+        False,
+        "--snapshot-sources",
+        help="Capture UTF-8 evidence snapshots in addition to path and hash",
+    ),
+    reassess: list[str] = typer.Option(
+        [],
+        "--reassess",
+        help="Peer handle to ask for a fresh estimate after this Mature step (repeatable)",
     ),
     observer: Optional[str] = typer.Option(
         None, "--observer", help="Observer handle (default: this install)"
     ),
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
 ) -> None:
-    """Mature: directed causal integration — self Geometry Receipt / workspace evolve.
+    """Mature: commit one directed, source-backed local learning step.
 
-    The first-class Self-Probe for learning. Records relative causal structure of
-    the own Trajectory and optional ownership_move on a Geometry Receipt only.
-    Never auto-applies to Stem / Vision / Policy (see #40). Continuous feed is #8.
+    Stem, Workspace, Registry, Trajectory, evidence, Geometry, and explicit
+    reassessment requests are committed atomically. Emergent Self-Mass is never
+    written by this command.
 
     Think is not a CLI: it is a phase label (inward, non-emitting) provided by
     substrate + prompts. Interact is tools/MCP/signals (see `ie signal apply`).
     """
     root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
-    if not registry.is_dir():
-        raise SystemExit(f"No registry/ under {root}")
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
-    source_refs = _resolve_source_refs(root, sources)
+    change_set: dict = {}
+    if changes:
+        try:
+            parsed = json.loads(changes.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"Could not read Mature change-set: {exc}") from exc
+        if not isinstance(parsed, dict):
+            raise SystemExit("Mature change-set must contain a JSON object")
+        change_set = parsed
+
+    change_sources = change_set.get("source_refs") or change_set.get("sources") or []
+    if isinstance(change_sources, str):
+        change_sources = [change_sources]
+    if not isinstance(change_sources, list) or not all(
+        isinstance(source_ref, str) for source_ref in change_sources
+    ):
+        raise SystemExit("Mature change-set source_refs must be a list of strings")
+    source_refs = _resolve_source_refs(root, list(sources) + change_sources)
     obs = _resolve_observer(root, observer)
     stem = None
     if state_delta or vision_shift or coherence:
@@ -583,6 +858,10 @@ def mature(
             "vision_gradient_shift": vision_shift or "",
             "coherence_note": coherence or "",
         }
+    if isinstance(change_set.get("stem_differential"), dict):
+        stem = {**(stem or {}), **change_set["stem_differential"]}
+    elif isinstance(change_set.get("stem"), dict):
+        stem = {**(stem or {}), **change_set["stem"]}
 
     ownership = None
     if commitment is not None or ownership_level is not None:
@@ -590,6 +869,8 @@ def mature(
             "commitment": commitment or "",
             "ownership_level_estimate": ownership_level,
         }
+    if ownership is None and isinstance(change_set.get("ownership_move"), dict):
+        ownership = change_set["ownership_move"]
 
     opt = None
     if optionality is not None:
@@ -605,23 +886,46 @@ def mature(
             "confidence": conf,
             "notes": optionality_notes or "",
         }
+    if opt is None and isinstance(change_set.get("optionality_delta"), dict):
+        opt = change_set["optionality_delta"]
 
-    from runtime.geometry import GeometryReceiptStore, create_self_probe
+    notes_value = notes or str(change_set.get("notes") or "")
+    workspace = change_set.get("workspace_changes", change_set.get("workspace", []))
+    registry = change_set.get("registry_changes", change_set.get("registry", []))
+    substance = change_set.get("substance")
+    reassessment_targets = list(reassess)
+    configured_targets = change_set.get("reassessment_targets") or []
+    if isinstance(configured_targets, str):
+        configured_targets = [configured_targets]
+    if not isinstance(configured_targets, list) or not all(
+        isinstance(target, str) for target in configured_targets
+    ):
+        raise SystemExit("Mature change-set reassessment_targets must be a list of strings")
+    for target in configured_targets:
+        if target not in reassessment_targets:
+            reassessment_targets.append(target)
+
+    from runtime.mature import MatureError, commit_mature
 
     try:
-        geo = create_self_probe(
-            mode="mature",
-            observer=obs,
-            notes=notes or "",
+        result = commit_mature(
+            root,
             source_refs=source_refs,
+            notes=notes_value,
+            actor=obs,
             stem_differential=stem,
+            substance=substance,
+            workspace_changes=workspace,
+            registry_changes=registry,
+            reassessment_targets=reassessment_targets,
             ownership_move=ownership,
             optionality_delta=opt,
+            capture_snapshots=snapshot_sources
+            or bool(change_set.get("capture_snapshots", False)),
         )
-    except ValueError as exc:
+    except MatureError as exc:
         raise SystemExit(str(exc)) from exc
-    GeometryReceiptStore(registry).save(geo)
-    typer.echo(json.dumps(geo.to_dict(), indent=2, ensure_ascii=False))
+    typer.echo(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
 
 
 @app.command("mass")
@@ -641,13 +945,12 @@ def mass(
     See docs/mass.md.
     """
     root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
-    if not registry.is_dir():
-        raise SystemExit(f"No registry/ under {root}")
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
     from runtime.mass import compute_mass_readout
 
-    readout = compute_mass_readout(registry)
+    readout = compute_mass_readout(root)
     if json_out:
         typer.echo(json.dumps(readout.to_dict(), indent=2, ensure_ascii=False))
         return
@@ -687,12 +990,24 @@ def catalogue(
 ) -> None:
     """Show dimension catalogue path / stub summary."""
     root = path.resolve() if path else require_ie_root()
-    cat = root / "dimension-catalogue.yaml"
-    if not cat.is_file():
-        typer.echo("No dimension-catalogue.yaml in this install.")
-        raise typer.Exit(code=1)
-    typer.echo(f"catalogue: {cat}")
-    typer.echo("(full catalogue inspection comes in a later slice)")
+    from runtime.database import Database
+
+    with Database(database_path(root)) as database:
+        rows = database.conn.execute(
+            """
+            SELECT name, weight, active, discovered_via, revision
+            FROM metric_dimensions
+            ORDER BY name
+            """
+        ).fetchall()
+    if not rows:
+        typer.echo("(empty dimension catalogue)")
+        return
+    for row in rows:
+        typer.echo(
+            f"{row['name']}  weight={row['weight']:.3f}  "
+            f"active={bool(row['active'])}  revision={row['revision']}"
+        )
 
 
 @app.command("reindex")
@@ -701,13 +1016,12 @@ def reindex(
 ) -> None:
     """Recompute derived readouts (volume / emergent self-Mass). Live only in v0."""
     root = path.resolve() if path else require_ie_root()
-    registry = root / "registry"
-    if not registry.is_dir():
-        raise SystemExit(f"No registry/ under {root}")
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
     from runtime.mass import compute_mass_readout
 
-    readout = compute_mass_readout(registry)
+    readout = compute_mass_readout(root)
     mass_s = (
         f"{readout.emergent_self_mass:.4f}"
         if readout.emergent_self_mass is not None

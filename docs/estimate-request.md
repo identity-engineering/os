@@ -1,4 +1,4 @@
-# Estimate Request + Inbox (v0)
+# Estimate Request + Inbox (SQLite-first V1)
 
 Implementation of the **inbound** half of the bidirectional gravitational sensor
 (issue #31). Design lock: `docs/bidirectional-gravitational-sensor.md`.
@@ -9,7 +9,7 @@ Implementation of the **inbound** half of the bidirectional gravitational sensor
 |-------|----------|
 | Schema | `schemas/estimate-request/v0.yaml` |
 | Models | `EstimateRequest`, `RequestStatus` in `runtime/models.py` |
-| Store | `registry/_inbound_requests/{request_id}.yaml` via `InboundRequestStore` |
+| Store | SQLite table `estimate_requests` in `.ie/ie.sqlite3` |
 | Ops | `runtime/request.py` |
 | CLI | `ie request create\|list\|show\|ignore\|quarantine` |
 | Reply link | optional `in_reply_to_request_id` on Interaction Signal → marks request answered |
@@ -33,7 +33,9 @@ Implementation of the **inbound** half of the bidirectional gravitational sensor
 
 - Requests **never** auto-answer.
 - Soft limit: max pending requests per requester handle (default 20).
-- No write path into Stem, Vision, Metric Stem weights, or access policy.
+- Mature may create explicit outbound reassessment requests; it does not answer
+   inbound requests automatically.
+- No request path silently changes Stem, Vision, Metric Stem weights, or policy.
 - Quarantine is first-class and symmetric in spirit to signal quarantine.
 
 ## CLI examples

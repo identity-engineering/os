@@ -12,9 +12,12 @@ It is **not** the inter-identity communication protocol and is **not** sent as a
 
 1. **AGENTS.md** (or CLAUDE.md / stack-equivalent) contains a short IE block: local_handle, paths or connection pointer, privacy defaults, schema version, optional surface endpoint URL.
 2. If no AGENTS ecosystem exists, optional **IE.md** with the same block.
-3. Structured state lives in Registry / Metric Stem / foreign-estimate zone — as files (YAML), SQLite, or managed SQL with the **same logical schema**.
+3. Structured V1 state lives in Registry / Metric Stem / foreign-estimate zone
+	in `<install-root>/.ie/ie.sqlite3`. YAML files under `schemas/` describe
+	contracts and examples; they are not mutable runtime state.
 
-YAML templates under `templates/personal/` are the Free-local serialization, not a requirement that every deployment is a YAML file.
+`IE.md` is a discovery aid only. Agents must use the CLI or runtime API for
+state reads and writes.
 
 ## Minimal local fields
 

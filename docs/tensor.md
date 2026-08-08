@@ -29,13 +29,18 @@ The high-dimensional, open, contentful dimensional space that lives inside each 
 
 The **intended** primary update path is the **Geometry Receipt** produced by the Probe process after every Interaction (Think / Interact / Mature). See `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`.
 
-- Geometry Receipts are local by default and **written today** under `registry/_geometry_receipts/`.
-- **v0 does not yet** rewrite Registry alloys, Metric Stem confidence, or live Tension from those receipts. Continuous write-back is the open work on **OS #8** (Living Tension Tensor update protocol).
+- Geometry Receipts are local by default and **written today** into the
+	`geometry_receipts` table in `.ie/ie.sqlite3`.
+- Interact updates Registry continuity separately and explicitly. Mature may
+	commit supplied Registry and Metric Stem changes; no Geometry Receipt causes
+	an inferred rewrite. Continuous derived Tension/Tensor feed remains the open
+	work on **OS #8**.
 - Receipts never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
 
 ## Storage implication
 
-See `docs/storage-tiers.md`. Free = local files/SQLite. Personal Pro = managed SQL. Skills are storage-agnostic.
+See `docs/storage-tiers.md`. Free = local SQLite. Personal Pro = managed SQL.
+Skills are storage-agnostic.
 
 ## Implications
 

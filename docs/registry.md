@@ -32,9 +32,10 @@ It answers:
 - Open: whether density still needs an explicit depth / intensity parameter in the dimension structure.
 - Open: the exact balance between what I estimate of the surrounding vs. what I receive via signal (to be fixed in the interaction contract).
 
-## Design decisions (v0)
+## Design decisions (SQLite-first V1)
 
-- **Single file per Identity** under `templates/personal/registry/{local_handle}.yaml`
+- **One SQLite projection** in `registry_entries`, with append-only revision rows
+	in `registry_entry_revisions`
 - `local_handle` is observer-owned and persistent inside this Registry
 - All quantitative fields are relative (`my_mass_estimate`, dimensional values, …)
 - Privacy defaults are structural and default to minimal sharing
@@ -55,9 +56,15 @@ It answers:
 | Perceived ownership | freedom degrees and jurisdiction I attribute |
 | Privacy | what may leave my frame |
 
+Incoming accepted Interaction Signals update `last_interaction`,
+`interaction_count`, `interaction_depth`, and public peer freshness. A first
+contact creates a minimal entry. Mature is the explicit owner-controlled path
+for estimates, dimensions, relationship notes, and other Registry changes; each
+change receives a revision and an audit snapshot.
+
 ## What comes next
 
-1. Minimal interaction signal that can update an existing entry (or propose a new one) and potentially discover / propose new dimensions
+1. Dimension discovery and optional cross-Identity propagation mechanics
 2. Live derivation rules for multi-dimensional distance, density aggregation and tension
 3. Dimension-discovery and optional cross-Identity propagation mechanics
 4. Clarification of density depth/intensity parameter (if needed)

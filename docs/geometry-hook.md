@@ -1,4 +1,4 @@
-# Geometry Hook (v0)
+# Geometry Hook (SQLite-first V1)
 
 Working design · 01.08.2026  
 Updated 02.08.2026 — storage-only feed path; Mass sources; membrane stub
@@ -27,9 +27,9 @@ InteractionSignal (+ apply Receipt)
         ↓
 Geometry Extraction
         ↓
-Geometry Receipt (local file)
+Geometry Receipt (local SQLite row)
         ↓
-registry/_geometry_receipts/
+geometry_receipts + geometry_receipt_sources
 ```
 
 **v0 stops at local storage.** Receipts do **not** yet rewrite Registry alloys, Metric Stem, or live Tension. That write-back is **OS #8**.
@@ -57,12 +57,9 @@ Same number the sender would publish on their public card / attach as `sender_em
 
 ## Storage
 
-```
-registry/
-  _foreign_estimates/
-  _geometry_receipts/
-  _inbound_requests/
-```
+`geometry_receipts` and `geometry_receipt_sources` live in
+`<install-root>/.ie/ie.sqlite3`. Evidence references and hashes are retained in
+`evidence_sources`; no mutable Geometry YAML directory is created.
 
 ## Failure behaviour
 

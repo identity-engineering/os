@@ -48,3 +48,6 @@ Full per-dimension dependency tensors (a tensor for every dimension) stay out of
 
 - Schema: `schemas/dimension-catalogue/v0.yaml`
 - Personal template: `templates/personal/dimension-catalogue.yaml`
+- Canonical V1 state: `metric_dimensions` and `metric_pairs` in `.ie/ie.sqlite3`
+- New dimensions are discovered through source-backed `ie mature` changes; the
+	initial install seeds only `ownership_depth` and `clarity_of_vision`.

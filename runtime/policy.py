@@ -43,6 +43,8 @@ class LocalPolicy:
             # Still record their published mass for audit, but no depth/consent weight.
             if signal.sender_emergent_mass is not None:
                 applied.append("sender_emergent_mass")
+            if signal.sender_last_mature_at is not None:
+                applied.append("sender_last_mature_at")
             rejected.append(
                 {"field": "interaction_depth_delta", "reason": "sender quarantined"}
             )
@@ -62,6 +64,8 @@ class LocalPolicy:
         applied.append("interaction_depth_delta")
         if signal.sender_emergent_mass is not None:
             applied.append("sender_emergent_mass")
+        if signal.sender_last_mature_at is not None:
+            applied.append("sender_last_mature_at")
 
         # Consent-based (about *me*)
         consent_map = {

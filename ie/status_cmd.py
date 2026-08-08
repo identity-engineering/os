@@ -1,82 +1,94 @@
-"""ie status — summarize a local IE install."""
+"""ie status - summarize a local SQLite-first IE install."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from .paths import HEADER_NAME
-
-try:
-    import yaml  # type: ignore
-except ImportError:  # pragma: no cover
-    yaml = None
-
-
-def _load_yaml(path: Path) -> dict[str, Any]:
-    if not path.is_file():
-        return {}
-    text = path.read_text(encoding="utf-8")
-    if yaml is None:
-        return {"_raw": text[:200]}
-    return yaml.safe_load(text) or {}
+from runtime.database import Database, database_path
 
 
 def collect_status(root: Path) -> dict[str, Any]:
-    header = _load_yaml(root / HEADER_NAME)
-    identity = header.get("identity") or {}
-    registry_dir = root / "registry"
-    fe_dir = registry_dir / "_foreign_estimates"
+    root = root.expanduser().resolve()
+    db_path = database_path(root)
+    if not db_path.is_file():
+        raise SystemExit(f"No IE database under {root} (.ie/ie.sqlite3)")
 
-    peers = []
-    if registry_dir.is_dir():
-        for p in sorted(registry_dir.glob("*.yaml")):
-            if p.name.startswith("_"):
-                continue
-            peers.append(p.stem)
-        for p in sorted(registry_dir.glob("*.json")):
-            if p.name.startswith("_"):
-                continue
-            peers.append(p.stem)
+    with Database(db_path) as database:
+        conn = database.conn
+        identity = conn.execute(
+            """
+            SELECT identity_id, local_handle, preferred_name, substrate,
+                   last_signal_at, last_mature_at
+            FROM identity
+            LIMIT 1
+            """
+        ).fetchone()
+        if identity is None:
+            raise SystemExit(f"IE database has no local identity: {db_path}")
 
-    foreign = []
-    if fe_dir.is_dir():
-        for p in sorted(fe_dir.glob("*.*")):
-            if (
-                not p.is_file()
-                or p.name.startswith("_")
-                or p.suffix.lower() not in {".yaml", ".yml", ".json"}
-            ):
-                continue
-            foreign.append(p.stem)
+        peers = [
+            row[0]
+            for row in conn.execute(
+                "SELECT peer_handle FROM registry_entries WHERE identity_id = ? ORDER BY peer_handle",
+                (identity["identity_id"],),
+            ).fetchall()
+        ]
+        foreign = [
+            row[0]
+            for row in conn.execute(
+                "SELECT sender_handle FROM foreign_estimates WHERE identity_id = ? ORDER BY sender_handle",
+                (identity["identity_id"],),
+            ).fetchall()
+        ]
+        dimension_count = int(
+            conn.execute(
+                "SELECT COUNT(*) FROM metric_dimensions WHERE identity_id = ?",
+                (identity["identity_id"],),
+            ).fetchone()[0]
+        )
+        schema_version = int(conn.execute("PRAGMA user_version").fetchone()[0])
 
     return {
         "root": str(root),
-        "handle": identity.get("local_handle"),
-        "preferred_name": identity.get("preferred_name"),
-        "substrate": header.get("substrate"),
-        "schema_version": header.get("schema_version"),
-        "registry_peers": sorted(set(peers)),
-        "foreign_estimate_senders": sorted(set(foreign)),
-        "has_stem": (root / "STEM.yaml").is_file(),
-        "has_catalogue": (root / "dimension-catalogue.yaml").is_file(),
+        "db_path": str(db_path),
+        "database": True,
+        "handle": identity["local_handle"],
+        "preferred_name": identity["preferred_name"],
+        "substrate": identity["substrate"],
+        "schema_version": schema_version,
+        "last_signal_at": identity["last_signal_at"],
+        "last_mature_at": identity["last_mature_at"],
+        "registry_peers": peers,
+        "foreign_estimate_senders": foreign,
+        "metric_dimension_count": dimension_count,
+        "has_stem": True,
+        "has_catalogue": dimension_count > 0,
     }
 
 
 def format_status(info: dict[str, Any]) -> str:
     lines = [
         f"IE install: {info['root']}",
-        f"  handle:     {info.get('handle') or '—'}",
-        f"  name:       {info.get('preferred_name') or '—'}",
-        f"  substrate:  {info.get('substrate') or '—'}",
-        f"  stem:       {'yes' if info.get('has_stem') else 'no'}",
-        f"  catalogue:  {'yes' if info.get('has_catalogue') else 'no'}",
-        f"  registry:   {len(info.get('registry_peers') or [])} peer(s)",
+        f"  database:  {info.get('db_path') or '—'}",
+        f"  schema:    v{info.get('schema_version') or '—'}",
+        f"  handle:    {info.get('handle') or '—'}",
+        f"  name:      {info.get('preferred_name') or '—'}",
+        f"  substrate: {info.get('substrate') or '—'}",
+        f"  mature:    {info.get('last_mature_at') or 'not yet'}",
+        f"  stem:      {'yes' if info.get('has_stem') else 'no'}",
+        f"  catalogue: {info.get('metric_dimension_count', 0)} dimension(s)",
+        f"  registry:  {len(info.get('registry_peers') or [])} peer(s)",
     ]
-    for h in info.get("registry_peers") or []:
-        lines.append(f"    - {h}")
-    fe = info.get("foreign_estimate_senders") or []
-    lines.append(f"  foreign estimates: {len(fe)} sender(s)")
-    for h in fe:
-        lines.append(f"    - {h}")
+    for handle in info.get("registry_peers") or []:
+        lines.append(f"    - {handle}")
+    foreign = info.get("foreign_estimate_senders") or []
+    lines.append(f"  foreign estimates: {len(foreign)} sender(s)")
+    for handle in foreign:
+        lines.append(f"    - {handle}")
     return "\n".join(lines)
+
+
+def status_json(info: dict[str, Any]) -> str:
+    return json.dumps(info, indent=2, ensure_ascii=False)
