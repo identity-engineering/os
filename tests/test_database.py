@@ -53,10 +53,16 @@ class DatabaseLifecycleTests(unittest.TestCase):
             self.assertEqual([row[0] for row in dimensions], ["clarity_of_vision", "ownership_depth"])
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 1)
+        self.assertEqual(info["schema_version"], 2)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
         self.assertGreaterEqual(info["table_count"], 20)
+        with Database(db_path) as database:
+            for table in ("registry_entry_revisions", "workspace_item_revisions"):
+                self.assertEqual(
+                    database.conn.execute(f"PRAGMA foreign_key_list({table})").fetchall(),
+                    [],
+                )
 
     def test_reopen_preserves_data_and_migration_is_idempotent(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
@@ -78,7 +84,13 @@ class DatabaseLifecycleTests(unittest.TestCase):
             migrations = database.conn.execute(
                 "SELECT version, name FROM schema_migrations"
             ).fetchall()
-            self.assertEqual([tuple(row) for row in migrations], [(1, "initial_db_only_v1")])
+            self.assertEqual(
+                [tuple(row) for row in migrations],
+                [
+                    (1, "initial_db_only_v1"),
+                    (2, "preserve_projection_history"),
+                ],
+            )
 
     def test_existing_database_is_not_overwritten(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
@@ -110,7 +122,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 1)
+        self.assertEqual(json.loads(info.output)["schema_version"], 2)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]

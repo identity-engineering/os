@@ -73,15 +73,11 @@ class ProjectionRebuildTests(unittest.TestCase):
                 database.conn.execute(
                     "UPDATE foreign_estimates SET accumulated_depth = 0.0"
                 )
-                database.conn.execute(
-                    "UPDATE registry_entries SET description = 'corrupt'"
-                )
+                database.conn.execute("DELETE FROM registry_entries")
                 database.conn.execute(
                     "UPDATE stem_state SET state_differential_json = '{}'"
                 )
-                database.conn.execute(
-                    "UPDATE workspace_items SET title = 'corrupt'"
-                )
+                database.conn.execute("DELETE FROM workspace_items")
                 database.conn.execute(
                     "UPDATE identity SET last_signal_at = NULL, last_mature_at = NULL"
                 )

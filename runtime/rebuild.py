@@ -203,13 +203,17 @@ def _rebuild_registry(conn, *, identity_id: str) -> tuple[int, int]:
         """
         SELECT r.*
         FROM registry_entry_revisions r
-        JOIN registry_entries e ON e.entry_id = r.entry_id
-        WHERE e.identity_id = ?
         ORDER BY r.entry_id, r.revision
         """,
-        (identity_id,),
     ).fetchall()
-    latest = _latest(rows, ("entry_id",))
+    identity_rows = []
+    for row in rows:
+        snapshot = _decode_json(row["snapshot_json"], {})
+        if not isinstance(snapshot, dict):
+            raise DatabaseError("registry revision history contains an invalid snapshot")
+        if snapshot.get("identity_id") == identity_id:
+            identity_rows.append(row)
+    latest = _latest(identity_rows, ("entry_id",))
     if latest:
         entry_ids = [key[0] for key in latest]
         placeholders = ", ".join("?" for _ in entry_ids)
@@ -226,8 +230,6 @@ def _rebuild_registry(conn, *, identity_id: str) -> tuple[int, int]:
 
     for revision in latest.values():
         snapshot = _decode_json(revision["snapshot_json"], {})
-        if not isinstance(snapshot, dict):
-            raise DatabaseError("registry revision history contains an invalid snapshot")
         values = _registry_values(snapshot, identity_id=identity_id)
         existing = conn.execute(
             "SELECT 1 FROM registry_entries WHERE entry_id = ?",
@@ -259,8 +261,8 @@ def _rebuild_registry(conn, *, identity_id: str) -> tuple[int, int]:
         """
         SELECT r.*
         FROM registry_dimension_revisions r
-        JOIN registry_entries e ON e.entry_id = r.entry_id
-        WHERE e.identity_id = ?
+        JOIN metric_dimensions d ON d.dimension_id = r.dimension_id
+        WHERE d.identity_id = ?
         ORDER BY r.entry_id, r.dimension_id, r.revision
         """,
         (identity_id,),
@@ -331,13 +333,17 @@ def _rebuild_workspace(conn, *, identity_id: str) -> int:
         """
         SELECT r.*
         FROM workspace_item_revisions r
-        JOIN workspace_items w ON w.item_id = r.item_id
-        WHERE w.identity_id = ?
         ORDER BY r.item_id, r.revision
         """,
-        (identity_id,),
     ).fetchall()
-    latest = _latest(rows, ("item_id",))
+    identity_rows = []
+    for row in rows:
+        snapshot = _decode_json(row["snapshot_json"], {})
+        if not isinstance(snapshot, dict):
+            raise DatabaseError("workspace revision history contains an invalid snapshot")
+        if snapshot.get("identity_id") == identity_id:
+            identity_rows.append(row)
+    latest = _latest(identity_rows, ("item_id",))
     if latest:
         item_ids = [key[0] for key in latest]
         placeholders = ", ".join("?" for _ in item_ids)
@@ -353,8 +359,6 @@ def _rebuild_workspace(conn, *, identity_id: str) -> int:
         conn.execute("DELETE FROM workspace_items WHERE identity_id = ?", (identity_id,))
     for revision in latest.values():
         snapshot = _decode_json(revision["snapshot_json"], {})
-        if not isinstance(snapshot, dict):
-            raise DatabaseError("workspace revision history contains an invalid snapshot")
         tags = snapshot.get("tags_json", snapshot.get("tags", []))
         tags_json = tags if isinstance(tags, str) else canonical_json(tags)
         fields = {

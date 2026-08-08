@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class DatabaseError(RuntimeError):
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS registry_entries (
 
 CREATE TABLE IF NOT EXISTS registry_entry_revisions (
     revision_id TEXT PRIMARY KEY,
-    entry_id TEXT NOT NULL REFERENCES registry_entries(entry_id) ON DELETE CASCADE,
+    entry_id TEXT NOT NULL,
     revision INTEGER NOT NULL,
     actor TEXT NOT NULL,
     event_id TEXT,
@@ -360,7 +360,7 @@ CREATE TABLE IF NOT EXISTS workspace_items (
 
 CREATE TABLE IF NOT EXISTS workspace_item_revisions (
     revision_id TEXT PRIMARY KEY,
-    item_id TEXT NOT NULL REFERENCES workspace_items(item_id) ON DELETE CASCADE,
+    item_id TEXT NOT NULL,
     revision INTEGER NOT NULL,
     operation TEXT NOT NULL CHECK (operation IN ('create', 'update', 'complete', 'archive')),
     actor TEXT NOT NULL,
@@ -431,7 +431,58 @@ CREATE TABLE IF NOT EXISTS trajectory_entries (
 );
 """
 
-MIGRATIONS = ((SCHEMA_VERSION, "initial_db_only_v1", INITIAL_SCHEMA),)
+PROJECTION_HISTORY_MIGRATION = """
+CREATE TABLE registry_entry_revisions_v2 (
+    revision_id TEXT PRIMARY KEY,
+    entry_id TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    actor TEXT NOT NULL,
+    event_id TEXT,
+    mature_id TEXT,
+    snapshot_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(entry_id, revision)
+);
+
+INSERT INTO registry_entry_revisions_v2(
+    revision_id, entry_id, revision, actor, event_id, mature_id,
+    snapshot_json, created_at
+)
+SELECT revision_id, entry_id, revision, actor, event_id, mature_id,
+       snapshot_json, created_at
+FROM registry_entry_revisions;
+
+DROP TABLE registry_entry_revisions;
+ALTER TABLE registry_entry_revisions_v2 RENAME TO registry_entry_revisions;
+
+CREATE TABLE workspace_item_revisions_v2 (
+    revision_id TEXT PRIMARY KEY,
+    item_id TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    operation TEXT NOT NULL CHECK (operation IN ('create', 'update', 'complete', 'archive')),
+    actor TEXT NOT NULL,
+    mature_id TEXT,
+    snapshot_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(item_id, revision)
+);
+
+INSERT INTO workspace_item_revisions_v2(
+    revision_id, item_id, revision, operation, actor, mature_id,
+    snapshot_json, created_at
+)
+SELECT revision_id, item_id, revision, operation, actor, mature_id,
+       snapshot_json, created_at
+FROM workspace_item_revisions;
+
+DROP TABLE workspace_item_revisions;
+ALTER TABLE workspace_item_revisions_v2 RENAME TO workspace_item_revisions;
+"""
+
+MIGRATIONS = (
+    (1, "initial_db_only_v1", INITIAL_SCHEMA),
+    (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
+)
 
 
 def _chmod_private(path: Path, mode: int) -> None:

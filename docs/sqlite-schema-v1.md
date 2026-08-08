@@ -21,6 +21,8 @@ canonical source of mutable state in V1.
   every database connection.
 - Current tables are projections for fast operation. Event and revision tables
   preserve the local history needed to explain and rebuild those projections.
+  Revision tables do not cascade from current projection rows: repairing or
+  deleting a projection must never delete the history needed to rebuild it.
 - No canonical mutable state is stored in YAML. YAML contract files in the
   repository are documentation only and are not read by the local runtime.
 
