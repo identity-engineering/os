@@ -42,6 +42,19 @@ Mature-derived value into emergent Self-Mass. Emergent Self-Mass remains a
 derived readout from `foreign_estimates`, and is published only when the owner
 later emits a signal or serves its public card.
 
+## Account vs Identity (product model)
+
+Product direction: **Account ≠ Identity**. An IE Account may contain many
+Identities across substrates. See `docs/account-identity-model.md`.
+
+SQLite-first **V1** still ships **one local Identity per installation** (table
+`identity`, unique on `install_id`). That is a deliberate Free starting shape,
+not a claim that Identity equals Account. Schema evolution toward multiple
+local Identities per install, and managed multi-Identity under one account,
+must reuse the same Identity meaning and must record `actor_identity_id` on
+mutations. V1 does not need N local Identities before the product model is
+locked.
+
 ## Table groups
 
 ### Installation and local identity
@@ -73,7 +86,7 @@ One row for the database installation.
 
 #### `identity`
 
-One local owner identity per installation. The handle is the operational
+One local owner identity per installation in V1. The handle is the operational
 address; the UUID prevents a handle rename from changing event ownership.
 
 | Column | Meaning |
