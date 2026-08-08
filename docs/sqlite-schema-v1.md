@@ -360,5 +360,9 @@ not committed.
 - Quarantine and revoked consent exclude data from current calculations without
   deleting the underlying audit trail.
 - `ie db backup` copies the SQLite database using SQLite's backup API.
+- `ie db rebuild-projections --yes` restores current Foreign Estimate, Stem,
+  Registry, and Workspace projections from canonical events and revision
+  snapshots. It does not rewrite append-only audit or policy history; create a
+  backup first.
 - A local reset is explicit and destructive. `--force` alone must never delete
   an existing database; reset requires a separate confirmation/flag.

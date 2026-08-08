@@ -40,6 +40,12 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 
 `ie init` remembers the created install as the active local root (`$XDG_CONFIG_HOME/ie-os/active-root` or `~/.config/ie-os/active-root`).
 
+V1 is a DB-only cutover. `ie init` does not migrate existing `HEADER.yaml`,
+`STEM.yaml`, Registry, trajectory, or other legacy YAML state. If a legacy
+install is detected, initialization stops; back it up or export it manually
+before using `ie init --reset --yes`, which removes the known legacy state and
+creates a new `.ie/ie.sqlite3`.
+
 ## Commands (SQLite-first V1)
 
 | Command | Purpose |
@@ -52,7 +58,7 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 | `ie policy …` | Persistent consent and sender quarantine |
 | `ie mature` | Mature: atomic source-backed learning commit |
 | `ie mass` | Emergent self-Mass readout |
-| `ie db info` / `integrity-check` / `backup` | Database diagnostics and recovery |
+| `ie db info` / `integrity-check` / `backup` / `rebuild-projections` | Database diagnostics and recovery |
 
 All mutable runtime state is in `<install-root>/.ie/ie.sqlite3`. `README.md` and
 `IE.md` are orientation documents only; the YAML files under `schemas/` and
@@ -110,7 +116,12 @@ Database recovery is explicit:
 ie db info
 ie db integrity-check
 ie db backup --to ~/ie-backups/ie.sqlite3
+ie db rebuild-projections --yes
 ```
+
+Run `backup` first. `rebuild-projections` restores Foreign Estimates from
+Interaction Events and owned projections from their revision snapshots; it
+does not rewrite append-only audit history or policy history.
 
 ## See also
 

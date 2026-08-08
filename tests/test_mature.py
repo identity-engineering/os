@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -81,12 +82,28 @@ class MatureTransactionTests(unittest.TestCase):
         self.assertEqual(len(self._query("SELECT * FROM registry_entries")), 1)
         self.assertEqual(len(self._query("SELECT * FROM registry_entry_revisions")), 1)
         self.assertEqual(len(self._query("SELECT * FROM registry_dimension_values")), 1)
+        self.assertEqual(len(self._query("SELECT * FROM registry_dimension_revisions")), 1)
+        dimension = self._query(
+            "SELECT * FROM metric_dimensions WHERE name = 'clarity'"
+        )[0]
+        self.assertEqual(dimension["discovered_via"], "mature")
         self.assertEqual(len(self._query("SELECT * FROM trajectory_entries")), 1)
         self.assertEqual(len(self._query("SELECT * FROM geometry_receipts")), 1)
+        source = self._query("SELECT * FROM evidence_sources")[0]
+        self.assertEqual(source["sha256"], hashlib.sha256(b"causal evidence\n").hexdigest())
+        self.assertEqual(source["snapshot_text"], "causal evidence\n")
+        self.assertEqual(
+            self._query("SELECT source_id FROM geometry_receipt_sources")[0][0],
+            source["source_id"],
+        )
 
         request = self._query("SELECT * FROM estimate_requests")[0]
         self.assertEqual(request["direction"], "outbound")
         self.assertEqual(request["mature_id"], result["mature_id"])
+        self.assertEqual(
+            json.loads(request["requested_fields_json"]),
+            ["coarse_mass_estimate", "mass_confidence"],
+        )
 
         identity = self._query("SELECT * FROM identity")[0]
         self.assertEqual(identity["last_mature_at"], result["last_mature_at"])
@@ -94,6 +111,8 @@ class MatureTransactionTests(unittest.TestCase):
         substance = json.loads(stem["substance_json"])
         self.assertNotIn("owned_mass", substance)
         self.assertEqual(substance["current_focus"], "ownership probe")
+        workspace = self._query("SELECT * FROM workspace_items")[0]
+        self.assertEqual(workspace["source_id"], source["source_id"])
         card = build_public_card(local_handle="me", registry_root=self.install)
         self.assertEqual(card["last_mature_at"], result["last_mature_at"])
 
@@ -144,6 +163,25 @@ class MatureTransactionTests(unittest.TestCase):
                     }
                 ],
             )
+
+    def test_workspace_source_reference_must_resolve(self):
+        with self.assertRaisesRegex(MatureError, "not one of the Mature sources"):
+            commit_mature(
+                self.install,
+                source_refs=["evidence.txt"],
+                workspace_changes=[
+                    {
+                        "kind": "note",
+                        "title": "Unproven note",
+                        "content": "This source was not supplied.",
+                        "source_ref": "missing.txt",
+                    }
+                ],
+            )
+
+        self.assertEqual(len(self._query("SELECT * FROM mature_events")), 0)
+        self.assertEqual(len(self._query("SELECT * FROM workspace_items")), 0)
+        self.assertEqual(len(self._query("SELECT * FROM evidence_sources")), 0)
 
 
 if __name__ == "__main__":

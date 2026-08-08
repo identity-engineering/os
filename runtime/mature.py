@@ -720,6 +720,35 @@ def _workspace_snapshot(row) -> dict[str, Any]:
     return snapshot
 
 
+def _workspace_source_id(
+    conn,
+    *,
+    identity_id: str,
+    change: dict[str, Any],
+    source_ids: dict[str, str],
+) -> Optional[str]:
+    if "source_ref" in change:
+        source_ref = str(change.get("source_ref", "")).strip()
+        source_id = source_ids.get(source_ref)
+        if source_id is None:
+            raise MatureError(
+                f"workspace source_ref is not one of the Mature sources: {source_ref}"
+            )
+        return source_id
+    if "source_id" not in change or change["source_id"] is None:
+        return None
+    source_id = str(change["source_id"]).strip()
+    if not source_id:
+        raise MatureError("workspace source_id must not be empty")
+    exists = conn.execute(
+        "SELECT 1 FROM evidence_sources WHERE identity_id = ? AND source_id = ?",
+        (identity_id, source_id),
+    ).fetchone()
+    if exists is None:
+        raise MatureError(f"workspace source_id does not exist: {source_id}")
+    return source_id
+
+
 def _apply_workspace_change(
     conn,
     *,
@@ -751,6 +780,12 @@ def _apply_workspace_change(
             raise MatureError("workspace create requires title")
         if "content" not in change:
             raise MatureError("workspace create requires content")
+        source_id = _workspace_source_id(
+            conn,
+            identity_id=identity_id,
+            change=change,
+            source_ids=source_ids,
+        )
         item: dict[str, Any] = {
             "item_id": item_id,
             "identity_id": identity_id,
@@ -761,8 +796,7 @@ def _apply_workspace_change(
             "priority": change.get("priority"),
             "due_at": change.get("due_at"),
             "tags_json": canonical_json(change.get("tags", [])),
-            "source_id": change.get("source_id")
-            or source_ids.get(str(change.get("source_ref", ""))),
+            "source_id": source_id,
             "revision": 1,
             "created_at": committed_at,
             "updated_at": committed_at,
@@ -781,8 +815,11 @@ def _apply_workspace_change(
         if "tags" in change:
             item["tags_json"] = canonical_json(change["tags"])
         if "source_id" in change or "source_ref" in change:
-            item["source_id"] = change.get("source_id") or source_ids.get(
-                str(change.get("source_ref", ""))
+            item["source_id"] = _workspace_source_id(
+                conn,
+                identity_id=identity_id,
+                change=change,
+                source_ids=source_ids,
             )
     if item["kind"] not in WORKSPACE_KINDS:
         raise MatureError(f"workspace kind is invalid: {item['kind']}")

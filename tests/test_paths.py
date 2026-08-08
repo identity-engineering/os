@@ -11,6 +11,7 @@ from unittest.mock import patch
 from typer.testing import CliRunner
 
 from ie.cli import _resolve_source_refs, app
+from ie.init_cmd import init_install
 from ie.paths import find_ie_root
 
 
@@ -84,6 +85,15 @@ class PathDiscoveryTests(unittest.TestCase):
 
         with self.assertRaisesRegex(SystemExit, "inside the install root"):
             _resolve_source_refs(self.install, [str(self._tmp.name)])
+
+    def test_legacy_yaml_install_requires_explicit_non_migrating_reset(self):
+        (self.install / "registry").mkdir(parents=True)
+        with self.assertRaisesRegex(SystemExit, "does not migrate YAML state"):
+            init_install(
+                self.install,
+                handle="me",
+                preferred_name="Me",
+            )
 
 
 if __name__ == "__main__":

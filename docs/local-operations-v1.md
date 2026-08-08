@@ -121,13 +121,16 @@ local database records the intent; delivery remains a transport concern.
 ```text
 ie db integrity-check
 ie db backup --to <file>
+ie db rebuild-projections --yes
 ie status --json
 ```
 
 Integrity checks do not mutate state. Backups use SQLite's online backup API so
 the database can be copied while the local surface is running. Restoring is an
 explicit operation into a new or empty install path; it never overwrites a
-current database implicitly.
+current database implicitly. Run `backup` first before rebuilding. The rebuild
+uses Interaction Events and Receipts plus Stem, Registry, and Workspace
+revision snapshots; append-only audit and policy history stays untouched.
 
 ## Ownership and visibility rules
 
@@ -153,8 +156,12 @@ reset. The reset process must:
 
 1. show the exact install root and database path;
 2. require a separate destructive confirmation;
-3. remove or archive only that install's `.ie/ie.sqlite3`; and
-4. run the normal DB-only initializer from an empty path.
+3. make clear that V1 does not migrate legacy YAML state;
+4. remove or archive that install's `.ie/ie.sqlite3` and known legacy state only;
+5. run the normal DB-only initializer from an empty path.
+
+Back up or manually export a legacy install before reset. The reset command is
+not a migration tool.
 
 `--force` means "allow initialization at a prepared target"; it does not by
 itself authorize deleting an existing database.

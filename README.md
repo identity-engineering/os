@@ -29,6 +29,8 @@ with a single transactional database per install.
 
 Installability remains, but mutable runtime state is DB-only in V1 (`.ie/ie.sqlite3`).
 `README.md` and `IE.md` in an install are orientation documents, not state.
+The YAML files under `schemas/` and `templates/personal/` are contracts and
+examples only; the runtime never reads them as mutable state.
 Everything starts from Identity Engineering: relative Mass, living Tensor, Geometry Receipt as continuous Probe bridge, Stem, Surface as membrane, Ownership as relative degrees of freedom, multi-substrate symmetry, Privacy by design.
 
 See `docs/probes-as-bridge.md`, `docs/tim-cycle.md`, `docs/living-form.md`.

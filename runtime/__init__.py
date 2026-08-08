@@ -1,4 +1,4 @@
-"""IE OS Surface Runtime – local deterministic core (v0)."""
+"""IE OS Surface Runtime – SQLite-first local deterministic core (V1)."""
 
 from .apply import apply_interaction_signal
 from .mass import MassReadout, build_public_card, compute_mass_readout

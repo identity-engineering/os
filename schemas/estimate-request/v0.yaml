@@ -9,9 +9,8 @@
 # See docs/estimate-request.md and docs/bidirectional-gravitational-sensor.md.
 
 location:
-  # Local Free tier:
-  #   registry/_inbound_requests/{request_id}.yaml
-  # Managed later: table inbound_requests
+  # Local Free tier: estimate_requests table in .ie/ie.sqlite3
+  # Managed later: compatible managed table
   description: |
     One record per pending or historical estimate request received by this Identity.
     Owned and inspected by the surface owner. Never auto-answered.

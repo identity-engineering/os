@@ -56,7 +56,8 @@ def init_install(
         names = ", ".join(path.name for path in legacy_paths)
         raise SystemExit(
             f"Legacy YAML install detected at {target} ({names}). "
-            "Use --reset with explicit confirmation to remove it."
+            "V1 does not migrate YAML state automatically; back it up or export "
+            "it manually, then use --reset with explicit confirmation to remove it."
         )
 
     if reset:

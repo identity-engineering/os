@@ -1,4 +1,4 @@
-"""ie — Identity Engineering OS CLI (v0 skeleton)."""
+"""ie — Identity Engineering OS CLI (SQLite-first V1)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ registry_app = typer.Typer(help="Local Registry operations")
 signal_app = typer.Typer(help="Interaction Signal operations")
 request_app = typer.Typer(help="Inbound estimate-request inbox (bidirectional sensor)")
 policy_app = typer.Typer(help="Persistent consent and sender policy")
-db_app = typer.Typer(help="SQLite database diagnostics and backup")
+db_app = typer.Typer(help="SQLite database diagnostics, recovery, and backup")
 app.add_typer(registry_app, name="registry")
 app.add_typer(signal_app, name="signal")
 app.add_typer(request_app, name="request")
@@ -189,7 +189,10 @@ def init(
     reset: bool = typer.Option(
         False,
         "--reset",
-        help="Explicitly remove the existing local DB/YAML install state",
+        help=(
+            "Destructively replace existing DB/YAML state; V1 does not migrate "
+            "legacy YAML automatically"
+        ),
     ),
     yes: bool = typer.Option(
         False,
@@ -329,6 +332,30 @@ def db_backup(
         result = backup_database(
             _database_root(path), destination, overwrite=force
         )
+    except DatabaseError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@db_app.command("rebuild-projections")
+def db_rebuild_projections(
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        help="Confirm rebuilding mutable projections from append-only history",
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Rebuild current projections without rewriting audit history."""
+    if not yes:
+        raise SystemExit(
+            "rebuild-projections rewrites current projections; pass --yes after a backup"
+        )
+    from runtime.database import DatabaseError
+    from runtime.rebuild import rebuild_projections
+
+    try:
+        result = rebuild_projections(_database_root(path))
     except DatabaseError as exc:
         raise SystemExit(str(exc)) from exc
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
