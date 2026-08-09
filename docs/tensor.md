@@ -24,6 +24,7 @@ The high-dimensional, open, contentful dimensional space that lives inside each 
 - Self-Mass is never self-declared. It emerges from the Mass estimates that the surrounding Identities return about me, weighted by their own Mass and by interaction depth.
 - Non-orthogonal relationships between dimensions are first-class via the Metric Stem (g_ij).
 - Full per-dimension dependency tensors remain out of scope for v0.
+- **Effective Freedom** (derived): unbound / remaining degrees of freedom divided by constraint intensity in the same space. See `docs/effective-freedom.md`. Operational surface: #40 (probes) + #8 (feed).
 
 ## How the Tensor is updated (01.08.2026 · clarified 02.08.2026)
 
@@ -48,5 +49,6 @@ Skills are storage-agnostic.
 - Metric Stem = observer's current basis + metric
 - Tensor = geometric reading of alloys under that metric (live)
 - Tension = aggregation over the Registry (live)
+- Effective Freedom = derived ratio of unbound DoF to constraint intensity (live; see `docs/effective-freedom.md`)
 - Curvature = later derived quantity
 - Geometry Receipt = the continuous Probe bridge that keeps the Tensor alive
