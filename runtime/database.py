@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class DatabaseError(RuntimeError):
@@ -386,7 +386,8 @@ CREATE TABLE IF NOT EXISTS geometry_receipts (
     stem_differential_json TEXT,
     ownership_move_json TEXT,
     optionality_delta_json TEXT,
-    notes TEXT NOT NULL DEFAULT ''
+    notes TEXT NOT NULL DEFAULT '',
+    fed_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS geometry_receipt_sources (
@@ -528,11 +529,19 @@ CREATE INDEX IF NOT EXISTS idx_managed_sync_leases_expiry
     ON managed_sync_leases(lease_until);
 """
 
+GEOMETRY_FEED_MIGRATION = """
+-- Idempotency marker for Geometry Receipt → Registry/Tension feed (OS #8)
+ALTER TABLE geometry_receipts ADD COLUMN fed_at TEXT;
+CREATE INDEX IF NOT EXISTS idx_geometry_receipts_fed
+    ON geometry_receipts(fed_at, timestamp);
+"""
+
 MIGRATIONS = (
     (1, "initial_db_only_v1", INITIAL_SCHEMA),
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
     (3, "managed_sync_queue", MANAGED_SYNC_QUEUE_MIGRATION),
     (4, "managed_sync_leases", MANAGED_SYNC_LEASE_MIGRATION),
+    (5, "geometry_receipt_fed_at", GEOMETRY_FEED_MIGRATION),
 )
 
 
