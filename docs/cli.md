@@ -1,6 +1,10 @@
-# IE CLI (SQLite-first V1)
+# IE CLI (local mini-Space V1)
 
 Issue #18 — installable `ie` command.
+
+The CLI operates a **local mini-Space** (`docs/space-model.md`): one install, one
+Identity in V1, full Ownership, no account required for the geometry loop.
+Mutable state is stored in SQLite under `.ie/ie.sqlite3` (store engine).
 
 ## Install the tool (once)
 
@@ -26,8 +30,8 @@ Prompt order:
 
 1. **Install path** — default `~/ie` (created automatically)
 2. **Account** — numbered choice:
-   - `1) No account` — local-only Free (default)
-   - `2) Login` — browser → account (stub in v0)
+   - `1) No account` — local-only Free mini-Space (default)
+   - `2) Login` — browser → account (stub in v0; optional continuity in IE-managed Space)
    - `3) Create account` — browser → account (stub in v0)
 3. **Preferred name**
 4. **local_handle** — default = preferred name lowercased (spaces → hyphens)
@@ -40,17 +44,19 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 
 `ie init` remembers the created install as the active local root (`$XDG_CONFIG_HOME/ie-os/active-root` or `~/.config/ie-os/active-root`).
 
-V1 is a DB-only cutover. `ie init` does not migrate existing `HEADER.yaml`,
-`STEM.yaml`, Registry, trajectory, or other legacy YAML state. If a legacy
-install is detected, initialization stops; back it up or export it manually
-before using `ie init --reset --yes`, which removes the known legacy state and
-creates a new `.ie/ie.sqlite3`.
+V1 does not migrate existing `HEADER.yaml`, `STEM.yaml`, Registry, trajectory,
+or other legacy YAML state. If a legacy install is detected, initialization
+stops; back it up or export it manually before using `ie init --reset --yes`,
+which removes the known legacy state and creates a new `.ie/ie.sqlite3`.
 
-## Commands (SQLite-first V1)
+Account is **optional**. Geometry lives on the local Identity; an IE Account is
+product auth/plan on the managed path only (`docs/account-identity-model.md`).
+
+## Commands (local mini-Space V1)
 
 | Command | Purpose |
 |---------|---------|
-| `ie init` | Interactive setup |
+| `ie init` | Interactive setup of a local mini-Space |
 | `ie status` | Install summary |
 | `ie registry list` / `get` | Local registry |
 | `ie signal apply` | Interact: apply signal + Geometry Receipt |
@@ -125,9 +131,12 @@ does not rewrite append-only audit history or policy history.
 
 ## See also
 
+- `docs/space-model.md`
+- `docs/account-identity-model.md`
+- `docs/local-operations-v1.md`
+- `docs/storage-tiers.md`
+- `docs/open-core.md`
 - `docs/tim-cycle.md`
 - `docs/living-form.md`
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`
-- `docs/tim-cycle.md`
-- `docs/living-form.md`

@@ -1,8 +1,12 @@
 # Local Operations V1
 
-This is the user-facing operating model for a DB-only Identity Engineering OS
-installation. It describes what changes, what remains derived, and where a
-failure can be recovered.
+This is the user-facing operating model for a **local mini-Space** install of
+Identity Engineering OS. Mutable state is held in one SQLite database (store
+engine). The install is a Space in the sense of `docs/space-model.md`: one
+machine hosting one Identity in V1, with full Ownership and no account required.
+
+It describes what changes, what remains derived, and where a failure can be
+recovered.
 
 ## What `ie init` creates
 
@@ -28,6 +32,9 @@ migrations before the install is remembered as active.
 The install directory and database receive restrictive local permissions. A
 fresh initialization never copies `HEADER.yaml`, `STEM.yaml`, a registry YAML,
 or any other canonical state YAML.
+
+In product terms: this is a **Free local mini-Space** — not a failed cloud path
+and not dependent on IE-managed continuity.
 
 ## Everyday user flow
 
@@ -135,7 +142,8 @@ revision snapshots; append-only audit and policy history stays untouched.
 If the optional Managed adapter is enabled, its queue is drained separately.
 Network failures remain local `retry` rows, cursor or payload conflicts become
 `blocked`, and a lost append response is recovered with the Managed status/pull
-contract. The accountless Free path never requires these tables or endpoints.
+contract. The accountless Free mini-Space path never requires these tables or
+endpoints.
 
 ## Ownership and visibility rules
 
@@ -170,3 +178,11 @@ not a migration tool.
 
 `--force` means "allow initialization at a prepared target"; it does not by
 itself authorize deleting an existing database.
+
+## Related
+
+- `docs/space-model.md` — local install as mini-Space
+- `docs/account-identity-model.md` — Account ≠ Identity; Free without account
+- `docs/storage-tiers.md` — Free / managed / governed tiers
+- `docs/cli.md` — command reference
+- `docs/open-core.md` — Open Core boundary
