@@ -1,7 +1,8 @@
 # Account ≠ Identity
 
 Status: architecture contract (locked direction 08.08.2026)  
-Space membrane model linked 09.08.2026 — see `docs/space-model.md`
+Space membrane model linked 09.08.2026 - see `docs/space-model.md`  
+Identity creation lineage + default jurisdiction linked 09.08.2026 - see `docs/identity-creation-jurisdiction.md`
 
 ## Core claim
 
@@ -12,12 +13,12 @@ An **IE Account** is not an Identity.
 | **IE Account** | Auth, billing/plan on the IE product (IE-managed Space only) |
 | **Identity** | Geometric unit: Surface, Registry, Mass, Stem, Public Card, signals |
 | **Space** | Membrane host: membership, Surface hosting, jurisdiction policy (`docs/space-model.md`) |
-| **Harness / Runtime / Agent / Idea / Org** | Substrate of an Identity — not a mode of the human owner |
+| **Harness / Runtime / Agent / Idea / Org** | Substrate of an Identity - not a mode of the human owner |
 
 One account may always hold **many Identities**, independent of substrate.
 A human Identity, an agent Identity, an idea Identity, and a cloud-runtime
 Identity are the same kind of geometric object. They differ in substrate and
-in the jurisdiction relations between them — not in whether MCP may write.
+in the jurisdiction relations between them - not in whether MCP may write.
 
 Identities are **members of Spaces**. Registry remains observer-relative on
 each Identity. Hosting and membrane policy live on the Space.
@@ -35,7 +36,7 @@ installation". That collapses distinct layers:
 Under multi-substrate symmetry, agents, ideas, and runtimes are Identities.
 Each harness that acts for long enough deserves its own local geometry, its
 own Registry perspective, and its own Public Card. The human who holds the
-account creates those Identities and decides their jurisdiction — that
+account creates those Identities and decides their jurisdiction - that
 decision is not "MCP is read-only".
 
 MCP and other Surface bindings **always write**. They write as the Identity
@@ -81,6 +82,8 @@ Installation / Harness bindings
 - Can send and receive Interaction Signals under policy.
 - May be a **member of many Spaces** with **one** Tensor / primary host
   (see `docs/space-model.md`).
+- Records factual **creator lineage** and receives a **default jurisdiction
+  grant package** at creation (see `docs/identity-creation-jurisdiction.md`).
 
 ### Harness binding
 
@@ -124,6 +127,11 @@ Cross-Identity interaction defaults to the normal Surface protocol
 (Signal / Request / Receipt). Account- or Space-internal short paths are a
 later opt-in, not the v0 default.
 
+**Creation-time default grants** give the creator an initial transferable
+jurisdiction package over the new Identity (policy, visibility, surface admin).
+Ordinary grants are revocable by the Child; a narrow residual emergency lever
+remains for the creator line. Full semantics: `docs/identity-creation-jurisdiction.md`.
+
 ## Relation to local Free V1
 
 SQLite-first V1 ships **one local Identity per installation**
@@ -146,12 +154,12 @@ require the managed path to treat:
 - **Identity** as a first-class row,
 - **Space** as membrane host (IE-managed Space first; governed Spaces later),
 - installation → identity binding (and space context),
-- grants between identities,
+- grants between identities (including creation-time default packages),
 - membership of identities in Spaces,
 - every import, sync event, and Surface call scoped by `identity_id`
   (and `space_id` when membrane-bound),
 - plan metering on **Identity capacity** and, for premium, **governed Space**
-  capability — not only raw API calls.
+  capability - not only raw API calls.
 
 Indicative metering direction (not a frozen price sheet):
 
@@ -206,7 +214,7 @@ identities
   primary_space_id?             -- canonical host Space when known
   substrate
   local_handle
-  creator_identity_id?
+  creator_identity_id?          -- factual lineage; see identity-creation-jurisdiction.md
   created_at / updated_at
 
 space_memberships
@@ -220,8 +228,11 @@ identity_grants
   actor_identity_id
   object_identity_id
   scope
+  residual?                     -- narrow emergency lever flag
+  transferable
   space_id?
   granted_at / revoked_at?
+  granted_by_identity_id
 
 installations
   installation_id
@@ -242,15 +253,16 @@ the managed Identity/Space layer exists.
 
 ## Relation to existing docs
 
-- `docs/space-model.md` — Space membrane host; multi-Space membership
-- `docs/identity-surface.md` — Surface is per Identity; bindings are MCP/HTTP/local
-- `docs/storage-tiers.md` — Free local vs managed continuity; same geometry
-- `docs/sqlite-schema-v1.md` — V1 one Identity per install; evolution path above
-- `docs/registry.md` — Registry is always observer-relative
-- `docs/principles.md` — multi-substrate symmetry; Ownership as jurisdiction
-- `docs/open-core.md` — account/managed features stay optional
-- `docs/agent-contract-v1.md` — agents act as Identities via Surface/CLI; no direct DB writes
-- Issue #40 Access & Jurisdiction — operational probes for degrees of freedom
+- `docs/space-model.md` - Space membrane host; multi-Space membership
+- `docs/identity-creation-jurisdiction.md` - creator lineage, default grants, residual red button
+- `docs/identity-surface.md` - Surface is per Identity; bindings are MCP/HTTP/local
+- `docs/storage-tiers.md` - Free local vs managed continuity; same geometry
+- `docs/sqlite-schema-v1.md` - V1 one Identity per install; evolution path above
+- `docs/registry.md` - Registry is always observer-relative
+- `docs/principles.md` - multi-substrate symmetry; Ownership as jurisdiction
+- `docs/open-core.md` - account/managed features stay optional
+- `docs/agent-contract-v1.md` - agents act as Identities via Surface/CLI; no direct DB writes
+- Issue #40 Access & Jurisdiction - operational probes for degrees of freedom
 - Issue #11 Multi-substrate symmetry
 
 ## Locked decisions summary
@@ -264,3 +276,4 @@ the managed Identity/Space layer exists.
 7. Actor Identity is explicit on every mutation; `space_id` when membrane applies.
 8. Plan metering orients on Identity capacity and governed-Space capability.
 9. Local Free without account remains first-class (mini-Space).
+10. Identity creation records lineage and issues a transferable default jurisdiction package; ordinary Parent grants are Child-revocable; residual emergency lever is narrow and audited (`docs/identity-creation-jurisdiction.md`).
