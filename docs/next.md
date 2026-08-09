@@ -15,13 +15,14 @@
 - **Account ≠ Identity** (`docs/account-identity-model.md`)
 - **Space membrane host** (`docs/space-model.md`) — Registry stays observer-relative
 - **MCP Surface binding v0** (`docs/mcp-surface-v0.md`) — Identity-scoped stdio tools; same handlers as CLI/HTTP
+- **Identity creation lineage + default jurisdiction** (`docs/identity-creation-jurisdiction.md`) — creator grants, transfer, Child revocation, residual red button
 
 ## Next
 
 1. **Feed Geometry Receipt → Tension / Tensor / Registry** — **#8**  
    (storage exists; continuous write-back is the heartbeat)
 2. **Access & Jurisdiction / membrane policy** — **#40**  
-   Align probes with multi-identity grants **and** Space membrane export/inbound rules
+   Align probes with multi-identity grants, creation-time default packages, residual red button, and Space membrane export/inbound rules
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 4. **Managed multi-identity + Space membership layer**  
    Identity rows, space membership, installation→identity binding, grant table — Open Core contracts + private `os-managed`

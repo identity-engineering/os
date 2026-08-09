@@ -14,12 +14,12 @@ Surface/MCP runs, and where jurisdiction policy is enforced.
 | **Space** | Host / membrane / jurisdiction plane (deployment + membership + policy) |
 | **IE-managed Space** | Canonical bootstrap/public Space operated by IE |
 | **Governed Space** | Isolated Team/Corp Space (IE-hosted federated or self-hosted) with stronger membrane policy |
-| **IE Account** | Auth + billing on the IE product only — lives in IE-managed, not in every Space |
+| **IE Account** | Auth + billing on the IE product only - lives in IE-managed, not in every Space |
 
 Local Free is not a failed cloud path. It is the minimal Space: one machine
 hosting one (or few) Identities. IE-managed is one Space among many, with
 network bootstrap and account responsibilities. Team premium is the right to
-run an additional governed Space — not the only way to use IE as a team.
+run an additional governed Space - not the only way to use IE as a team.
 
 ### Framework alignment (one Space)
 
@@ -37,8 +37,8 @@ public site (e.g. metric / dimensionality) is incomplete **description** of this
 Space, not a second ontology.
 
 **Boundary is scale-invariant.** Every Identity has Boundary (Surface, consent,
-jurisdiction edge) — human, agent, idea, org, and Space Identity. A Space
-membrane is the Boundary of the **Space Identity**, not a Collective-only
+jurisdiction edge) - human, agent, idea, org, and Space Identity. A Space
+membrane is the Boundary of the **Space Identity**, not a collective-only
 primitive. Member Identities keep their own Boundaries inside the host
 (Multicellularity: nested membranes). Emergence is the scale jump when the
 whole acquires its own trajectory and therefore its own Boundary.
@@ -46,12 +46,12 @@ whole acquires its own trajectory and therefore its own Boundary.
 Public framework pages: `/framework/space`, `/framework/boundary`,
 `/framework/multicellularity`, `/os`.
 
-## Why “Space” not “Registry host”
+## Why "Space" not "Registry host"
 
-Calling the host a “registry” overloaded the observer-relative Registry and
+Calling the host a "registry" overloaded the observer-relative Registry and
 suggested a shared team perception store. That would break Relativity.
 
-A Space may **store** many Identities’ data and run many Surfaces. Each member
+A Space may **store** many Identities' data and run many Surfaces. Each member
 Identity still holds its **own** relative Registry. The Space does not flatten
 fifty observers into one alloy.
 
@@ -61,8 +61,8 @@ Every Space has a **Space-ID**.
 
 **Default:** Space-ID is 1:1 with a sovereign **Space Identity** (typically
 substrate `org` or `collective`). That Identity is what appears in other
-Identities’ Registries, carries public Mass correlation, and is the membrane’s
-outward form — i.e. the form that **has** Boundary at collective scale.
+Identities' Registries, carries public Mass correlation, and is the membrane's
+outward form - i.e. the form that **has** Boundary at collective scale.
 
 - Creating a Team/Corp Space normally creates this Space Identity with it.
 - A purely private membrane without a public Space Identity remains possible;
@@ -102,7 +102,8 @@ Identity
   └── harnesses / agents = further Identities (space-bound as needed)
 ```
 
-See also `docs/account-identity-model.md`.
+See also `docs/account-identity-model.md` and
+`docs/identity-creation-jurisdiction.md` (creator lineage + default grants).
 
 ## Many Spaces, one bootstrap
 
@@ -116,8 +117,14 @@ Local mini-Space          ← Free install on a machine
 
 All governed Spaces can **federate** toward IE-managed (become known, address
 reachable Identities under policy) without uploading full private geometry.
-“Known in IE-managed” means host descriptor, endpoints, policy caps, and
-optional Public Cards — not a silent full Stem/Registry mirror.
+"Known in IE-managed" means host descriptor, endpoints, policy caps, and
+optional Public Cards - not a silent full Stem/Registry mirror.
+
+**Known is not addressable by default.** Whether a member Identity that is
+registered or discovered in a parent/main Space can be called on its Surface is
+a grant + membrane decision. Creation-time jurisdiction packages and residual
+emergency levers govern who may set those caps
+(`docs/identity-creation-jurisdiction.md`).
 
 ### Product tiers (direction, not price sheet)
 
@@ -125,7 +132,7 @@ optional Public Cards — not a silent full Stem/Registry mirror.
 |------|----------------|
 | **Free local** | Mini-Space on device; no account required |
 | **Personal / default managed** | Identities hosted in IE-managed Space |
-| **Team in IE-managed** | Fully valid: many Identities under accounts in the managed Space — not “premium isolation” |
+| **Team in IE-managed** | Fully valid: many Identities under accounts in the managed Space - not "premium isolation" |
 | **Team/Corp premium** | **Additional governed Space** (IE-hosted federated **or** customer self-hosted) with harder overall membrane policy, isolation, and governance. Especially billable when IE operates that Space |
 
 Premium is the **membrane**, not the right to exist as a team inside IE-managed.
@@ -136,7 +143,7 @@ Premium is the **membrane**, not the right to exist as a team inside IE-managed.
 |------|--------|
 | Human person | **One** Identity; primary host typically IE-managed Space |
 | Agent / harness | Own Identity; usually bound to the Space where it operates |
-| Join Space B | **Membership / registration** in B — not a second human Identity |
+| Join Space B | **Membership / registration** in B - not a second human Identity |
 | Tensor / Stem | **One per Identity**, not per Space |
 | Space-local effect | Policy, visible signals, grants, optional space-local projections |
 | Actor context | Mutations carry `actor_identity_id` and, when relevant, `space_id` |
@@ -147,7 +154,7 @@ Hierarchy:
 2. Other Spaces **reference** the same `identity_id` via membership.
 3. Sub-Spaces may register members downward; primary hosting stays explicit.
 4. Work in Space A can change the one Tensor; Space B sees consequences only
-   through membrane-allowed signals, cards, and grants — not by reading A’s
+   through membrane-allowed signals, cards, and grants - not by reading A's
    private store.
 
 Harnesses remain distinct Identities (already locked). Multi-Space human work
@@ -155,16 +162,16 @@ is a richer tension field of **one** Identity, not multiple selves.
 
 ## Membrane security
 
-The hard problem is not “one ID in many Spaces”. It is **what the membrane
+The hard problem is not "one ID in many Spaces". It is **what the membrane
 passes**.
 
 Required controls:
 
-1. **Space jurisdiction** — what membership allows Space B to know or write.
-2. **Export policy** — which events, estimates, and fragments may leave.
-3. **Inbound policy** — what may enter from IE-managed or other Spaces.
-4. **No silent cross-Space Stem writes** — only Surface paths and explicit grants.
-5. **Audit** — `actor_identity_id` + `space_id` on governed mutations.
+1. **Space jurisdiction** - what membership allows Space B to know or write.
+2. **Export policy** - which events, estimates, and fragments may leave.
+3. **Inbound policy** - what may enter from IE-managed or other Spaces.
+4. **No silent cross-Space Stem writes** - only Surface paths and explicit grants.
+5. **Audit** - `actor_identity_id` + `space_id` on governed mutations.
 
 ### IAM as operational analogy (not a category replacement)
 
@@ -215,9 +222,9 @@ every mutation envelope
 ```
 
 Geometry tables remain Identity-scoped as in Open Core. Space rows add
-hosting, membership, and membrane — they do not replace `registry_entries`.
-There is no separate “collective Boundary” table: outer membrane is policy on
-the Space / Space Identity; member Boundary is each Identity’s Surface.
+hosting, membership, and membrane - they do not replace `registry_entries`.
+There is no separate "collective Boundary" table: outer membrane is policy on
+the Space / Space Identity; member Boundary is each Identity's Surface.
 
 ## Relation to local Free V1
 
@@ -236,7 +243,7 @@ center. Product language is **Space-first / Identity-scoped** (see issue #59).
 
 - Implementing federated multi-region hosting ops in v0
 - Forcing every team onto a governed Space
-- Uploading full private geometry when a Space becomes “known” in IE-managed
+- Uploading full private geometry when a Space becomes "known" in IE-managed
 - Shared team Registry that replaces per-Identity Registries
 - Multiple human Identities for one person because they work in two Spaces
 - A second Boundary concept for teams (use Space Identity Boundary + membership)
@@ -259,12 +266,13 @@ center. Product language is **Space-first / Identity-scoped** (see issue #59).
 
 ## Related
 
-- `docs/account-identity-model.md` — Account ≠ Identity
-- `docs/registry.md` — observer-relative Registry only
-- `docs/identity-surface.md` — Surface per Identity; membrane approval rules
-- `docs/storage-tiers.md` — Free local vs managed continuity
-- `docs/living-form.md` — membrane / metabolism lens
-- `docs/principles.md` — multi-substrate; relative by default
+- `docs/account-identity-model.md` - Account ≠ Identity
+- `docs/identity-creation-jurisdiction.md` - creator lineage, default grants, residual red button
+- `docs/registry.md` - observer-relative Registry only
+- `docs/identity-surface.md` - Surface per Identity; membrane approval rules
+- `docs/storage-tiers.md` - Free local vs managed continuity
+- `docs/living-form.md` - membrane / metabolism lens
+- `docs/principles.md` - multi-substrate; relative by default
 - Framework site: `/framework/space`, `/framework/boundary`, `/framework/multicellularity`, `/os`
 - Issue #40 Access & Jurisdiction
 - Issue #11 Multi-substrate symmetry
