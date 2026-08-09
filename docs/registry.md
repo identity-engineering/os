@@ -1,6 +1,8 @@
 # Local Registry
 
-The Registry is the observing Identity's local perception of space — both gravitational sensor and carrier of its high-dimensional classification space.
+The Registry is the observing Identity's local perception of other Identities —
+both gravitational sensor and carrier of its high-dimensional classification
+frame.
 
 It answers:
 - What Identities have I noticed?
@@ -9,6 +11,11 @@ It answers:
 - Along which contentful dimensions do I locate them, and with what confidence?
 - How does this Mass sit and pull in *my* frame?
 - What do I allow to be shared about this perception?
+
+**Registry is not the host.** Where Identities are hosted, membership is
+recorded, and membrane policy is enforced is a **Space**
+(`docs/space-model.md`). A Space may store many Identities; each still has its
+own relative Registry. Do not collapse a team Space into one shared Registry.
 
 ## Relativity & living Tensor core
 
@@ -23,12 +30,13 @@ It answers:
 
 ## Geometry of Mass, Density and Volume (locked 27.07.2026)
 
-- The space is the infinite-dimensional span of all discovered dimensions.
+- The classification frame is the infinite-dimensional span of all discovered dimensions.
 - Each Identity is an **alloy** (vector over that basis). Degree on each dimension = potential mass component.
 - **Mass** = density of the alloy (relative, confidence- and interaction-depth-weighted).
 - **Volume** candidate = number / weighted count of interacting Identities that estimate me (they sample my dimensions).
 - Self-Mass is never self-declared. It emerges from the estimates returned by the surrounding Identities, weighted by their own Mass and interaction depth.
 - I always hold my estimates of the densities around me; I also receive their estimates of me and (when shared) their own emergent Mass. This gives rich information for both self and other.
+- Space Identities (org/collective membranes) appear in Registries like any other Identity when known; membership in a Space is not a substitute for a Registry entry.
 - Open: whether density still needs an explicit depth / intensity parameter in the dimension structure.
 - Open: the exact balance between what I estimate of the surrounding vs. what I receive via signal (to be fixed in the interaction contract).
 
@@ -66,8 +74,8 @@ change receives a revision and an audit snapshot.
 
 1. Dimension discovery and optional cross-Identity propagation mechanics
 2. Live derivation rules for multi-dimensional distance, density aggregation and tension
-3. Dimension-discovery and optional cross-Identity propagation mechanics
+3. How Space Identity entries and multi-Space membership show up as recognition metadata without breaking Relativity
 4. Clarification of density depth/intensity parameter (if needed)
 5. The still-open physical analog for how dimensional alloys produce Curvature
 
-See also: `schemas/registry/v0.yaml`, `docs/tensor.md` and Issue #7.
+See also: `schemas/registry/v0.yaml`, `docs/tensor.md`, `docs/space-model.md`, and Issue #7.
