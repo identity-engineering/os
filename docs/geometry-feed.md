@@ -1,6 +1,6 @@
 # Geometry Receipt → Tension / Tensor / Registry feed
 
-Status: design lock (v0) · opens implementation of OS #8
+Status: **v0 implemented** (hook + explicit) · OS #8
 
 Related: `docs/tensor.md`, `docs/geometry-hook.md`, `docs/probes-as-bridge.md`,
 `docs/effective-freedom.md`, issue #8, issue #44 (delivery modes)
@@ -11,10 +11,9 @@ Geometry Receipts are already written after Interact (and later Think/Mature).
 They are local audit + probe artifacts. The **feed** is the continuous,
 ownership-gated write-back that turns those artifacts into live geometry:
 
-- Registry alloys (contentful dimensions of peers / self aspects)
-- Metric Stem (observer basis + sparse g_ij when discovery warrants)
-- derived Tension aggregate
-- derived Effective Freedom ratio
+- Registry alloys / effect_on_me (contentful signal of peer impact)
+- derived Tension aggregate (tension_sum from components)
+- later: Metric Stem discovery and Effective Freedom ratio
 
 Without the feed the Surface is a sensor; with the feed it becomes metabolism.
 
@@ -22,55 +21,52 @@ Without the feed the Surface is a sensor; with the feed it becomes metabolism.
 
 | Receipt field / extractor | Sink | Gate | Notes |
 |---------------------------|------|------|-------|
-| relative_mass_proxy / interaction_density | Registry peer alloy (depth / continuity) | owner or grant | already partially continuous via Interact projection; feed makes it explicit and versioned |
-| existence / continuity notes | Registry continuity projection | owner | no silent overwrite of owned estimates |
-| Membrane policy observation | observational only | — | never becomes Access/Jurisdiction claim (see #40 / #61) |
-| derived Effective Freedom | live readout + optional profile | owner | computed from Access/Jurisdiction probes + constraint intensity; see `docs/effective-freedom.md` |
-| new dimension candidates | Metric Stem catalogue (discovery) | owner explicit | never auto-promoted |
+| relative_mass_proxy / interaction_density | Registry `effect_on_me_json` | owner | observational snapshot + tension_sum; revisioned |
+| existence / continuity notes | already on Registry via signal path | owner | no double-write |
+| Membrane policy observation | observational only | — | never becomes Access/Jurisdiction claim |
+| derived Effective Freedom | live readout + optional profile | owner | deferred (needs #40 probes) |
+| new dimension candidates | Metric Stem catalogue | owner explicit | not auto-promoted in v0 |
 
-Self-Mass remains **never** written from a self Geometry Receipt. It continues to emerge only from foreign estimates (`docs/mass.md`).
+Self-Mass remains **never** written from a self Geometry Receipt.
 
-## Delivery modes (from #44)
+## Delivery modes
 
-| Mode | When | Quality |
-|------|------|---------|
-| **hook** | after successful `apply_interaction_signal` | best: Interact → Receipt → feed in one path |
-| **explicit** | `ie geometry feed` / batch | idempotent, re-runnable |
-| **adapter** | session-end harness | works without kernel hooks |
-| **none / lagging** | zone only | sensor lives; Tensor feed deferred |
+| Mode | Status |
+|------|--------|
+| **hook** | shipped — after successful apply + persist |
+| **explicit** | shipped — `ie geometry feed` |
+| **adapter** | documented only |
+| **none / lagging** | supported via opt-out `emit_geometry_receipt=False` |
 
-v0 ships **hook + explicit**. Adapter contract is documented only.
+## Implementation (v0)
+
+- `runtime/geometry_feed.py` — `feed_receipt`, `feed_pending`, `feed_capability`
+- Schema migration 5 — `geometry_receipts.fed_at` for idempotency
+- Hook wired in `runtime/apply.py` (best-effort; never fails apply)
+- CLI: `ie geometry feed [--receipt-id | --all] [--force]`
+- Status: `geometry_feed: hook`
 
 ## Ownership & non-goals
 
-- Feed writes are owner-gated (local Identity) or grant-scoped once multi-Identity lands.
+- Feed writes are owner-gated (local Identity).
 - No path from Receipt into Stem / Vision / access-policy mutation.
 - No self-declared Mass.
 - No forced cross-Identity estimation.
 - No silent promotion of Access/Jurisdiction into Metric Stem dimensions.
 
-## Exit criteria (this issue / PR sequence)
+## Exit criteria
 
-- [ ] Design doc (this file) on main
-- [ ] Capability declaration on status / local entry: `geometry_feed: hook | explicit | adapter | none`
-- [ ] Explicit CLI path `ie geometry feed` (idempotent)
-- [ ] Hook path after Interact remains best-effort and never fails apply
-- [ ] Tests for at least one write path + one read of derived Tension / Effective Freedom
-- [ ] Linked from `docs/next.md`, `docs/tensor.md`, `docs/geometry-hook.md`
-
-## Implementation order (after design lands)
-
-1. Schema / status surface for feed capability
-2. Explicit feed command + library entry (`runtime/geometry_feed.py` or extension of `runtime/geometry.py`)
-3. Wire hook (default on, opt-out for tests)
-4. Derived Effective Freedom readout
-5. Adapter sequence note for chat/agent harnesses
+- [x] Design doc (this file)
+- [x] Capability declaration on status: `geometry_feed: hook`
+- [x] Explicit CLI path `ie geometry feed` (idempotent)
+- [x] Hook path after Interact remains best-effort and never fails apply
+- [x] Tests for write path + idempotent re-feed
+- [x] Linked from `docs/next.md`, `docs/tensor.md`
 
 ## Related
 
-- Issue #8 (this work)
+- Issue #8
 - Issue #44 (delivery modes)
-- `docs/tensor.md` — Tensor is live reading, not a separate file
-- `docs/geometry-hook.md` — Receipt production (already shipped)
-- `docs/effective-freedom.md` — derived ratio
-- `docs/next.md` — #8 is the current top lever
+- `docs/tensor.md`
+- `docs/geometry-hook.md`
+- `docs/effective-freedom.md`
