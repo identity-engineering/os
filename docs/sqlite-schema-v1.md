@@ -146,8 +146,34 @@ as the default package; ordinary scopes are transferable and Child-revocable;
 On `ie init` the runtime issues the full default package to the new Identity
 (self for V1 genesis). Multi-Identity creation will issue the package to the
 creator as actor over the new object Identity. Full semantics:
-`docs/identity-creation-jurisdiction.md`. Operational probes and transfer/revoke
-CLI remain under issue #40.
+`docs/identity-creation-jurisdiction.md`.
+
+### Access & Jurisdiction profiles (probes)
+
+#### `access_jurisdiction_profiles`
+
+Owner-gated measurement of perceived degrees of freedom (issue #40). Distinct
+from grants: grants answer who may act; profiles answer what Access / Jurisdiction
+the observer currently measures for an object.
+
+| Column | Meaning |
+|---|---|
+| `profile_id` | UUID primary key |
+| `observer_identity_id` | Local Identity that committed the probe |
+| `object_kind` | `self` \| `peer` \| `stem_aspect` \| `space` |
+| `object_ref` | `self` / peer handle / aspect name / space id |
+| `observed_at` | When the probe was taken |
+| `confidence` | Overall confidence in `[0, 1]` |
+| `access_json` | Canonical JSON: reach, use, observe, affected_by, extras |
+| `jurisdiction_json` | Canonical JSON: decide_goals, constrain, transfer, destroy, redefine_boundary, extras |
+| `notes` | Free-text observer notes |
+| `source` | `owner_probe` \| `cli` \| `mature` \| `agent` |
+| `revision` | Monotonic per (observer, object_kind, object_ref) |
+| `created_at` / `updated_at` | Row lifecycle |
+
+Write path is owner-gated only (`runtime/jurisdiction.py`, `ie jurisdiction probe`).
+Inbound Interaction Signals never write this table. See
+`docs/access-jurisdiction-probes.md`.
 
 ### Policy and privacy
 
