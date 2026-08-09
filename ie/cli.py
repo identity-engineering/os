@@ -12,6 +12,7 @@ import typer
 
 from ie import __version__
 from ie.init_cmd import init_install
+from ie.mcp_cmd import register as register_mcp
 from ie.paths import remember_ie_root, require_ie_root
 from ie.registry_cmd import get_peer, list_peers
 from ie.status_cmd import collect_status, format_status, status_json
@@ -34,6 +35,7 @@ app.add_typer(signal_app, name="signal")
 app.add_typer(request_app, name="request")
 app.add_typer(policy_app, name="policy")
 app.add_typer(db_app, name="db")
+register_mcp(app)
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
 
