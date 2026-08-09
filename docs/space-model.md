@@ -183,9 +183,10 @@ space_trust / federation
   capabilities                  -- discover, address, relay_signals, …
   established_at
 
-every governed mutation envelope
-  actor_identity_id             -- mandatory
-  space_id?                     -- mandatory when membrane applies
+every mutation envelope
+  actor_identity_id             -- always required
+  space_id                      -- required when a Space membrane applies
+                                -- (local mini-Space V1 may omit until Space rows exist)
 ```
 
 Geometry tables remain Identity-scoped as in Open Core. Space rows add
