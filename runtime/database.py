@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class DatabaseError(RuntimeError):
@@ -587,12 +587,37 @@ WHERE NOT EXISTS (
 );
 """
 
+ACCESS_JURISDICTION_PROFILES_MIGRATION = """
+CREATE TABLE IF NOT EXISTS access_jurisdiction_profiles (
+    profile_id TEXT PRIMARY KEY,
+    observer_identity_id TEXT NOT NULL REFERENCES identity(identity_id) ON DELETE CASCADE,
+    object_kind TEXT NOT NULL,
+    object_ref TEXT NOT NULL,
+    observed_at TEXT NOT NULL,
+    confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
+    access_json TEXT NOT NULL DEFAULT '{}',
+    jurisdiction_json TEXT NOT NULL DEFAULT '{}',
+    notes TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT 'owner_probe',
+    revision INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_aj_profiles_lookup
+    ON access_jurisdiction_profiles(observer_identity_id, object_kind, object_ref, revision DESC);
+
+CREATE INDEX IF NOT EXISTS idx_aj_profiles_observer
+    ON access_jurisdiction_profiles(observer_identity_id, observed_at DESC);
+"""
+
 MIGRATIONS = (
     (1, "initial_db_only_v1", INITIAL_SCHEMA),
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
     (3, "managed_sync_queue", MANAGED_SYNC_QUEUE_MIGRATION),
     (4, "managed_sync_leases", MANAGED_SYNC_LEASE_MIGRATION),
     (5, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
+    (6, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
 )
 
 

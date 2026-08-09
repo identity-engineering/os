@@ -70,11 +70,20 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 },
             )
 
+            # Migration 6: profiles table exists
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            self.assertIn("access_jurisdiction_profiles", tables)
+
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 5)
+        self.assertEqual(info["schema_version"], 6)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
-        self.assertGreaterEqual(info["table_count"], 21)
+        self.assertGreaterEqual(info["table_count"], 22)
         with Database(db_path) as database:
             for table in ("registry_entry_revisions", "workspace_item_revisions"):
                 self.assertEqual(
@@ -110,6 +119,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (3, "managed_sync_queue"),
                     (4, "managed_sync_leases"),
                     (5, "jurisdiction_grants_and_lineage"),
+                    (6, "access_jurisdiction_profiles"),
                 ],
             )
 
@@ -259,12 +269,19 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 5)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 6)
             # Jurisdiction package backfilled for the stub identity
             grant_count = database.conn.execute(
                 "SELECT COUNT(*) FROM identity_grants WHERE object_identity_id = 'id-1'"
             ).fetchone()[0]
             self.assertEqual(grant_count, 5)
+            # Profiles table present after migration 6
+            self.assertEqual(
+                database.conn.execute(
+                    "SELECT COUNT(*) FROM access_jurisdiction_profiles"
+                ).fetchone()[0],
+                0,
+            )
 
     def test_existing_database_is_not_overwritten(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
@@ -296,7 +313,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 5)
+        self.assertEqual(json.loads(info.output)["schema_version"], 6)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -308,7 +325,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 5", info_text.output)
+        self.assertIn("schema_version: 6", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(
