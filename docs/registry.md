@@ -12,10 +12,10 @@ It answers:
 - How does this Mass sit and pull in *my* frame?
 - What do I allow to be shared about this perception?
 
-**Registry is not the host.** Where Identities are hosted, membership is
-recorded, and membrane policy is enforced is a **Space**
-(`docs/space-model.md`). A Space may store many Identities; each still has its
-own relative Registry. Do not collapse a team Space into one shared Registry.
+**Registry is not the host.** Hosting Identities, recording membership, and
+enforcing membrane policy happen in a **Space** (`docs/space-model.md`). A
+Space may store many Identities; each still has its own relative Registry. Do
+not collapse a team Space into one shared Registry.
 
 ## Relativity & living Tensor core
 
