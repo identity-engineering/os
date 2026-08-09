@@ -68,3 +68,67 @@ def _handle_from_name(preferred_name: str) -> str:
     s = re.sub(r"[^a-z0-9._-]", "", s)
     s = re.sub(r"-+", "-", s).strip("-")
     return s or "identity"
+
+
+def _database_root(path: Optional[Path]) -> Path:
+    root = path.resolve() if path else require_ie_root()
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
+    return root
+
+
+def _echo_data(data: dict, *, json_out: bool) -> None:
+    if json_out:
+        typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
+        return
+    for key, value in data.items():
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        typer.echo(f"{key}: {value}")
+
+
+@db_app.command("info")
+def db_info(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(
+        True, "--json/--no-json", help="Output as JSON (default)"
+    ),
+) -> None:
+    """Show SQLite path, schema, migration, and connection metadata."""
+    from runtime.database import database_info
+
+    _echo_data(database_info(_database_root(path)), json_out=json_out)
+
+
+@db_app.command("integrity-check")
+def db_integrity_check(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(
+        True, "--json/--no-json", help="Output as JSON (default)"
+    ),
+) -> None:
+    """Run SQLite integrity and foreign-key checks."""
+    from runtime.database import database_integrity_check
+
+    result = database_integrity_check(_database_root(path))
+    _echo_data(result, json_out=json_out)
+    if not result["ok"]:
+        raise typer.Exit(code=1)
+
+
+@db_app.command("backup")
+def db_backup(
+    destination: Path = typer.Option(..., "--to", "--destination", help="Backup file path"),
+    force: bool = typer.Option(False, "--force", help="Replace an existing backup"),
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+) -> None:
+    """Create a consistent online backup of the local SQLite database."""
+    from runtime.database import DatabaseError, backup_database
+
+    try:
+        result = backup_database(
+            _database_root(path), destination, overwrite=force
+        )
+    except DatabaseError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
