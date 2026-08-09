@@ -17,12 +17,13 @@
 - **MCP Surface binding v0** (`docs/mcp-surface-v0.md`) — Identity-scoped stdio tools; same handlers as CLI/HTTP
 - **Identity creation lineage + default jurisdiction** (`docs/identity-creation-jurisdiction.md`) — creator grants, transfer, Child revocation, residual red button
 - **Jurisdiction grants schema v5** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; residual_emergency non-transferable
+- **Access & Jurisdiction probes** (`docs/access-jurisdiction-probes.md`, `access_jurisdiction_profiles`, `ie jurisdiction`) — owner-gated measurement of degrees of freedom (#40 closed)
 
 ## Next
 
 1. **Feed Geometry Receipt → Tension / Tensor / Registry** — **#8**  
    (storage exists; continuous write-back is the heartbeat)
-2. **Access & Jurisdiction / membrane policy** — **#40** (schema + package landed; remaining: probes, Space membrane export/inbound rules, grant transfer/revoke CLI)
+2. **Space membrane export/inbound + grant transfer/revoke CLI** — follow-ups from #40 / #61 (probes + grants schema closed)
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 4. **Managed multi-identity + Space membership layer**  
    Identity rows, space membership, installation→identity binding, grant table — Open Core contracts + private `os-managed`
