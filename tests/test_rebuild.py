@@ -104,7 +104,7 @@ class ProjectionRebuildTests(unittest.TestCase):
         self.assertEqual(len(self._query("SELECT * FROM interaction_events")), 1)
         self.assertEqual(len(self._query("SELECT * FROM apply_receipts")), 1)
         self.assertEqual(len(self._query("SELECT * FROM mature_events")), 1)
-        self.assertEqual(len(self._query("SELECT * FROM registry_entry_revisions")), 2)
+        self.assertEqual(len(self._query("SELECT * FROM registry_entry_revisions")), 3)
         self.assertEqual(len(self._query("SELECT * FROM stem_revisions")), 1)
         self.assertEqual(len(self._query("SELECT * FROM workspace_item_revisions")), 1)
 
