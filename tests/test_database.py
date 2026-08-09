@@ -53,7 +53,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             self.assertEqual([row[0] for row in dimensions], ["clarity_of_vision", "ownership_depth"])
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 2)
+        self.assertEqual(info["schema_version"], 4)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
         self.assertGreaterEqual(info["table_count"], 20)
@@ -89,6 +89,8 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 [
                     (1, "initial_db_only_v1"),
                     (2, "preserve_projection_history"),
+                    (3, "managed_sync_queue"),
+                    (4, "managed_sync_leases"),
                 ],
             )
 
@@ -215,7 +217,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 4)
 
     def test_existing_database_is_not_overwritten(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
@@ -247,7 +249,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 2)
+        self.assertEqual(json.loads(info.output)["schema_version"], 4)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -259,7 +261,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 2", info_text.output)
+        self.assertIn("schema_version: 4", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(

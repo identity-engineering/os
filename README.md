@@ -79,6 +79,7 @@ See `docs/next.md` and `docs/open-core.md`.
 | `docs/identity-surface.md` | Membrane ops and policy |
 | `docs/interaction-signal.md` | Signal across the membrane |
 | `docs/surface-runtime-local.md` | How to run local apply / HTTP |
+| `docs/managed-sync-queue.md` | Optional offline Managed queue and recovery |
 | `docs/bidirectional-gravitational-sensor.md` | Outbound signal + inbound request/inbox |
 | `docs/ecosystem-vision.md` | Standard vs platform horizon |
 | `docs/next.md` | Praxis order |

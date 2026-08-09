@@ -132,6 +132,11 @@ current database implicitly. Run `backup` first before rebuilding. The rebuild
 uses Interaction Events and Receipts plus Stem, Registry, and Workspace
 revision snapshots; append-only audit and policy history stays untouched.
 
+If the optional Managed adapter is enabled, its queue is drained separately.
+Network failures remain local `retry` rows, cursor or payload conflicts become
+`blocked`, and a lost append response is recovered with the Managed status/pull
+contract. The accountless Free path never requires these tables or endpoints.
+
 ## Ownership and visibility rules
 
 | Data | Changes through | Visible to others by default |
