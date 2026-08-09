@@ -24,6 +24,19 @@ When multiple Identities exist under one account or install, the agent must
 know which `identity_id` (or local handle) it is bound to. Context switch is
 explicit.
 
+## MCP binding (local V1)
+
+Agents that speak MCP may attach to the local Surface via stdio:
+
+```text
+ie surface mcp
+# or: python -m runtime.mcp_handler --install <root>
+```
+
+Session is bound to the single install Identity. Every tool result carries
+`actor.actor_identity_id`. `ie_signal_apply` forces the destination to the
+bound Identity. See `docs/mcp-surface-v0.md`.
+
 ## Read path
 
 Agents should prefer stable commands and JSON output:
@@ -98,36 +111,3 @@ A Mature request should include:
 - requested Stem, Workspace, and Registry changes;
 - confidence where an estimate or dimension value changes; and
 - explicit reassessment targets if peers should be asked for a fresh estimate.
-
-The agent must be able to explain the resulting Mature event by its source IDs,
-before/after revisions, and Trajectory entry. It must not:
-
-- write a self-declared emergent Self-Mass;
-- silently overwrite an existing Registry estimate without a revision;
-- rewrite policy as a side effect of learning;
-- claim that an external path is immutable without a hash; or
-- turn a local Geometry Receipt into a public payload without consent.
-
-## Privacy and evidence
-
-Canonical Interaction Events contain validated contract fields only. Raw HTTP
-bodies, arbitrary tool envelopes, and secrets are not persisted by default.
-External evidence uses root-relative paths and SHA-256. Content snapshots are
-opt-in and should be avoided for secrets or large files.
-
-Agents should report when a source is missing, changed since hashing, outside
-the install root, or unavailable for snapshotting. They should not silently
-replace missing evidence with a newly invented summary.
-
-## Failure and recovery
-
-An agent should treat these outcomes differently:
-
-- `rejected`: no domain projection was accepted; inspect the reason;
-- `partial`: some fields were accepted and the receipt is authoritative;
-- `applied` or `accepted`: use the returned receipt/event IDs for follow-up;
-- integrity failure: stop writes and request backup/repair handling.
-
-After a process restart, the agent should query the database by stable ID before
-retrying a command. `ie db integrity-check` is the first diagnostic for a
-database-level failure.
