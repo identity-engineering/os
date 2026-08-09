@@ -357,6 +357,22 @@ Workspace revisions instead of duplicating their full content.
 
 ## Transaction rules
 
+### Optional Managed sync transaction
+
+When a Managed adapter is enabled, the queue tables add durable transport
+state without changing local Free semantics:
+
+- `managed_sync_queue` stores the canonical envelope, retry status, attempts,
+  and the opaque client cursor;
+- `managed_sync_leases` prevents two drainers from sending the same row at the
+  same time and expires after a bounded interval; and
+- `managed_sync_state` stores the client cursor and the independent numeric
+  Managed recovery cursor per stream.
+
+The queue is not part of identity export/import and does not contain Mature
+state. Accepted server responses update the queue and stream state in one local
+transaction; a lost response is repaired through the Managed pull contract.
+
 ### Interaction transaction
 
 For a structurally valid signal, one SQLite transaction writes:

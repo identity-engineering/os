@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 4
 
 
 class DatabaseError(RuntimeError):
@@ -479,9 +479,60 @@ DROP TABLE workspace_item_revisions;
 ALTER TABLE workspace_item_revisions_v2 RENAME TO workspace_item_revisions;
 """
 
+MANAGED_SYNC_QUEUE_MIGRATION = """
+CREATE TABLE IF NOT EXISTS managed_sync_queue (
+    queue_id TEXT PRIMARY KEY,
+    event_id TEXT NOT NULL UNIQUE,
+    stream TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    occurred_at TEXT NOT NULL,
+    previous_cursor TEXT,
+    cursor TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'retry', 'accepted', 'blocked')),
+    attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    next_attempt_at TEXT NOT NULL,
+    last_error TEXT,
+    server_cursor TEXT,
+    accepted_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_managed_sync_queue_due
+    ON managed_sync_queue(status, next_attempt_at, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_managed_sync_queue_stream
+    ON managed_sync_queue(stream, status, created_at);
+
+CREATE TABLE IF NOT EXISTS managed_sync_state (
+    stream TEXT PRIMARY KEY,
+    client_cursor TEXT,
+    server_cursor TEXT,
+    updated_at TEXT NOT NULL
+);
+"""
+
+MANAGED_SYNC_LEASE_MIGRATION = """
+CREATE TABLE IF NOT EXISTS managed_sync_leases (
+    queue_id TEXT PRIMARY KEY REFERENCES managed_sync_queue(queue_id) ON DELETE CASCADE,
+    lease_id TEXT NOT NULL UNIQUE,
+    lease_until TEXT NOT NULL,
+    claimed_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_managed_sync_leases_expiry
+    ON managed_sync_leases(lease_until);
+"""
+
 MIGRATIONS = (
     (1, "initial_db_only_v1", INITIAL_SCHEMA),
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
+    (3, "managed_sync_queue", MANAGED_SYNC_QUEUE_MIGRATION),
+    (4, "managed_sync_leases", MANAGED_SYNC_LEASE_MIGRATION),
 )
 
 
