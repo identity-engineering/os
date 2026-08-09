@@ -1,6 +1,6 @@
 # Space model
 
-Status: architecture contract (locked direction 09.08.2026)
+Status: architecture contract (locked direction 09.08.2026; framework alignment same day)
 
 ## Core claim
 
@@ -21,10 +21,30 @@ hosting one (or few) Identities. IE-managed is one Space among many, with
 network bootstrap and account responsibilities. Team premium is the right to
 run an additional governed Space — not the only way to use IE as a team.
 
-Framework note: operational **Space** (this host) may rhyme with the framework
-*proposal* layer “Space” (relational order of degrees of freedom). This
-contract does **not** silently promote that proposal to a public Core Concept.
-See framework proposal rules; operational meaning here is membrane host.
+### Framework alignment (one Space)
+
+Framework and OS name the **same** Space. Scientific lenses cut different aspects;
+OS is where those aspects become operable together.
+
+| Lens | Aspect of the same Space |
+|------|--------------------------|
+| **Physics** | Degrees of freedom / configuration arena |
+| **Biology** | Boundary (membrane, selective exchange) |
+| **OS** | Installable host: membership, Surface, membrane policy |
+
+There are not two Spaces (framework vs operational). Open formal work on the
+public site (e.g. metric / dimensionality) is incomplete **description** of this
+Space, not a second ontology.
+
+**Boundary is scale-invariant.** Every Identity has Boundary (Surface, consent,
+jurisdiction edge) — human, agent, idea, org, and Space Identity. A Space
+membrane is the Boundary of the **Space Identity**, not a Collective-only
+primitive. Member Identities keep their own Boundaries inside the host
+(Multicellularity: nested membranes). Emergence is the scale jump when the
+whole acquires its own trajectory and therefore its own Boundary.
+
+Public framework pages: `/framework/space`, `/framework/boundary`,
+`/framework/multicellularity`, `/os`.
 
 ## Why “Space” not “Registry host”
 
@@ -42,7 +62,7 @@ Every Space has a **Space-ID**.
 **Default:** Space-ID is 1:1 with a sovereign **Space Identity** (typically
 substrate `org` or `collective`). That Identity is what appears in other
 Identities’ Registries, carries public Mass correlation, and is the membrane’s
-outward form.
+outward form — i.e. the form that **has** Boundary at collective scale.
 
 - Creating a Team/Corp Space normally creates this Space Identity with it.
 - A purely private membrane without a public Space Identity remains possible;
@@ -52,11 +72,15 @@ outward form.
 - Explicit **sub-Spaces** are allowed later as governed children; membership
   cascades downward while primary hosting rules (below) still apply.
 
-Biology lens: the Space **is** the membrane; the Space Identity is the living
-form that membrane presents. Membership in the Mercedes Space is relation to
-that Space Identity under host policy — including trajectory effects (time in
-field, proximity to Stem, rotation) that can change how Mass is perceived —
-without turning every employee into a clone of the brand.
+Biology lens (operational):
+
+- **Space host** implements degrees of freedom + membrane policy together.
+- **Space Identity** is the living form that membrane presents outward.
+- **Membership** is Multicellularity-style nesting: members remain bounded
+  units under host policy; they are not clones of the Space Identity.
+- Trajectory effects (time in field, proximity to Stem, rotation) can change
+  how Mass is perceived in relation to that Space Identity without dissolving
+  member Boundaries.
 
 ## Layer stack (with Account ≠ Identity)
 
@@ -65,14 +89,15 @@ IE Account (managed only: auth, plan)
   └── may create / pay for Identities and optional governed Spaces
 
 Space (space_id = sovereign Space Identity by default)
-  ├── membrane policy (what enters / leaves)
-  ├── membership → Identity IDs (reference, not clone)
+  ├── membrane policy (what enters / leaves)  ← Boundary of Space Identity
+  ├── membership → Identity IDs (reference, not clone; nested Boundaries)
   ├── hosts Surfaces (MCP / HTTP / local) for members
   └── may store space-allowed projections
 
 Identity
   ├── one Stem / Tensor (primary host)
   ├── own relative Registry
+  ├── own Boundary (Surface / consent / jurisdiction edge)
   ├── may be member of many Spaces
   └── harnesses / agents = further Identities (space-bound as needed)
 ```
@@ -167,7 +192,7 @@ spaces
   kind                          -- ie_managed | governed | local
   hosting                       -- ie_federated | self | local_device
   parent_space_id?              -- sub-Space cascade
-  policy_json                   -- membrane defaults
+  policy_json                   -- membrane defaults (Boundary of Space Identity)
   created_at / updated_at
 
 space_memberships
@@ -191,6 +216,8 @@ every mutation envelope
 
 Geometry tables remain Identity-scoped as in Open Core. Space rows add
 hosting, membership, and membrane — they do not replace `registry_entries`.
+There is no separate “collective Boundary” table: outer membrane is policy on
+the Space / Space Identity; member Boundary is each Identity’s Surface.
 
 ## Relation to local Free V1
 
@@ -202,6 +229,9 @@ A local install is a **local mini-Space**:
 - optional later link: membership of that Identity into IE-managed Space
   without abandoning local sovereignty.
 
+SQLite is the store engine for local / self-hosted Spaces, not the product
+center. Product language is **Space-first / Identity-scoped** (see issue #59).
+
 ## Explicit non-goals (this contract)
 
 - Implementing federated multi-region hosting ops in v0
@@ -209,6 +239,7 @@ A local install is a **local mini-Space**:
 - Uploading full private geometry when a Space becomes “known” in IE-managed
 - Shared team Registry that replaces per-Identity Registries
 - Multiple human Identities for one person because they work in two Spaces
+- A second Boundary concept for teams (use Space Identity Boundary + membership)
 - Freezing Team/Corp price numbers
 
 ## Locked decisions summary
@@ -223,6 +254,8 @@ A local install is a **local mini-Space**:
 8. Governed Space may be IE-federated or self-hosted; both are Team/Corp features.
 9. Membrane policy governs cross-Space visibility; IAM informs, geometry leads.
 10. Local Free remains a first-class mini-Space.
+11. Framework and OS share one Space (physics degrees of freedom + biology Boundary + OS host).
+12. Boundary is scale-invariant; Space membrane = Boundary of the Space Identity; members nest under Multicellularity, not a second Boundary primitive.
 
 ## Related
 
@@ -232,5 +265,7 @@ A local install is a **local mini-Space**:
 - `docs/storage-tiers.md` — Free local vs managed continuity
 - `docs/living-form.md` — membrane / metabolism lens
 - `docs/principles.md` — multi-substrate; relative by default
+- Framework site: `/framework/space`, `/framework/boundary`, `/framework/multicellularity`, `/os`
 - Issue #40 Access & Jurisdiction
 - Issue #11 Multi-substrate symmetry
+- Issue #59 Space-first Open Core wording
