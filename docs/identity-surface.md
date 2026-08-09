@@ -1,6 +1,7 @@
 # Identity Surface
 
-Locked 28.07.2026
+Locked 28.07.2026  
+Multi-identity account model linked 08.08.2026
 
 ## Core claim
 
@@ -15,6 +16,10 @@ The surface can be bound to:
 - **Local emulation** (CLI / files for Free tier)
 
 Same semantics, different bindings.
+
+The Surface belongs to an **Identity**, not to an IE Account. An account may
+hold many Identities; each has its own Surface, Registry frame, and Public
+Card. See `docs/account-identity-model.md`.
 
 ## Why this exists
 
@@ -42,6 +47,11 @@ Relative Mass, volume, and tension can update without the human re-typing estima
 
 Further tools (rich dimension read/write, custom domain tools) are **opt-in** and subject to the access policy.
 
+Owner-side operations on the same Identity (status, Mature, registry list, …)
+use the same runtime handlers whether invoked via CLI, HTTP, or MCP. MCP is not
+a read-only mirror of the CLI; when the session is authenticated as Identity I,
+it may write I's geometry under the same rules as local CLI.
+
 See `schemas/surface-operations/v0.yaml`, `docs/foreign-estimate-zone.md`, and `docs/estimate-request.md`.
 
 ## Bounded foreign-write zone
@@ -68,9 +78,9 @@ The **access policy** of an Identity Surface has a clear owner:
 | Criticality | Who may change policy / add tools / widen scopes |
 |-------------|--------------------------------------------------|
 | Uncritical routine | May be an approved agent acting under existing policy |
-| **Critical** | **Human owner** (or designated human role) must approve out of the box in the IE standard |
+| **Critical** | **Identity holder** (human owner of a human Identity, or the designated owner role for a runtime/idea Identity) must approve out of the box in the IE standard |
 
-Examples of **critical** (human approval required by default):
+Examples of **critical** (approval required by default):
 
 - Creating a new offered tool on the surface
 - Granting write access beyond the minimal signal zone
@@ -78,23 +88,28 @@ Examples of **critical** (human approval required by default):
 - Changing revoke rules or disabling audit
 - Binding a new MCP/API endpoint that exposes more state
 
-Examples of **non-critical** (may be agent-automated if policy allows):
+Examples of **non-critical** (may be automated if policy allows):
 
 - Applying a minimal authenticated signal into the foreign-estimate zone
 - Emitting receipts
 - Rotating non-secret operational metadata
 - Listing or ignoring inbound estimate requests under existing policy
+- Mature and registry updates **on the authenticated Identity itself**
+
+Cross-Identity mutations under the same account (e.g. agent Mature on a human
+Stem) require an explicit grant. They are not implied by sharing an account.
+See `docs/account-identity-model.md`.
 
 ### Human-in-the-loop requirements
 
 The IE standard must support, out of the box:
 
-1. **Clear owner** of the access policy (human Identity handle / account)
+1. **Clear owner** of the access policy (Identity handle / account membership role)
 2. **Approval requests** for critical changes (readable surface: what is requested, by whom, what scope)
 3. **Revoke** functions that actually cut access and can quarantine prior writes where feasible
-4. Separation between "AI that acts in my name under approval" and "me" — even a well-informed agent is not the human owner
+4. Separation between "AI that acts as its own Identity under grants" and "the human Identity" — an agent Identity is not a silent mode of the human
 
-Speaking with "my AI" is not identical to being the Identity's sovereign controller. Approved delegation is allowed; critical surface changes default to human confirmation.
+Speaking with "my AI" is interaction between Identities (or between harnesses bound to different Identities), not automatic elevation to the human's jurisdiction.
 
 ## Default apply policy (signals)
 
@@ -119,10 +134,11 @@ Each Identity:
 - may expose additional tools later under approval rules
 - remains multi-substrate (human, runtime, idea, org, …) — the surface is how others address that entity
 
-An idea-Identity can have a surface too (often narrower). A runtime-Identity often exposes MCP naturally. A human-Identity typically owns policy and delegates operation of the runtime that hosts the surface.
+An idea-Identity can have a surface too (often narrower). A runtime-Identity often exposes MCP naturally. A human-Identity typically holds account-level roles and may create other Identities under the account without absorbing them.
 
 ## Related docs
 
+- `docs/account-identity-model.md` — Account ≠ Identity; harness binding; grants
 - `docs/communication.md` — transport vs payload vs receipt
 - `docs/local-entry.md` — AGENTS.md / local discoverability (not the inter-identity protocol)
 - `docs/interaction-signal.md` — payload fields
