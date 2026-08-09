@@ -120,6 +120,34 @@ address; the UUID prevents a handle rename from changing event ownership.
 | `created_at`, `updated_at` | Lifecycle timestamps |
 | `last_signal_at` | Nullable last accepted or observed signal time |
 | `last_mature_at` | Nullable timestamp of the latest committed local Mature step; public freshness metadata |
+| `creator_identity_id` | Nullable factual lineage (null for V1 genesis / bootstrap). See `docs/identity-creation-jurisdiction.md` |
+
+### Jurisdiction grants (creation package + residual)
+
+#### `identity_grants`
+
+Current and historical jurisdiction grants over an Identity. Issued at creation
+as the default package; ordinary scopes are transferable and Child-revocable;
+`residual_emergency` is the narrow audited red-button lever.
+
+| Column | Meaning |
+|---|---|
+| `grant_id` | UUID primary key |
+| `actor_identity_id` | Grantee (who may exercise the scope) |
+| `object_identity_id` | The Identity whose policy / surface / visibility is affected |
+| `scope` | `policy_admin` \| `visibility_control` \| `surface_admin` \| `grant_admin` \| `residual_emergency` |
+| `residual` | 1 for the residual emergency lever |
+| `transferable` | 1 if ordinary transfer is allowed |
+| `space_id` | Optional membrane scope (later) |
+| `granted_at` / `revoked_at` | Lifecycle |
+| `granted_by_identity_id` | Who issued the grant |
+| `note` | Audit note |
+
+On `ie init` the runtime issues the full default package to the new Identity
+(self for V1 genesis). Multi-Identity creation will issue the package to the
+creator as actor over the new object Identity. Full semantics:
+`docs/identity-creation-jurisdiction.md`. Operational probes and transfer/revoke
+CLI remain under issue #40.
 
 ### Policy and privacy
 
