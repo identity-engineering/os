@@ -14,6 +14,7 @@
 - Think = concept only (substrate + prompts); no Think CLI
 - **Account ≠ Identity** (`docs/account-identity-model.md`)
 - **Space membrane host** (`docs/space-model.md`) — Registry stays observer-relative
+- **MCP Surface binding v0** (`docs/mcp-surface-v0.md`) — Identity-scoped stdio tools; same handlers as CLI/HTTP
 
 ## Next
 
@@ -22,11 +23,9 @@
 2. **Access & Jurisdiction / membrane policy** — **#40**  
    Align probes with multi-identity grants **and** Space membrane export/inbound rules
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
-4. **MCP binding for Surface Runtime** (remaining #29 exit criterion)  
-   Same handlers as local HTTP/CLI; session authenticates as an Identity; write is full for that Identity's geometry; Space context when membrane applies
-5. **Managed multi-identity + Space membership layer**  
+4. **Managed multi-identity + Space membership layer**  
    Identity rows, space membership, installation→identity binding, grant table — Open Core contracts + private `os-managed`
 
 ## Related issues
 
-#8 (Tensor feed), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime), #31 (request/inbox), #40 (Access/Jurisdiction), #45 (TIM foundation), #11 (multi-substrate), Cloudflare R2 releases.
+#8 (Tensor feed), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — MCP done), #31 (request/inbox), #40 (Access/Jurisdiction), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), Cloudflare R2 releases.
