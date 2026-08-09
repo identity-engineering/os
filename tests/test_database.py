@@ -53,7 +53,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             self.assertEqual([row[0] for row in dimensions], ["clarity_of_vision", "ownership_depth"])
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 4)
+        self.assertEqual(info["schema_version"], 5)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
         self.assertGreaterEqual(info["table_count"], 20)
@@ -91,6 +91,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (2, "preserve_projection_history"),
                     (3, "managed_sync_queue"),
                     (4, "managed_sync_leases"),
+                    (5, "geometry_receipt_fed_at"),
                 ],
             )
 
@@ -106,6 +107,24 @@ class DatabaseLifecycleTests(unittest.TestCase):
             );
             CREATE TABLE workspace_items (
                 item_id TEXT PRIMARY KEY
+            );
+            CREATE TABLE geometry_receipts (
+                receipt_id TEXT PRIMARY KEY,
+                install_id TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                observer TEXT NOT NULL,
+                target TEXT NOT NULL,
+                source_apply_receipt_id TEXT,
+                mature_id TEXT,
+                relative_mass_proxy_json TEXT,
+                tension_components_json TEXT NOT NULL DEFAULT '[]',
+                degrees_of_freedom_json TEXT,
+                jurisdiction_shift_json TEXT,
+                stem_differential_json TEXT,
+                ownership_move_json TEXT,
+                optionality_delta_json TEXT,
+                notes TEXT NOT NULL DEFAULT ''
             );
             CREATE TABLE registry_entry_revisions (
                 revision_id TEXT PRIMARY KEY,
@@ -217,7 +236,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 4)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 5)
 
     def test_existing_database_is_not_overwritten(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
@@ -249,7 +268,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 4)
+        self.assertEqual(json.loads(info.output)["schema_version"], 5)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -261,7 +280,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 4", info_text.output)
+        self.assertIn("schema_version: 5", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(

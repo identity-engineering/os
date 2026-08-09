@@ -26,7 +26,7 @@ The high-dimensional, open, contentful dimensional space that lives inside each 
 - Full per-dimension dependency tensors remain out of scope for v0.
 - **Effective Freedom** (derived): unbound / remaining degrees of freedom divided by constraint intensity in the same space. See `docs/effective-freedom.md`. Operational surface: #40 (probes) + #8 (feed).
 
-## How the Tensor is updated (01.08.2026 · clarified 02.08.2026)
+## How the Tensor is updated (01.08.2026 · clarified 02.08.2026 · design 09.08.2026)
 
 The **intended** primary update path is the **Geometry Receipt** produced by the Probe process after every Interaction (Think / Interact / Mature). See `docs/probes-as-bridge.md` and `schemas/geometry-receipt/v0.yaml`.
 
@@ -34,8 +34,8 @@ The **intended** primary update path is the **Geometry Receipt** produced by the
 	`geometry_receipts` table in `.ie/ie.sqlite3`.
 - Interact updates Registry continuity separately and explicitly. Mature may
 	commit supplied Registry and Metric Stem changes; no Geometry Receipt causes
-	an inferred rewrite. Continuous derived Tension/Tensor feed remains the open
-	work on **OS #8**.
+	an inferred rewrite. Continuous derived Tension/Tensor feed is specified in
+	`docs/geometry-feed.md` and tracked as **OS #8**.
 - Receipts never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
 
 ## Storage implication
@@ -52,3 +52,4 @@ Skills are storage-agnostic.
 - Effective Freedom = derived ratio of unbound DoF to constraint intensity (live; see `docs/effective-freedom.md`)
 - Curvature = later derived quantity
 - Geometry Receipt = the continuous Probe bridge that keeps the Tensor alive
+- Feed = ownership-gated write-back from Receipt → alloys / Tension / Effective Freedom (`docs/geometry-feed.md`)
