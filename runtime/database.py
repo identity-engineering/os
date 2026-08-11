@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 7
 
 
 class DatabaseError(RuntimeError):
@@ -535,12 +535,97 @@ CREATE INDEX IF NOT EXISTS idx_geometry_receipts_fed
     ON geometry_receipts(fed_at, timestamp);
 """
 
+JURISDICTION_GRANTS_MIGRATION = """
+-- Creator lineage (nullable for genesis / V1 bootstrap). No FK to keep V1 simple.
+ALTER TABLE identity ADD COLUMN creator_identity_id TEXT;
+
+CREATE TABLE IF NOT EXISTS identity_grants (
+    grant_id TEXT PRIMARY KEY,
+    actor_identity_id TEXT NOT NULL REFERENCES identity(identity_id),
+    object_identity_id TEXT NOT NULL REFERENCES identity(identity_id),
+    scope TEXT NOT NULL,
+    residual INTEGER NOT NULL DEFAULT 0 CHECK (residual IN (0, 1)),
+    transferable INTEGER NOT NULL DEFAULT 1 CHECK (transferable IN (0, 1)),
+    space_id TEXT,
+    granted_at TEXT NOT NULL,
+    revoked_at TEXT,
+    granted_by_identity_id TEXT REFERENCES identity(identity_id),
+    note TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_identity_grants_object
+    ON identity_grants(object_identity_id, scope, revoked_at);
+
+CREATE INDEX IF NOT EXISTS idx_identity_grants_actor
+    ON identity_grants(actor_identity_id, scope, revoked_at);
+
+-- Backfill self-owned default package for existing V1 identities (genesis residual on self).
+-- UUID construction via randomblob is sufficient for one-time migration.
+INSERT INTO identity_grants (
+    grant_id, actor_identity_id, object_identity_id, scope, residual, transferable,
+    space_id, granted_at, revoked_at, granted_by_identity_id, note
+)
+SELECT
+    lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' ||
+    substr(lower(hex(randomblob(2))), 2) || '-' ||
+    substr('89ab', abs(random()) % 4 + 1, 1) ||
+    substr(lower(hex(randomblob(2))), 2) || '-' || lower(hex(randomblob(6))),
+    i.identity_id,
+    i.identity_id,
+    s.scope,
+    s.residual,
+    s.transferable,
+    NULL,
+    i.created_at,
+    NULL,
+    i.identity_id,
+    'v1-genesis-backfill'
+FROM identity i
+CROSS JOIN (
+    SELECT 'policy_admin' AS scope, 0 AS residual, 1 AS transferable
+    UNION ALL SELECT 'visibility_control', 0, 1
+    UNION ALL SELECT 'surface_admin', 0, 1
+    UNION ALL SELECT 'grant_admin', 0, 1
+    UNION ALL SELECT 'residual_emergency', 1, 0
+) AS s
+WHERE NOT EXISTS (
+    SELECT 1 FROM identity_grants g
+    WHERE g.object_identity_id = i.identity_id AND g.scope = s.scope
+);
+"""
+
+ACCESS_JURISDICTION_PROFILES_MIGRATION = """
+CREATE TABLE IF NOT EXISTS access_jurisdiction_profiles (
+    profile_id TEXT PRIMARY KEY,
+    observer_identity_id TEXT NOT NULL REFERENCES identity(identity_id) ON DELETE CASCADE,
+    object_kind TEXT NOT NULL,
+    object_ref TEXT NOT NULL,
+    observed_at TEXT NOT NULL,
+    confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
+    access_json TEXT NOT NULL DEFAULT '{}',
+    jurisdiction_json TEXT NOT NULL DEFAULT '{}',
+    notes TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT 'owner_probe',
+    revision INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_aj_profiles_lookup
+    ON access_jurisdiction_profiles(observer_identity_id, object_kind, object_ref, revision DESC);
+
+CREATE INDEX IF NOT EXISTS idx_aj_profiles_observer
+    ON access_jurisdiction_profiles(observer_identity_id, observed_at DESC);
+"""
+
 MIGRATIONS = (
     (1, "initial_db_only_v1", INITIAL_SCHEMA),
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
     (3, "managed_sync_queue", MANAGED_SYNC_QUEUE_MIGRATION),
     (4, "managed_sync_leases", MANAGED_SYNC_LEASE_MIGRATION),
     (5, "geometry_receipt_fed_at", GEOMETRY_FEED_MIGRATION),
+    (6, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
+    (7, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
 )
 
 
@@ -636,6 +721,44 @@ class Database:
             self.conn.commit()
 
 
+def _issue_default_jurisdiction_package(
+    connection: sqlite3.Connection,
+    *,
+    identity_id: str,
+    granted_by_identity_id: str,
+    granted_at: str,
+    note: str = "creation-default",
+) -> None:
+    """Issue the locked default jurisdiction package (docs/identity-creation-jurisdiction.md)."""
+    scopes = [
+        ("policy_admin", 0, 1),
+        ("visibility_control", 0, 1),
+        ("surface_admin", 0, 1),
+        ("grant_admin", 0, 1),
+        ("residual_emergency", 1, 0),  # residual, non-transferable by ordinary revoke
+    ]
+    for scope, residual, transferable in scopes:
+        connection.execute(
+            """
+            INSERT INTO identity_grants(
+                grant_id, actor_identity_id, object_identity_id, scope, residual,
+                transferable, space_id, granted_at, revoked_at, granted_by_identity_id, note
+            ) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?)
+            """,
+            (
+                str(uuid4()),
+                identity_id,  # V1 genesis: self holds the package
+                identity_id,
+                scope,
+                residual,
+                transferable,
+                granted_at,
+                granted_by_identity_id,
+                note,
+            ),
+        )
+
+
 def initialize_database(
     install_root: Union[str, Path],
     *,
@@ -686,8 +809,8 @@ def initialize_database(
                 """
                 INSERT INTO identity(
                     identity_id, install_id, local_handle, preferred_name, substrate,
-                    accepts_ie_signals, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+                    accepts_ie_signals, created_at, updated_at, creator_identity_id
+                ) VALUES (?, ?, ?, ?, ?, 1, ?, ?, NULL)
                 """,
                 (identity_id, install_id, handle, preferred_name, substrate, now, now),
             )
@@ -719,6 +842,14 @@ def initialize_database(
                     """,
                     (str(uuid4()), identity_id, dimension_name, now, now, now),
                 )
+            # Creation-time default jurisdiction package (V1 genesis: self holds it)
+            _issue_default_jurisdiction_package(
+                connection,
+                identity_id=identity_id,
+                granted_by_identity_id=identity_id,
+                granted_at=now,
+                note="v1-genesis-creation",
+            )
     finally:
         connection.close()
         _chmod_private(db_path, 0o600)

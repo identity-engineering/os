@@ -44,19 +44,46 @@ class DatabaseLifecycleTests(unittest.TestCase):
             self.assertEqual(connection.execute("PRAGMA foreign_keys").fetchone()[0], 1)
             self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
             identity = connection.execute(
-                "SELECT local_handle, preferred_name FROM identity"
+                "SELECT local_handle, preferred_name, creator_identity_id FROM identity"
             ).fetchone()
-            self.assertEqual(dict(identity), {"local_handle": "me", "preferred_name": "Me"})
+            self.assertEqual(
+                dict(identity),
+                {"local_handle": "me", "preferred_name": "Me", "creator_identity_id": None},
+            )
             dimensions = connection.execute(
                 "SELECT name FROM metric_dimensions ORDER BY name"
             ).fetchall()
             self.assertEqual([row[0] for row in dimensions], ["clarity_of_vision", "ownership_depth"])
 
+            grants = connection.execute(
+                "SELECT scope, residual, transferable FROM identity_grants ORDER BY scope"
+            ).fetchall()
+            scopes = {row["scope"]: (row["residual"], row["transferable"]) for row in grants}
+            self.assertEqual(
+                scopes,
+                {
+                    "grant_admin": (0, 1),
+                    "policy_admin": (0, 1),
+                    "residual_emergency": (1, 0),
+                    "surface_admin": (0, 1),
+                    "visibility_control": (0, 1),
+                },
+            )
+
+            # Migration 7: profiles table exists
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            self.assertIn("access_jurisdiction_profiles", tables)
+
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 5)
+        self.assertEqual(info["schema_version"], 7)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
-        self.assertGreaterEqual(info["table_count"], 20)
+        self.assertGreaterEqual(info["table_count"], 22)
         with Database(db_path) as database:
             for table in ("registry_entry_revisions", "workspace_item_revisions"):
                 self.assertEqual(
@@ -92,6 +119,8 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (3, "managed_sync_queue"),
                     (4, "managed_sync_leases"),
                     (5, "geometry_receipt_fed_at"),
+                    (6, "jurisdiction_grants_and_lineage"),
+                    (7, "access_jurisdiction_profiles"),
                 ],
             )
 
@@ -102,6 +131,21 @@ class DatabaseLifecycleTests(unittest.TestCase):
         connection.execute("PRAGMA foreign_keys = ON")
         connection.executescript(
             """
+            CREATE TABLE install (
+                install_id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE identity (
+                identity_id TEXT PRIMARY KEY,
+                install_id TEXT NOT NULL,
+                local_handle TEXT NOT NULL,
+                preferred_name TEXT,
+                substrate TEXT NOT NULL,
+                accepts_ie_signals INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
             CREATE TABLE registry_entries (
                 entry_id TEXT PRIMARY KEY
             );
@@ -157,6 +201,14 @@ class DatabaseLifecycleTests(unittest.TestCase):
             """
         )
         connection.execute("PRAGMA user_version = 1")
+        connection.execute(
+            "INSERT INTO install(install_id, created_at, updated_at) VALUES (?, ?, ?)",
+            ("install-1", "2026-08-08T00:00:00+00:00", "2026-08-08T00:00:00+00:00"),
+        )
+        connection.execute(
+            "INSERT INTO identity(identity_id, install_id, local_handle, preferred_name, substrate, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("id-1", "install-1", "me", "Me", "human", "2026-08-08T00:00:00+00:00", "2026-08-08T00:00:00+00:00"),
+        )
         connection.execute(
             "INSERT INTO registry_entries(entry_id) VALUES (?)", ("entry-1",)
         )
@@ -236,7 +288,19 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 5)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 7)
+            # Jurisdiction package backfilled for the stub identity
+            grant_count = database.conn.execute(
+                "SELECT COUNT(*) FROM identity_grants WHERE object_identity_id = 'id-1'"
+            ).fetchone()[0]
+            self.assertEqual(grant_count, 5)
+            # Profiles table present after migration 6
+            self.assertEqual(
+                database.conn.execute(
+                    "SELECT COUNT(*) FROM access_jurisdiction_profiles"
+                ).fetchone()[0],
+                0,
+            )
 
     def test_existing_database_is_not_overwritten(self):
         initialize_database(self.root, handle="me", preferred_name="Me")
@@ -268,7 +332,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 5)
+        self.assertEqual(json.loads(info.output)["schema_version"], 7)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -280,7 +344,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 5", info_text.output)
+        self.assertIn("schema_version: 7", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(

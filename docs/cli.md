@@ -66,6 +66,7 @@ product auth/plan on the managed path only (`docs/account-identity-model.md`).
 | `ie mature` | Mature: atomic source-backed learning commit |
 | `ie mass` | Emergent self-Mass readout |
 | `ie db info` / `integrity-check` / `backup` / `rebuild-projections` | Database diagnostics and recovery |
+| `ie jurisdiction probe` / `show` / `list` | Access & Jurisdiction owner probes |
 
 All mutable runtime state is in `<install-root>/.ie/ie.sqlite3`. `README.md` and
 `IE.md` are orientation documents only; the YAML files under `schemas/` and
@@ -152,4 +153,5 @@ does not rewrite append-only audit history or policy history.
 - `docs/living-form.md`
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`
+- `docs/access-jurisdiction-probes.md`
 - `docs/geometry-feed.md`
