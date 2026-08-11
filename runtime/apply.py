@@ -28,7 +28,7 @@ def apply_interaction_signal(
     """Apply an Interaction Signal into the local foreign-estimate zone.
 
     Geometry Hook runs by default after a non-rejected apply (Probes-as-Bridge).
-    Extraction is best-effort and never fails the Interaction apply itself.
+    Extraction + feed are best-effort and never fail the Interaction apply itself.
     Pass emit_geometry_receipt=False only for tests or explicit opt-out.
     """
     store = SQLiteStore.from_registry_root(registry_root)
@@ -128,13 +128,12 @@ def apply_interaction_signal(
     )
 
     # Geometry Hook (Probes-as-Bridge). Default on. Best-effort; never fails apply.
-    # Failures are recorded in receipt.reason when possible (not fully silent).
+    geo = None
     if emit_geometry_receipt and receipt.status != ApplyStatus.REJECTED:
         try:
-            from .geometry import GeometryReceiptStore, run_geometry_hook
+            from .geometry import run_geometry_hook
 
             observer = observer_handle or signal.to_handle or expected_to_handle or "local"
-            # Prefer Mass published on this signal; else last stored value for sender.
             stored_sender_mass = None
             if record is not None and record.sender_emergent_mass is not None:
                 stored_sender_mass = float(record.sender_emergent_mass)
@@ -156,8 +155,6 @@ def apply_interaction_signal(
                         if signal.sender_last_mature_at is not None
                         else (record.sender_last_mature_at if record is not None else None)
                     ),
-                    # Callers / future Surface adapters may inject a card read:
-                    # "public_card_emergent_self_mass": <float>
                 },
             )
             if geo is not None:
@@ -176,9 +173,25 @@ def apply_interaction_signal(
         receipt,
         fields_to_apply=applied,
         quarantine=quarantine,
-        geometry=geo if "geo" in locals() else None,
+        geometry=geo,
         prior_record=record,
     )
+
+    # Geometry feed (OS #8): write Receipt into Registry effect_on_me. Best-effort.
+    if geo is not None:
+        try:
+            from .geometry_feed import feed_receipt
+
+            fed = feed_receipt(registry_root, geo.receipt_id)
+            if fed.get("status") == "fed":
+                receipt.reason = (
+                    (receipt.reason or "") + f"; geometry_fed={geo.receipt_id}"
+                ).strip("; ")
+        except Exception as exc:  # noqa: BLE001 — feed must not fail apply
+            receipt.reason = (
+                (receipt.reason or "")
+                + f"; geometry_feed_error={type(exc).__name__}"
+            ).strip("; ")
 
     return receipt
 

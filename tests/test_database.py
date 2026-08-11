@@ -70,7 +70,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 },
             )
 
-            # Migration 6: profiles table exists
+            # Migration 7: profiles table exists
             tables = {
                 row[0]
                 for row in connection.execute(
@@ -80,7 +80,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             self.assertIn("access_jurisdiction_profiles", tables)
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 6)
+        self.assertEqual(info["schema_version"], 7)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
         self.assertGreaterEqual(info["table_count"], 22)
@@ -118,8 +118,9 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (2, "preserve_projection_history"),
                     (3, "managed_sync_queue"),
                     (4, "managed_sync_leases"),
-                    (5, "jurisdiction_grants_and_lineage"),
-                    (6, "access_jurisdiction_profiles"),
+                    (5, "geometry_receipt_fed_at"),
+                    (6, "jurisdiction_grants_and_lineage"),
+                    (7, "access_jurisdiction_profiles"),
                 ],
             )
 
@@ -150,6 +151,24 @@ class DatabaseLifecycleTests(unittest.TestCase):
             );
             CREATE TABLE workspace_items (
                 item_id TEXT PRIMARY KEY
+            );
+            CREATE TABLE geometry_receipts (
+                receipt_id TEXT PRIMARY KEY,
+                install_id TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                observer TEXT NOT NULL,
+                target TEXT NOT NULL,
+                source_apply_receipt_id TEXT,
+                mature_id TEXT,
+                relative_mass_proxy_json TEXT,
+                tension_components_json TEXT NOT NULL DEFAULT '[]',
+                degrees_of_freedom_json TEXT,
+                jurisdiction_shift_json TEXT,
+                stem_differential_json TEXT,
+                ownership_move_json TEXT,
+                optionality_delta_json TEXT,
+                notes TEXT NOT NULL DEFAULT ''
             );
             CREATE TABLE registry_entry_revisions (
                 revision_id TEXT PRIMARY KEY,
@@ -269,7 +288,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 6)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 7)
             # Jurisdiction package backfilled for the stub identity
             grant_count = database.conn.execute(
                 "SELECT COUNT(*) FROM identity_grants WHERE object_identity_id = 'id-1'"
@@ -313,7 +332,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 6)
+        self.assertEqual(json.loads(info.output)["schema_version"], 7)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -325,7 +344,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 6", info_text.output)
+        self.assertIn("schema_version: 7", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(

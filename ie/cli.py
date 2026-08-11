@@ -13,6 +13,7 @@ import typer
 from ie import __version__
 from ie.init_cmd import init_install
 from ie.mcp_cmd import register as register_mcp
+from ie.geometry_cmd import register as register_geometry
 from ie.jurisdiction_cmd import register as register_jurisdiction
 from ie.paths import remember_ie_root, require_ie_root
 from ie.registry_cmd import get_peer, list_peers
@@ -37,6 +38,7 @@ app.add_typer(request_app, name="request")
 app.add_typer(policy_app, name="policy")
 app.add_typer(db_app, name="db")
 register_mcp(app)
+register_geometry(app)
 register_jurisdiction(app)
 
 DEFAULT_INIT_PATH = Path.home() / "ie"
@@ -274,10 +276,14 @@ def status(
     if path and not database_path(root).is_file():
         raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
     info = collect_status(root)
+    from runtime.geometry_feed import feed_capability
+
+    info["geometry_feed"] = feed_capability(root)
     if json_out:
         typer.echo(status_json(info))
         return
     typer.echo(format_status(info))
+    typer.echo(f"  geometry_feed: {info['geometry_feed']}")
     from runtime.mass import compute_mass_readout
 
     readout = compute_mass_readout(root)

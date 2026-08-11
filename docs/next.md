@@ -16,18 +16,21 @@
 - **Space membrane host** (`docs/space-model.md`) — Registry stays observer-relative
 - **MCP Surface binding v0** (`docs/mcp-surface-v0.md`) — Identity-scoped stdio tools; same handlers as CLI/HTTP
 - **Identity creation lineage + default jurisdiction** (`docs/identity-creation-jurisdiction.md`) — creator grants, transfer, Child revocation, residual red button
-- **Jurisdiction grants schema v5** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; residual_emergency non-transferable
+- **Surface Runtime v0 complete** (#29 closed) — CLI + HTTP + MCP shipped
+- **Geometry Receipt feed v0** (`docs/geometry-feed.md`) — hook + explicit CLI; Registry effect_on_me write-back (#8)
+- **Jurisdiction grants schema v6** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; residual_emergency non-transferable
 - **Access & Jurisdiction probes** (`docs/access-jurisdiction-probes.md`, `access_jurisdiction_profiles`, `ie jurisdiction`) — owner-gated measurement of degrees of freedom (#40 closed)
 
 ## Next
 
-1. **Feed Geometry Receipt → Tension / Tensor / Registry** — **#8**  
-   (storage exists; continuous write-back is the heartbeat)
-2. **Space membrane export/inbound + grant transfer/revoke CLI** — follow-ups from #40 / #61 (probes + grants schema closed)
+1. **Space membrane export/inbound + grant transfer/revoke CLI** — follow-ups from #40 / #61 (probes + grants schema shipped)
+2. **Richer Tensor / Effective Freedom derivation** from fed receipts + probes
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 4. **Managed multi-identity + Space membership layer**  
    Identity rows, space membership, installation→identity binding, grant table — Open Core contracts + private `os-managed`
 
 ## Related issues
 
-#8 (Tensor feed), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — MCP done), #31 (request/inbox), #40 (Access/Jurisdiction), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), #61 (probes + Space membrane), Cloudflare R2 releases.
+#8 (Tensor feed — v0 shipped on this branch), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — closed), #31 (request/inbox), #40 (Access/Jurisdiction), #44 (feed delivery modes), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), #61 (probes + Space membrane), Cloudflare R2 releases.
+
+Design note: `docs/effective-freedom.md`.

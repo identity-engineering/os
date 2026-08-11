@@ -57,9 +57,10 @@ product auth/plan on the managed path only (`docs/account-identity-model.md`).
 | Command | Purpose |
 |---------|---------|
 | `ie init` | Interactive setup of a local mini-Space |
-| `ie status` | Install summary |
+| `ie status` | Install summary (includes `geometry_feed`) |
 | `ie registry list` / `get` | Local registry |
-| `ie signal apply` | Interact: apply signal + Geometry Receipt |
+| `ie signal apply` | Interact: apply signal + Geometry Receipt + feed |
+| `ie geometry feed` | Explicit Geometry Receipt → Registry feed |
 | `ie request …` | Inbound estimate-request inbox |
 | `ie policy …` | Persistent consent and sender quarantine |
 | `ie mature` | Mature: atomic source-backed learning commit |
@@ -70,6 +71,17 @@ product auth/plan on the managed path only (`docs/account-identity-model.md`).
 All mutable runtime state is in `<install-root>/.ie/ie.sqlite3`. `README.md` and
 `IE.md` are orientation documents only; the YAML files under `schemas/` and
 `templates/` are contracts/examples and are not runtime storage.
+
+### Geometry feed
+
+```bash
+ie geometry feed                 # process pending receipts
+ie geometry feed --all           # same, higher limit
+ie geometry feed --receipt-id <id>
+ie geometry feed --force         # re-feed already marked receipts
+```
+
+Hook path runs automatically after successful `ie signal apply`.
 
 ### TIM mapping (short)
 
@@ -142,3 +154,4 @@ does not rewrite append-only audit history or policy history.
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`
 - `docs/access-jurisdiction-probes.md`
+- `docs/geometry-feed.md`

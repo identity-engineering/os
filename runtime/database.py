@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 class DatabaseError(RuntimeError):
@@ -528,6 +528,13 @@ CREATE INDEX IF NOT EXISTS idx_managed_sync_leases_expiry
     ON managed_sync_leases(lease_until);
 """
 
+GEOMETRY_FEED_MIGRATION = """
+-- Idempotency marker for Geometry Receipt → Registry/Tension feed (OS #8)
+ALTER TABLE geometry_receipts ADD COLUMN fed_at TEXT;
+CREATE INDEX IF NOT EXISTS idx_geometry_receipts_fed
+    ON geometry_receipts(fed_at, timestamp);
+"""
+
 JURISDICTION_GRANTS_MIGRATION = """
 -- Creator lineage (nullable for genesis / V1 bootstrap). No FK to keep V1 simple.
 ALTER TABLE identity ADD COLUMN creator_identity_id TEXT;
@@ -616,8 +623,9 @@ MIGRATIONS = (
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
     (3, "managed_sync_queue", MANAGED_SYNC_QUEUE_MIGRATION),
     (4, "managed_sync_leases", MANAGED_SYNC_LEASE_MIGRATION),
-    (5, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
-    (6, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
+    (5, "geometry_receipt_fed_at", GEOMETRY_FEED_MIGRATION),
+    (6, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
+    (7, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
 )
 
 
