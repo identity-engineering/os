@@ -3,8 +3,9 @@
 Implements a minimal subset of the Model Context Protocol over newline-delimited
 JSON-RPC 2.0 on stdin/stdout. Tools wrap the same runtime handlers as CLI/HTTP.
 
-Session always authenticates as the install Identity. Results include
-actor_identity_id. Cross-Identity write is not exposed in V1 tools.
+Session always authenticates as the install Identity and binds to an active
+Space membership. Results include actor_identity_id and space_id. Capability
+checks are repeated for every tool call; cross-Identity write is not exposed.
 """
 
 from __future__ import annotations
@@ -98,17 +99,24 @@ class McpSurface:
     def call_tool(self, name: str, arguments: Optional[dict[str, Any]]) -> dict[str, Any]:
         args = arguments or {}
         if name == "ie_status":
+            self.session.require_capability("surface")
             return self._status()
         if name == "ie_card":
+            self.session.require_capability("surface")
+            self.session.require_capability("public_card")
             return self._card()
         if name == "ie_mass":
+            self.session.require_capability("surface")
             return self._mass(detail=bool(args.get("detail", False)))
         if name == "ie_signal_apply":
+            self.session.require_capability("surface")
+            self.session.require_capability("interaction_signal")
             signal = args.get("signal")
             if not isinstance(signal, dict):
                 raise ValueError("ie_signal_apply requires signal object")
             return self._signal_apply(signal, open_consent=bool(args.get("open_consent", False)))
         if name == "ie_registry_list":
+            self.session.require_capability("surface")
             return self._registry_list()
         raise ValueError(f"unknown tool: {name}")
 
@@ -195,7 +203,8 @@ def handle_rpc(surface: McpSurface, message: dict[str, Any]) -> Optional[dict[st
                     "version": SERVER_VERSION,
                 },
                 "instructions": (
-                    "IE OS local Surface. Session is bound to one Identity. "
+                    "IE OS local Surface. Session is bound to one Identity and "
+                    "an active Space membership. Capability checks run per tool. "
                     "Tools write only that Identity's geometry. "
                     f"actor_identity_id={surface.session.identity_id}"
                 ),
@@ -285,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--space-id",
         default=None,
-        help="Optional space_id stamp on actor envelope (membrane not enforced in V1)",
+        help="Space ID with an active local membership (default: primary local Space)",
     )
     args = parser.parse_args(argv)
 

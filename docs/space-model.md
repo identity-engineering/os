@@ -234,15 +234,21 @@ The local runtime exposes a public Space boundary descriptor through
 ```bash
 ie space boundary export --to ~/ie-boundary.json --space-id <space-id>
 ie space boundary verify --from ~/ie-boundary.json --space-id <space-id>
+ie space boundary verify --from ~/remote-boundary.json --path ~/ie --register
+ie space list --path ~/ie --json
 ```
 
 The descriptor contains the Space ID, public host metadata, an explicit
 `full_private_geometry: false` export policy, and a checksum. It does not
 contain the private SQLite tables or deterministic Identity-space export. A
 verified inbound descriptor is classified as `known`, never implicitly
-`addressable`, and never grants private-geometry access. This is the first
-membrane contract slice, not full cross-Space enforcement: membership,
-federation, endpoint policy, and signal gating still need persisted Space state.
+`addressable`, and never grants private-geometry access. Schema 9 persists the
+local Space and its primary membership, and MCP binds explicit or default
+Spaces through deny-by-default `surface`, `public_card`, and
+`interaction_signal` capability checks. A running MCP session rechecks those
+gates on every tool call. Full cross-Space enforcement still needs governed
+membership administration, federation, endpoint authentication, and a
+private-geometry transfer protocol.
 
 ## Relation to local Free V1
 

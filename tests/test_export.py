@@ -56,6 +56,8 @@ class IdentityExportTests(unittest.TestCase):
         self.assertEqual(len(tables["interaction_events"]), 1)
         self.assertEqual(len(tables["apply_receipts"]), 1)
         self.assertEqual(len(tables["identity_grants"]), 5)
+        self.assertEqual(len(tables["spaces"]), 1)
+        self.assertEqual(len(tables["space_memberships"]), 1)
         self.assertEqual(len(tables["access_jurisdiction_profiles"]), 1)
 
     def test_checksum_rejects_tampered_payload(self):

@@ -122,6 +122,33 @@ def register(app: typer.Typer) -> None:
                 f"c={r['confidence']:.2f}  at={r['observed_at']}"
             )
 
+    @space_app.command("list")
+    def space_list(
+        path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+        include_revoked: bool = typer.Option(
+            False, "--include-revoked", help="Include revoked Space records"
+        ),
+        json_out: bool = typer.Option(False, "--json", help="Print as JSON"),
+    ) -> None:
+        """List local and known Spaces with their membrane state."""
+        from runtime.membrane import MembraneError, list_spaces
+
+        try:
+            rows = list_spaces(database_root(path), include_revoked=include_revoked)
+        except MembraneError as exc:
+            raise SystemExit(str(exc)) from exc
+        if json_out:
+            typer.echo(json.dumps({"spaces": rows}, indent=2, ensure_ascii=False))
+            return
+        if not rows:
+            typer.echo("(no spaces)")
+            return
+        for space in rows:
+            typer.echo(
+                f"{space['space_id']}  {space['kind']}  {space['status']}  "
+                f"known={space['known']}  addressable={space['addressable']}"
+            )
+
     @grant_app.command("list")
     def grant_list(
         object_identity_id: Optional[str] = typer.Option(
@@ -235,15 +262,24 @@ def register(app: typer.Typer) -> None:
         expected_space_id: Optional[str] = typer.Option(
             None, "--space-id", help="Require this Space ID"
         ),
+        path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+        register: bool = typer.Option(
+            False,
+            "--register",
+            help="Persist the verified Space as known but not addressable",
+        ),
     ) -> None:
         """Verify and classify an inbound public Space boundary."""
         from runtime.membrane import MembraneError, accept_inbound_boundary
 
         try:
             document = json.loads(source.expanduser().resolve().read_text(encoding="utf-8"))
+            if register and path is None:
+                raise MembraneError("--register requires --path")
             result = accept_inbound_boundary(
                 document,
                 expected_space_id=expected_space_id,
+                install_root=database_root(path) if register and path else None,
             )
         except (OSError, json.JSONDecodeError, MembraneError) as exc:
             raise SystemExit(str(exc)) from exc

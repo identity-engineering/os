@@ -2,7 +2,7 @@
 
 Status: design contract for the first DB-only local runtime.
 
-The current runtime schema version is **8**. Schema migrations are applied
+The current runtime schema version is **9**. Schema migrations are applied
 transactionally on database open and recorded in `schema_migrations`.
 
 This document is the storage contract for a fresh local installation. It is
@@ -142,7 +142,7 @@ as the default package; ordinary scopes are transferable and Child-revocable;
 | `scope` | `policy_admin` \| `visibility_control` \| `surface_admin` \| `grant_admin` \| `residual_emergency` |
 | `residual` | 1 for the residual emergency lever |
 | `transferable` | 1 if ordinary transfer is allowed |
-| `space_id` | Optional membrane scope; V1 stores it but has no membership table yet |
+| `space_id` | Optional membrane scope; resolved against persisted Space membership when a membrane applies |
 | `granted_at` / `revoked_at` | Lifecycle; revoked rows remain as history |
 | `granted_by_identity_id` | Who issued the grant |
 | `revoked_by_identity_id` | Identity that revoked the grant, when revoked |
@@ -158,6 +158,45 @@ Ordinary grants can be transferred atomically: the source row is revoked and a
 new row is issued to the target Identity. The object Identity or a matching
 ordinary `grant_admin` grant can revoke ordinary grants. The residual emergency
 grant is intentionally rejected by both ordinary paths.
+
+### Space membrane state
+
+#### `spaces`
+
+Persisted local and known Space descriptors. A local install seeds one `local`
+Space whose `space_id` equals the local `identity_id`; inbound boundary
+verification may add a remote Space as `known` but not `addressable`.
+
+| Column | Meaning |
+|---|---|
+| `space_id` | Stable Space identifier and primary key |
+| `kind` / `hosting` | `local`, `ie_managed`, or `governed`; hosting substrate |
+| `parent_space_id` | Optional governed parent Space |
+| `sovereign_identity_id` | Identity that owns the Space boundary, when known |
+| `local_handle` / `preferred_name` / `substrate` | Public host descriptor fields |
+| `boundary_id` | Latest verified public boundary checksum, when available |
+| `policy_json` | Canonical persisted membrane policy |
+| `known` / `addressable` | Discovery and routing are separate states; inbound registration sets `1 / 0` |
+| `status` | `active` or `revoked` |
+| `created_at` / `updated_at` | Lifecycle timestamps |
+
+#### `space_memberships`
+
+Membership of a local Identity in a Space. V1 seeds the local Identity as an
+active `primary_host` member of its local Space. A known inbound Space does not
+create a membership row.
+
+| Column | Meaning |
+|---|---|
+| `space_id` / `identity_id` | Composite primary key identifying the membership |
+| `primary_host` | Whether this Space hosts the local Identity's canonical geometry |
+| `status` | `active`, `invited`, or `revoked` |
+| `joined_at` / `revoked_at` | Membership lifecycle |
+
+Surface and Interaction Signal capabilities require an active membership.
+Private geometry is never accepted through a public boundary; a known inbound
+Space therefore remains non-addressable until a future governed membership
+workflow exists.
 
 ### Access & Jurisdiction profiles (probes)
 

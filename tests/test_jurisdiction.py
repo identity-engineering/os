@@ -267,7 +267,7 @@ class JurisdictionGrantTests(unittest.TestCase):
                 "--to",
                 str(boundary_path),
                 "--space-id",
-                "space-cli",
+                self.identity_id,
             ],
         )
         self.assertEqual(exported.exit_code, 0, exported.output)
@@ -282,7 +282,7 @@ class JurisdictionGrantTests(unittest.TestCase):
                 "--from",
                 str(boundary_path),
                 "--space-id",
-                "space-cli",
+                self.identity_id,
             ],
         )
         self.assertEqual(verified.exit_code, 0, verified.output)
@@ -290,6 +290,54 @@ class JurisdictionGrantTests(unittest.TestCase):
         self.assertTrue(verification["verified"])
         self.assertEqual(verification["status"], "known")
         self.assertFalse(verification["addressable"])
+
+        remote_root = self.root.parent / "remote"
+        remote_metadata = initialize_database(
+            remote_root, handle="remote", preferred_name="Remote"
+        )
+        remote_boundary = remote_root / "boundary.json"
+        remote_export = runner.invoke(
+            app,
+            [
+                "space",
+                "boundary",
+                "export",
+                "--path",
+                str(remote_root),
+                "--to",
+                str(remote_boundary),
+            ],
+        )
+        self.assertEqual(remote_export.exit_code, 0, remote_export.output)
+
+        registered = runner.invoke(
+            app,
+            [
+                "space",
+                "boundary",
+                "verify",
+                "--from",
+                str(remote_boundary),
+                "--path",
+                str(self.root),
+                "--register",
+                "--space-id",
+                remote_metadata["identity_id"],
+            ],
+        )
+        self.assertEqual(registered.exit_code, 0, registered.output)
+        self.assertTrue(json.loads(registered.output)["registered"])
+
+        spaces = runner.invoke(
+            app,
+            ["space", "list", "--path", str(self.root), "--json"],
+        )
+        self.assertEqual(spaces.exit_code, 0, spaces.output)
+        listed_spaces = json.loads(spaces.output)["spaces"]
+        self.assertIn(
+            remote_metadata["identity_id"],
+            {space["space_id"] for space in listed_spaces},
+        )
 
 
 if __name__ == "__main__":

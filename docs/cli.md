@@ -68,6 +68,7 @@ product auth/plan on the managed path only (`docs/account-identity-model.md`).
 | `ie db info` / `integrity-check` / `backup` / `rebuild-projections` | Database diagnostics and recovery |
 | `ie jurisdiction probe` / `show` / `list` | Access & Jurisdiction owner probes |
 | `ie jurisdiction grant list` / `transfer` / `revoke` | Audit ordinary Identity grants |
+| `ie space list` | Persisted local and known Space membrane state |
 | `ie space boundary export` / `verify` | Public Space membrane descriptor |
 
 All mutable runtime state is in `<install-root>/.ie/ie.sqlite3`. `README.md` and
@@ -153,13 +154,19 @@ ie jurisdiction grant revoke --grant <grant-id> --note "retire access"
 
 ie space boundary export --to ~/ie-boundary.json --space-id <space-id>
 ie space boundary verify --from ~/ie-boundary.json --space-id <space-id>
+ie space boundary verify --from ~/remote-boundary.json --path ~/ie --register
+ie space list --path ~/ie --json
 ```
 
 Transfer and revoke preserve audit rows and reject the residual emergency grant
 through the ordinary path. Boundary export contains public host metadata and a
 restrictive membrane policy, never the private Identity-space tables. Verify
-classifies an accepted boundary as `known` with `addressable: false`; actual
-membership and membrane enforcement require the later Space state layer.
+classifies an accepted boundary as `known` with `addressable: false`. With
+`--register --path`, that known state is persisted without creating membership.
+The local Space and primary membership are persisted in Schema 9; MCP session
+binding and per-tool checks enforce the local `surface`, `public_card`, and
+`interaction_signal` gates. Governed membership administration, federation,
+and complete HTTP/CLI endpoint gating remain later work.
 
 ## See also
 

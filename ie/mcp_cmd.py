@@ -27,7 +27,7 @@ def register(app: typer.Typer) -> None:
         space_id: Optional[str] = typer.Option(
             None,
             "--space-id",
-            help="Optional space_id stamp on actor envelope (membrane not enforced in V1)",
+            help="Space ID with an active local membership (default: primary local Space)",
         ),
     ) -> None:
         """Run local stdio MCP Surface bound to the install Identity."""

@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 class DatabaseError(RuntimeError):
@@ -36,6 +36,20 @@ def canonical_json(value: Any) -> str:
 
 def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+DEFAULT_SPACE_MEMBRANE_POLICY = {
+    "known": True,
+    "addressable": False,
+    "export_policy": {
+        "public_card": True,
+        "full_private_geometry": False,
+    },
+    "inbound_policy": {
+        "interaction_signals": "grant_and_membrane",
+        "private_geometry": "deny",
+    },
+}
 
 
 def database_path(install_root: Union[str, Path]) -> Path:
@@ -623,6 +637,86 @@ ALTER TABLE identity_grants ADD COLUMN revoked_by_identity_id TEXT REFERENCES id
 ALTER TABLE identity_grants ADD COLUMN revocation_note TEXT NOT NULL DEFAULT '';
 """
 
+DEFAULT_SPACE_MEMBRANE_POLICY_JSON = canonical_json(DEFAULT_SPACE_MEMBRANE_POLICY)
+
+SPACE_MEMBRANE_STATE_MIGRATION = f"""
+CREATE TABLE IF NOT EXISTS spaces (
+    space_id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL CHECK (kind IN ('ie_managed', 'governed', 'local')),
+    hosting TEXT NOT NULL CHECK (hosting IN ('ie_federated', 'self', 'local_device')),
+    parent_space_id TEXT REFERENCES spaces(space_id),
+    sovereign_identity_id TEXT,
+    local_handle TEXT,
+    preferred_name TEXT,
+    substrate TEXT,
+    boundary_id TEXT,
+    policy_json TEXT NOT NULL DEFAULT '{{}}',
+    known INTEGER NOT NULL DEFAULT 1 CHECK (known IN (0, 1)),
+    addressable INTEGER NOT NULL DEFAULT 0 CHECK (addressable IN (0, 1)),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_spaces_identity
+    ON spaces(sovereign_identity_id, status);
+
+CREATE TABLE IF NOT EXISTS space_memberships (
+    space_id TEXT NOT NULL REFERENCES spaces(space_id) ON DELETE CASCADE,
+    identity_id TEXT NOT NULL REFERENCES identity(identity_id) ON DELETE CASCADE,
+    primary_host INTEGER NOT NULL DEFAULT 0 CHECK (primary_host IN (0, 1)),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'invited', 'revoked')),
+    joined_at TEXT NOT NULL,
+    revoked_at TEXT,
+    PRIMARY KEY (space_id, identity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_space_memberships_identity
+    ON space_memberships(identity_id, status, primary_host);
+
+INSERT INTO spaces(
+    space_id, kind, hosting, parent_space_id, sovereign_identity_id,
+    local_handle, preferred_name, substrate, boundary_id, policy_json,
+    known, addressable, status, created_at, updated_at
+)
+SELECT
+    i.identity_id,
+    'local',
+    'local_device',
+    NULL,
+    i.identity_id,
+    i.local_handle,
+    i.preferred_name,
+    i.substrate,
+    NULL,
+    '{DEFAULT_SPACE_MEMBRANE_POLICY_JSON}',
+    1,
+    0,
+    'active',
+    i.created_at,
+    i.updated_at
+FROM identity i
+WHERE NOT EXISTS (
+    SELECT 1 FROM spaces s WHERE s.space_id = i.identity_id
+);
+
+INSERT INTO space_memberships(
+    space_id, identity_id, primary_host, status, joined_at, revoked_at
+)
+SELECT
+    i.identity_id,
+    i.identity_id,
+    1,
+    'active',
+    i.created_at,
+    NULL
+FROM identity i
+WHERE NOT EXISTS (
+    SELECT 1 FROM space_memberships m
+    WHERE m.space_id = i.identity_id AND m.identity_id = i.identity_id
+);
+"""
+
 MIGRATIONS = (
     (1, "initial_db_only_v1", INITIAL_SCHEMA),
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
@@ -632,6 +726,7 @@ MIGRATIONS = (
     (6, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
     (7, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
     (8, "jurisdiction_grant_lifecycle", JURISDICTION_GRANT_LIFECYCLE_MIGRATION),
+    (9, "space_membrane_state", SPACE_MEMBRANE_STATE_MIGRATION),
 )
 
 
@@ -765,6 +860,51 @@ def _issue_default_jurisdiction_package(
         )
 
 
+def _ensure_local_space(
+    connection: sqlite3.Connection,
+    *,
+    identity_id: str,
+    created_at: str,
+) -> None:
+    """Seed the V1 install's sovereign local Space and primary membership."""
+    identity = connection.execute(
+        """
+        SELECT local_handle, preferred_name, substrate, created_at, updated_at
+        FROM identity WHERE identity_id = ?
+        """,
+        (identity_id,),
+    ).fetchone()
+    if identity is None:
+        raise DatabaseError(f"cannot seed local Space for missing Identity: {identity_id}")
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO spaces(
+            space_id, kind, hosting, parent_space_id, sovereign_identity_id,
+            local_handle, preferred_name, substrate, boundary_id, policy_json,
+            known, addressable, status, created_at, updated_at
+        ) VALUES (?, 'local', 'local_device', NULL, ?, ?, ?, ?, NULL, ?, 1, 0, 'active', ?, ?)
+        """,
+        (
+            identity_id,
+            identity_id,
+            identity["local_handle"],
+            identity["preferred_name"],
+            identity["substrate"],
+            DEFAULT_SPACE_MEMBRANE_POLICY_JSON,
+            identity["created_at"] or created_at,
+            identity["updated_at"] or created_at,
+        ),
+    )
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO space_memberships(
+            space_id, identity_id, primary_host, status, joined_at, revoked_at
+        ) VALUES (?, ?, 1, 'active', ?, NULL)
+        """,
+        (identity_id, identity_id, identity["created_at"] or created_at),
+    )
+
+
 def initialize_database(
     install_root: Union[str, Path],
     *,
@@ -819,6 +959,11 @@ def initialize_database(
                 ) VALUES (?, ?, ?, ?, ?, 1, ?, ?, NULL)
                 """,
                 (identity_id, install_id, handle, preferred_name, substrate, now, now),
+            )
+            _ensure_local_space(
+                connection,
+                identity_id=identity_id,
+                created_at=now,
             )
             connection.execute(
                 """

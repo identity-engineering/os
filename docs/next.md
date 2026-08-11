@@ -21,10 +21,11 @@
 - **Jurisdiction grants schema v8** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; ordinary transfer/revoke audit metadata; residual_emergency non-transferable
 - **Access & Jurisdiction probes** (`docs/access-jurisdiction-probes.md`, `access_jurisdiction_profiles`, `ie jurisdiction`) — owner-gated measurement of degrees of freedom (#40 closed)
 - **Issue #61 first slice** — public Space boundary export/verification plus ordinary grant transfer/revoke CLI; verified inbound boundaries remain known but not addressable
+- **Space membrane state schema v9** — local Space and primary membership are persisted; inbound boundaries can be registered as known-only; MCP binding and per-tool capability gates are active
 
 ## Next
 
-1. **Persisted Space membership and membrane policy enforcement** — connect boundary descriptors to membership, endpoint, export, inbound, and signal gates
+1. **Governed multi-Space membership and full membrane enforcement** — add membership administration, endpoint federation, and complete CLI/HTTP signal gates on top of the local Schema 9/MCP slice
 2. **Richer Tensor / Effective Freedom derivation** from fed receipts + probes
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 4. **Managed multi-identity + Space membership layer**  

@@ -8,9 +8,10 @@ import unittest
 from pathlib import Path
 from io import StringIO
 
-from runtime.database import initialize_database
+from runtime.database import Database, initialize_database
 from runtime.mcp_handler import McpSurface, handle_rpc, TOOL_DEFS
 from runtime.mcp_session import IdentitySession, bind_local_session
+from runtime.membrane import MembraneError
 from runtime.models import ApplyStatus
 
 
@@ -31,14 +32,29 @@ class McpSessionTests(unittest.TestCase):
         self.assertEqual(session.identity_id, self.identity_id)
         self.assertEqual(session.local_handle, "me")
         self.assertEqual(session.preferred_name, "Me")
+        self.assertEqual(session.space_id, self.identity_id)
         env = session.actor_envelope()
         self.assertEqual(env["actor_identity_id"], self.identity_id)
         self.assertEqual(env["local_handle"], "me")
-        self.assertNotIn("space_id", env)
+        self.assertEqual(env["space_id"], self.identity_id)
 
     def test_bind_rejects_missing_db(self) -> None:
         with self.assertRaises(FileNotFoundError):
             bind_local_session(self.install / "does-not-exist")
+
+    def test_bind_rejects_unknown_space(self) -> None:
+        with self.assertRaisesRegex(MembraneError, "access denied"):
+            bind_local_session(self.install, space_id="unknown-space")
+
+    def test_tool_rechecks_revoked_membership(self) -> None:
+        session = bind_local_session(self.install)
+        with Database(self.install) as database:
+            database.conn.execute(
+                "UPDATE space_memberships SET status = 'revoked', revoked_at = 'now'"
+            )
+            database.conn.commit()
+        with self.assertRaisesRegex(MembraneError, "access denied"):
+            McpSurface(session).call_tool("ie_status", {})
 
     def test_with_actor_stamps_envelope(self) -> None:
         session = bind_local_session(self.install)

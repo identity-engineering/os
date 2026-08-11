@@ -145,13 +145,17 @@ dimensions via Mature / dimension discovery after a probe is committed.
 - Silent write from Interaction Signal into profiles
 - Promotion of Ownership to a public Core Concept page (framework decision)
 - Residual emergency grant transfer / revoke through the ordinary path
-- Persisted Space membership and full membrane enforcement (issue #61 follow-up)
+- Governed multi-Space membership administration and full cross-Space membrane
+  enforcement (issue #61 follow-up)
 
 Ordinary grant transfer and revoke are available through
 `ie jurisdiction grant`; the residual path remains intentionally separate.
 Public Space boundary export and inbound verification are available through
-`ie space boundary`, but they do not yet create membership or enforce endpoint
-and signal policy without persisted Space state.
+`ie space boundary`. Schema 9 persists the local Space and primary membership;
+`--register` records an inbound Space as known but not addressable, without
+creating membership. MCP binding and per-tool checks enforce the local Space
+surface and signal gates. Endpoint federation and governed membership remain
+future work.
 
 ## Exit criteria mapping (#40)
 

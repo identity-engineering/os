@@ -4,7 +4,11 @@ from .apply import apply_interaction_signal
 from .export import export_identity_space, verify_identity_export, write_identity_export
 from .membrane import (
     accept_inbound_boundary,
+    evaluate_space_access,
     export_space_boundary,
+    list_spaces,
+    local_space_id,
+    require_space_access,
     verify_space_boundary,
     write_space_boundary,
 )
@@ -38,6 +42,10 @@ __all__ = [
     "verify_identity_export",
     "write_identity_export",
     "export_space_boundary",
+    "list_spaces",
+    "local_space_id",
+    "evaluate_space_access",
+    "require_space_access",
     "verify_space_boundary",
     "write_space_boundary",
     "accept_inbound_boundary",

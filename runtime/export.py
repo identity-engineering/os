@@ -23,6 +23,11 @@ TABLE_QUERIES: dict[str, tuple[str, tuple[Any, ...]]] = {
         """,
         (),
     ),
+    "spaces": ("SELECT * FROM spaces", ()),
+    "space_memberships": (
+        "SELECT * FROM space_memberships WHERE identity_id = ?",
+        (),
+    ),
     "access_jurisdiction_profiles": (
         "SELECT * FROM access_jurisdiction_profiles WHERE observer_identity_id = ?",
         (),
@@ -129,7 +134,9 @@ def _decode_json_columns(row: dict[str, Any]) -> dict[str, Any]:
 
 def _query_rows(conn, table: str, identity_id: str, install_id: str) -> list[dict[str, Any]]:
     query, _ = TABLE_QUERIES[table]
-    if table in {"install", "interaction_events", "geometry_receipts", "geometry_receipt_sources", "apply_receipts"}:
+    if table in {"spaces"}:
+        parameters = ()
+    elif table in {"install", "interaction_events", "geometry_receipts", "geometry_receipt_sources", "apply_receipts"}:
         parameters = (install_id,)
     elif table in {"registry_entry_revisions", "workspace_item_revisions", "identity_grants"}:
         parameters = (identity_id, identity_id)

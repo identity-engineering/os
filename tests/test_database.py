@@ -78,9 +78,25 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchall()
             }
             self.assertIn("access_jurisdiction_profiles", tables)
+            space = connection.execute(
+                "SELECT space_id, kind, hosting, sovereign_identity_id, addressable "
+                "FROM spaces"
+            ).fetchone()
+            self.assertIsNotNone(space)
+            self.assertEqual(space["space_id"], metadata["identity_id"])
+            self.assertEqual(space["kind"], "local")
+            self.assertEqual(space["hosting"], "local_device")
+            self.assertEqual(space["sovereign_identity_id"], metadata["identity_id"])
+            self.assertEqual(space["addressable"], 0)
+            membership = connection.execute(
+                "SELECT status, primary_host FROM space_memberships "
+                "WHERE space_id = ? AND identity_id = ?",
+                (metadata["identity_id"], metadata["identity_id"]),
+            ).fetchone()
+            self.assertEqual(dict(membership), {"status": "active", "primary_host": 1})
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 8)
+        self.assertEqual(info["schema_version"], 9)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
         self.assertGreaterEqual(info["table_count"], 22)
@@ -122,6 +138,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (6, "jurisdiction_grants_and_lineage"),
                     (7, "access_jurisdiction_profiles"),
                     (8, "jurisdiction_grant_lifecycle"),
+                    (9, "space_membrane_state"),
                 ],
             )
 
@@ -289,7 +306,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 8)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 9)
             # Jurisdiction package backfilled for the stub identity
             grant_count = database.conn.execute(
                 "SELECT COUNT(*) FROM identity_grants WHERE object_identity_id = 'id-1'"
@@ -333,7 +350,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 8)
+        self.assertEqual(json.loads(info.output)["schema_version"], 9)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -345,7 +362,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 8", info_text.output)
+        self.assertIn("schema_version: 9", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(

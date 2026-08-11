@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .database import Database, database_path
+from .membrane import local_space_id, require_space_access
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,7 @@ class IdentitySession:
     local_handle: str
     preferred_name: Optional[str]
     substrate: str
-    space_id: Optional[str] = None  # reserved; membrane not enforced in local V1
+    space_id: Optional[str] = None
 
     def actor_envelope(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -41,13 +42,24 @@ class IdentitySession:
         merged["actor"] = self.actor_envelope()
         return merged
 
+    def require_capability(self, capability: str) -> dict[str, Any]:
+        """Re-check the bound Space before serving a tool request."""
+        if self.space_id is None:
+            raise RuntimeError("MCP session has no bound Space")
+        return require_space_access(
+            self.install_root,
+            space_id=self.space_id,
+            identity_id=self.identity_id,
+            capability=capability,
+        )
+
 
 def bind_local_session(
     install_root: Path | str,
     *,
     space_id: Optional[str] = None,
 ) -> IdentitySession:
-    """Bind MCP/HTTP session to the install's sole Identity (V1)."""
+    """Bind MCP/HTTP session to the sole Identity and an active Space membership."""
     root = Path(install_root).expanduser().resolve()
     db_path = database_path(root)
     if not db_path.is_file():
@@ -69,11 +81,19 @@ def bind_local_session(
                 f"Local V1 MCP expects exactly one Identity per install; found {count}"
             )
 
+    effective_space_id = space_id or local_space_id(root)
+    require_space_access(
+        root,
+        space_id=effective_space_id,
+        identity_id=str(row["identity_id"]),
+        capability="surface",
+    )
+
     return IdentitySession(
         install_root=root,
         identity_id=str(row["identity_id"]),
         local_handle=str(row["local_handle"]),
         preferred_name=row["preferred_name"],
         substrate=str(row["substrate"] or "human"),
-        space_id=space_id,
+        space_id=effective_space_id,
     )

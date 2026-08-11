@@ -5,9 +5,14 @@ Local Free installs expose the same Surface Runtime handlers over **stdio JSON-R
 ## Binding rule
 
 - Session authenticates as the **single install Identity** (`IdentitySession`).
+- Session binds to the primary local Space by default, or to an explicit Space
+	only when that Identity has an active persisted membership.
 - Every tool result includes `actor` with `actor_identity_id`.
+- The actor envelope also includes the bound `space_id`.
 - `ie_signal_apply` forces `to` / `to_handle` to the bound Identity. Cross-Identity write is not exposed in V1 tools.
-- Optional `space_id` may be stamped on the actor envelope; membrane enforcement is not active in local V1.
+- Tool calls re-check the Space membrane: Surface access is required for every
+	tool, `public_card` for `ie_card`, and `interaction_signal` for
+	`ie_signal_apply`. A revoked membership therefore stops an existing session.
 
 See `docs/account-identity-model.md` and `docs/space-model.md`.
 
@@ -52,6 +57,10 @@ All tools share the same policy, receipts, and geometry paths as CLI/HTTP.
 - [x] Tools cannot bypass Identity binding
 - [x] Tests for apply + at least one read path via MCP
 - [x] Docs updated; #29 MCP checkbox closable
+
+Space binding is local Schema 9 state. A verified inbound Space can be known
+without becoming addressable, but it cannot bind an MCP session until a future
+membership workflow creates an active membership.
 
 ## Related
 
