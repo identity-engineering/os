@@ -2,6 +2,13 @@
 
 from .apply import apply_interaction_signal
 from .export import export_identity_space, verify_identity_export, write_identity_export
+from .membrane import (
+    accept_inbound_boundary,
+    export_space_boundary,
+    verify_space_boundary,
+    write_space_boundary,
+)
+from .jurisdiction import list_grants, revoke_grant, transfer_grant
 from .mass import MassReadout, build_public_card, compute_mass_readout
 from .managed_sync import (
     ManagedSyncEnvelope,
@@ -30,6 +37,13 @@ __all__ = [
     "export_identity_space",
     "verify_identity_export",
     "write_identity_export",
+    "export_space_boundary",
+    "verify_space_boundary",
+    "write_space_boundary",
+    "accept_inbound_boundary",
+    "list_grants",
+    "transfer_grant",
+    "revoke_grant",
     "InteractionSignal",
     "Receipt",
     "ApplyStatus",

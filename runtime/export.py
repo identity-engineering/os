@@ -16,6 +16,17 @@ TABLE_QUERIES: dict[str, tuple[str, tuple[Any, ...]]] = {
     "identity": ("SELECT * FROM identity WHERE identity_id = ?", ()),
     "privacy_defaults": ("SELECT * FROM privacy_defaults WHERE identity_id = ?", ()),
     "consent_grants": ("SELECT * FROM consent_grants WHERE identity_id = ?", ()),
+    "identity_grants": (
+        """
+        SELECT * FROM identity_grants
+        WHERE actor_identity_id = ? OR object_identity_id = ?
+        """,
+        (),
+    ),
+    "access_jurisdiction_profiles": (
+        "SELECT * FROM access_jurisdiction_profiles WHERE observer_identity_id = ?",
+        (),
+    ),
     "quarantines": ("SELECT * FROM quarantines WHERE identity_id = ?", ()),
     "policy_events": ("SELECT * FROM policy_events WHERE identity_id = ?", ()),
     "metric_dimensions": ("SELECT * FROM metric_dimensions WHERE identity_id = ?", ()),
@@ -120,7 +131,7 @@ def _query_rows(conn, table: str, identity_id: str, install_id: str) -> list[dic
     query, _ = TABLE_QUERIES[table]
     if table in {"install", "interaction_events", "geometry_receipts", "geometry_receipt_sources", "apply_receipts"}:
         parameters = (install_id,)
-    elif table in {"registry_entry_revisions", "workspace_item_revisions"}:
+    elif table in {"registry_entry_revisions", "workspace_item_revisions", "identity_grants"}:
         parameters = (identity_id, identity_id)
     else:
         parameters = (identity_id,)

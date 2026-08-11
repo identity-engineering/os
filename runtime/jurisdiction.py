@@ -23,6 +23,13 @@ JURISDICTION_FIELDS = (
     "redefine_boundary",
 )
 OBJECT_KINDS = ("self", "peer", "stem_aspect", "space")
+GRANT_SCOPES = (
+    "policy_admin",
+    "visibility_control",
+    "surface_admin",
+    "grant_admin",
+    "residual_emergency",
+)
 
 
 def _parse_object_ref(object_spec: str) -> tuple[str, str]:
@@ -247,6 +254,214 @@ def list_profiles(install_root: Union[str, Path]) -> list[dict[str, Any]]:
     return [_row_to_dict(row) for row in rows]
 
 
+def list_grants(
+    install_root: Union[str, Path],
+    *,
+    object_identity_id: Optional[str] = None,
+    actor_identity_id: Optional[str] = None,
+    include_revoked: bool = False,
+) -> list[dict[str, Any]]:
+    """List grants visible from the local Identity's jurisdiction surface."""
+    root = Path(install_root).expanduser().resolve()
+    db_path = database_path(root)
+    if not db_path.is_file():
+        raise JurisdictionError(f"No IE database under {root}")
+
+    with Database(db_path) as database:
+        local_identity = _local_identity(database.conn)
+        object_id = object_identity_id or str(local_identity["identity_id"])
+        conditions = ["object_identity_id = ?"]
+        parameters: list[Any] = [object_id]
+        if actor_identity_id:
+            conditions.append("actor_identity_id = ?")
+            parameters.append(actor_identity_id)
+        if not include_revoked:
+            conditions.append("revoked_at IS NULL")
+        rows = database.conn.execute(
+            "SELECT * FROM identity_grants WHERE "
+            + " AND ".join(conditions)
+            + " ORDER BY granted_at, grant_id",
+            parameters,
+        ).fetchall()
+    return [_grant_row_to_dict(row) for row in rows]
+
+
+def transfer_grant(
+    install_root: Union[str, Path],
+    *,
+    grant_id: str,
+    to_identity_id: str,
+    note: str = "",
+) -> dict[str, Any]:
+    """Transfer one active ordinary grant and revoke the source atomically."""
+    root = Path(install_root).expanduser().resolve()
+    db_path = database_path(root)
+    if not db_path.is_file():
+        raise JurisdictionError(f"No IE database under {root}")
+    if not grant_id.strip() or not to_identity_id.strip():
+        raise JurisdictionError("grant_id and to_identity_id are required")
+
+    now = utcnow()
+    with Database(db_path) as database:
+        with database.transaction() as conn:
+            local_identity = _local_identity(conn)
+            actor_id = str(local_identity["identity_id"])
+            grant = conn.execute(
+                "SELECT * FROM identity_grants WHERE grant_id = ?",
+                (grant_id,),
+            ).fetchone()
+            if grant is None:
+                raise JurisdictionError(f"grant not found: {grant_id}")
+            if grant["revoked_at"] is not None:
+                raise JurisdictionError("cannot transfer a revoked grant")
+            if str(grant["actor_identity_id"]) != actor_id:
+                raise JurisdictionError("local Identity does not hold this grant")
+            if bool(grant["residual"]):
+                raise JurisdictionError("residual emergency grants are not transferable")
+            if not bool(grant["transferable"]):
+                raise JurisdictionError("grant is marked non-transferable")
+            if str(grant["actor_identity_id"]) == to_identity_id:
+                raise JurisdictionError("grant target must differ from current holder")
+            target = conn.execute(
+                "SELECT identity_id FROM identity WHERE identity_id = ?",
+                (to_identity_id,),
+            ).fetchone()
+            if target is None:
+                raise JurisdictionError(f"target Identity not found: {to_identity_id}")
+            duplicate = conn.execute(
+                """
+                SELECT 1 FROM identity_grants
+                WHERE actor_identity_id = ?
+                  AND object_identity_id = ?
+                  AND scope = ?
+                  AND revoked_at IS NULL
+                  AND space_id IS ?
+                LIMIT 1
+                """,
+                (
+                    to_identity_id,
+                    grant["object_identity_id"],
+                    grant["scope"],
+                    grant["space_id"],
+                ),
+            ).fetchone()
+            if duplicate is not None:
+                raise JurisdictionError("target Identity already holds this scope")
+
+            conn.execute(
+                """
+                UPDATE identity_grants
+                SET revoked_at = ?, revoked_by_identity_id = ?, revocation_note = ?
+                WHERE grant_id = ? AND revoked_at IS NULL
+                """,
+                (now, actor_id, note or "transferred", grant_id),
+            )
+            new_grant_id = str(uuid4())
+            conn.execute(
+                """
+                INSERT INTO identity_grants(
+                    grant_id, actor_identity_id, object_identity_id, scope, residual,
+                    transferable, space_id, granted_at, revoked_at,
+                    granted_by_identity_id, note, revoked_by_identity_id, revocation_note
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, '')
+                """,
+                (
+                    new_grant_id,
+                    to_identity_id,
+                    grant["object_identity_id"],
+                    grant["scope"],
+                    grant["residual"],
+                    grant["transferable"],
+                    grant["space_id"],
+                    now,
+                    actor_id,
+                    note or "transferred",
+                ),
+            )
+
+    return {
+        "status": "transferred",
+        "actor_identity_id": actor_id,
+        "source_grant_id": grant_id,
+        "grant_id": new_grant_id,
+        "target_identity_id": to_identity_id,
+        "object_identity_id": str(grant["object_identity_id"]),
+        "scope": str(grant["scope"]),
+        "space_id": grant["space_id"],
+        "transferred_at": now,
+        "note": note or "transferred",
+    }
+
+
+def revoke_grant(
+    install_root: Union[str, Path],
+    *,
+    grant_id: str,
+    note: str = "",
+) -> dict[str, Any]:
+    """Revoke an ordinary grant by the object Identity or its grant admin."""
+    root = Path(install_root).expanduser().resolve()
+    db_path = database_path(root)
+    if not db_path.is_file():
+        raise JurisdictionError(f"No IE database under {root}")
+    if not grant_id.strip():
+        raise JurisdictionError("grant_id is required")
+
+    now = utcnow()
+    with Database(db_path) as database:
+        with database.transaction() as conn:
+            local_identity = _local_identity(conn)
+            actor_id = str(local_identity["identity_id"])
+            grant = conn.execute(
+                "SELECT * FROM identity_grants WHERE grant_id = ?",
+                (grant_id,),
+            ).fetchone()
+            if grant is None:
+                raise JurisdictionError(f"grant not found: {grant_id}")
+            if grant["revoked_at"] is not None:
+                raise JurisdictionError("grant is already revoked")
+            if bool(grant["residual"]):
+                raise JurisdictionError("residual emergency grants require a separate emergency path")
+            object_id = str(grant["object_identity_id"])
+            is_object = actor_id == object_id
+            has_admin = conn.execute(
+                """
+                SELECT 1 FROM identity_grants
+                WHERE actor_identity_id = ?
+                  AND object_identity_id = ?
+                  AND scope = 'grant_admin'
+                  AND residual = 0
+                  AND revoked_at IS NULL
+                  AND (space_id IS NULL OR space_id IS ?)
+                LIMIT 1
+                """,
+                (actor_id, object_id, grant["space_id"]),
+            ).fetchone()
+            if not is_object and has_admin is None:
+                raise JurisdictionError("local Identity cannot revoke this grant")
+            reason = note or "revoked"
+            conn.execute(
+                """
+                UPDATE identity_grants
+                SET revoked_at = ?, revoked_by_identity_id = ?, revocation_note = ?
+                WHERE grant_id = ? AND revoked_at IS NULL
+                """,
+                (now, actor_id, reason, grant_id),
+            )
+
+    return {
+        "status": "revoked",
+        "actor_identity_id": actor_id,
+        "grant_id": grant_id,
+        "object_identity_id": object_id,
+        "target_identity_id": str(grant["actor_identity_id"]),
+        "scope": str(grant["scope"]),
+        "space_id": grant["space_id"],
+        "revoked_at": now,
+        "note": reason,
+    }
+
+
 def _row_to_dict(row: Any) -> dict[str, Any]:
     return {
         "profile_id": row["profile_id"],
@@ -264,4 +479,22 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         "revision": row["revision"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
+    }
+
+
+def _grant_row_to_dict(row: Any) -> dict[str, Any]:
+    return {
+        "grant_id": row["grant_id"],
+        "actor_identity_id": row["actor_identity_id"],
+        "object_identity_id": row["object_identity_id"],
+        "scope": row["scope"],
+        "residual": bool(row["residual"]),
+        "transferable": bool(row["transferable"]),
+        "space_id": row["space_id"],
+        "granted_at": row["granted_at"],
+        "revoked_at": row["revoked_at"],
+        "granted_by_identity_id": row["granted_by_identity_id"],
+        "note": row["note"] or "",
+        "revoked_by_identity_id": row["revoked_by_identity_id"],
+        "revocation_note": row["revocation_note"] or "",
     }

@@ -15,7 +15,19 @@ from runtime.database import database_path
 def register(app: typer.Typer) -> None:
     """Register jurisdiction subcommands on the root CLI app."""
     jurisdiction_app = typer.Typer(help="Access & Jurisdiction probes (owner-gated)")
+    grant_app = typer.Typer(help="Identity grant lifecycle operations")
+    space_app = typer.Typer(help="Space boundary operations")
+    boundary_app = typer.Typer(help="Public Space membrane boundary")
     app.add_typer(jurisdiction_app, name="jurisdiction")
+    jurisdiction_app.add_typer(grant_app, name="grant")
+    app.add_typer(space_app, name="space")
+    space_app.add_typer(boundary_app, name="boundary")
+
+    def database_root(path: Optional[Path]) -> Path:
+        root = path.resolve() if path else require_ie_root()
+        if not database_path(root).is_file():
+            raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
+        return root
 
     @jurisdiction_app.command("probe")
     def jurisdiction_probe(
@@ -40,9 +52,7 @@ def register(app: typer.Typer) -> None:
         path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
     ) -> None:
         """Commit an owner-gated Access + Jurisdiction profile for an object."""
-        root = path.resolve() if path else require_ie_root()
-        if not database_path(root).is_file():
-            raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
+        root = database_root(path)
         try:
             access_obj = json.loads(access)
             juris_obj = json.loads(jurisdiction)
@@ -76,7 +86,7 @@ def register(app: typer.Typer) -> None:
         path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
     ) -> None:
         """Show the latest Access/Jurisdiction profile for an object."""
-        root = path.resolve() if path else require_ie_root()
+        root = database_root(path)
         from runtime.jurisdiction import JurisdictionError, get_profile
 
         try:
@@ -93,7 +103,7 @@ def register(app: typer.Typer) -> None:
         json_out: bool = typer.Option(False, "--json", help="Print as JSON"),
     ) -> None:
         """List latest Access/Jurisdiction profiles for this Identity."""
-        root = path.resolve() if path else require_ie_root()
+        root = database_root(path)
         from runtime.jurisdiction import JurisdictionError, list_profiles
 
         try:
@@ -111,3 +121,132 @@ def register(app: typer.Typer) -> None:
                 f"{r['object_kind']}:{r['object_ref']}  rev={r['revision']}  "
                 f"c={r['confidence']:.2f}  at={r['observed_at']}"
             )
+
+    @grant_app.command("list")
+    def grant_list(
+        object_identity_id: Optional[str] = typer.Option(
+            None, "--object", help="Object Identity ID (default: local Identity)"
+        ),
+        actor_identity_id: Optional[str] = typer.Option(
+            None, "--actor", help="Filter by acting Identity ID"
+        ),
+        include_revoked: bool = typer.Option(
+            False, "--include-revoked", help="Include revoked grant history"
+        ),
+        path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+        json_out: bool = typer.Option(False, "--json", help="Print as JSON"),
+    ) -> None:
+        """List grants for the local object Identity."""
+        from runtime.jurisdiction import JurisdictionError, list_grants
+
+        try:
+            rows = list_grants(
+                database_root(path),
+                object_identity_id=object_identity_id,
+                actor_identity_id=actor_identity_id,
+                include_revoked=include_revoked,
+            )
+        except JurisdictionError as exc:
+            raise SystemExit(str(exc)) from exc
+        if json_out:
+            typer.echo(json.dumps({"grants": rows}, indent=2, ensure_ascii=False))
+            return
+        if not rows:
+            typer.echo("(no grants)")
+            return
+        for grant in rows:
+            status = "revoked" if grant["revoked_at"] else "active"
+            typer.echo(
+                f"{grant['grant_id']}  {grant['scope']}  {status}  "
+                f"actor={grant['actor_identity_id']}  object={grant['object_identity_id']}"
+            )
+
+    @grant_app.command("transfer")
+    def grant_transfer(
+        grant_id: str = typer.Option(..., "--grant", "-g", help="Grant ID"),
+        to_identity_id: str = typer.Option(
+            ..., "--to", help="Target Identity ID"
+        ),
+        note: Optional[str] = typer.Option(None, "--note"),
+        path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    ) -> None:
+        """Transfer an active ordinary grant to another local Identity."""
+        from runtime.jurisdiction import JurisdictionError, transfer_grant
+
+        try:
+            result = transfer_grant(
+                database_root(path),
+                grant_id=grant_id,
+                to_identity_id=to_identity_id,
+                note=note or "",
+            )
+        except JurisdictionError as exc:
+            raise SystemExit(str(exc)) from exc
+        typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+    @grant_app.command("revoke")
+    def grant_revoke(
+        grant_id: str = typer.Option(..., "--grant", "-g", help="Grant ID"),
+        note: Optional[str] = typer.Option(None, "--note"),
+        path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    ) -> None:
+        """Revoke an ordinary grant without deleting its audit history."""
+        from runtime.jurisdiction import JurisdictionError, revoke_grant
+
+        try:
+            result = revoke_grant(
+                database_root(path),
+                grant_id=grant_id,
+                note=note or "",
+            )
+        except JurisdictionError as exc:
+            raise SystemExit(str(exc)) from exc
+        typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+    @boundary_app.command("export")
+    def boundary_export(
+        destination: Path = typer.Option(
+            ..., "--to", "--destination", help="Boundary JSON path"
+        ),
+        space_id: Optional[str] = typer.Option(None, "--space-id"),
+        force: bool = typer.Option(False, "--force", help="Replace an existing file"),
+        path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    ) -> None:
+        """Write a public Space boundary without private Identity geometry."""
+        from runtime.database import DatabaseError
+        from runtime.membrane import MembraneError, write_space_boundary
+
+        try:
+            result = write_space_boundary(
+                database_root(path),
+                destination,
+                space_id=space_id,
+                overwrite=force,
+            )
+        except (DatabaseError, MembraneError) as exc:
+            raise SystemExit(str(exc)) from exc
+        typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+    @boundary_app.command("verify")
+    def boundary_verify(
+        source: Path = typer.Option(
+            ..., "--from", "--file", help="Boundary JSON path"
+        ),
+        expected_space_id: Optional[str] = typer.Option(
+            None, "--space-id", help="Require this Space ID"
+        ),
+    ) -> None:
+        """Verify and classify an inbound public Space boundary."""
+        from runtime.membrane import MembraneError, accept_inbound_boundary
+
+        try:
+            document = json.loads(source.expanduser().resolve().read_text(encoding="utf-8"))
+            result = accept_inbound_boundary(
+                document,
+                expected_space_id=expected_space_id,
+            )
+        except (OSError, json.JSONDecodeError, MembraneError) as exc:
+            raise SystemExit(str(exc)) from exc
+        result["verified"] = True
+        result["source"] = str(source.expanduser().resolve())
+        typer.echo(json.dumps(result, indent=2, ensure_ascii=False))

@@ -80,7 +80,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             self.assertIn("access_jurisdiction_profiles", tables)
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 7)
+        self.assertEqual(info["schema_version"], 8)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
         self.assertGreaterEqual(info["table_count"], 22)
@@ -121,6 +121,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (5, "geometry_receipt_fed_at"),
                     (6, "jurisdiction_grants_and_lineage"),
                     (7, "access_jurisdiction_profiles"),
+                    (8, "jurisdiction_grant_lifecycle"),
                 ],
             )
 
@@ -288,7 +289,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 7)
+            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 8)
             # Jurisdiction package backfilled for the stub identity
             grant_count = database.conn.execute(
                 "SELECT COUNT(*) FROM identity_grants WHERE object_identity_id = 'id-1'"
@@ -332,7 +333,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 7)
+        self.assertEqual(json.loads(info.output)["schema_version"], 8)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -344,7 +345,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 7", info_text.output)
+        self.assertIn("schema_version: 8", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(

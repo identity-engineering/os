@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 class DatabaseError(RuntimeError):
@@ -618,6 +618,11 @@ CREATE INDEX IF NOT EXISTS idx_aj_profiles_observer
     ON access_jurisdiction_profiles(observer_identity_id, observed_at DESC);
 """
 
+JURISDICTION_GRANT_LIFECYCLE_MIGRATION = """
+ALTER TABLE identity_grants ADD COLUMN revoked_by_identity_id TEXT REFERENCES identity(identity_id);
+ALTER TABLE identity_grants ADD COLUMN revocation_note TEXT NOT NULL DEFAULT '';
+"""
+
 MIGRATIONS = (
     (1, "initial_db_only_v1", INITIAL_SCHEMA),
     (2, "preserve_projection_history", PROJECTION_HISTORY_MIGRATION),
@@ -626,6 +631,7 @@ MIGRATIONS = (
     (5, "geometry_receipt_fed_at", GEOMETRY_FEED_MIGRATION),
     (6, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
     (7, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
+    (8, "jurisdiction_grant_lifecycle", JURISDICTION_GRANT_LIFECYCLE_MIGRATION),
 )
 
 

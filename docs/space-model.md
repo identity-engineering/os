@@ -226,6 +226,24 @@ hosting, membership, and membrane - they do not replace `registry_entries`.
 There is no separate "collective Boundary" table: outer membrane is policy on
 the Space / Space Identity; member Boundary is each Identity's Surface.
 
+## Local V1 boundary slice
+
+The local runtime exposes a public Space boundary descriptor through
+`runtime/membrane.py` and:
+
+```bash
+ie space boundary export --to ~/ie-boundary.json --space-id <space-id>
+ie space boundary verify --from ~/ie-boundary.json --space-id <space-id>
+```
+
+The descriptor contains the Space ID, public host metadata, an explicit
+`full_private_geometry: false` export policy, and a checksum. It does not
+contain the private SQLite tables or deterministic Identity-space export. A
+verified inbound descriptor is classified as `known`, never implicitly
+`addressable`, and never grants private-geometry access. This is the first
+membrane contract slice, not full cross-Space enforcement: membership,
+federation, endpoint policy, and signal gating still need persisted Space state.
+
 ## Relation to local Free V1
 
 A local install is a **local mini-Space**:

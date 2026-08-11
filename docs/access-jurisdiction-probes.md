@@ -144,8 +144,14 @@ dimensions via Mature / dimension discovery after a probe is committed.
 - Forced mutual estimation of Access/Jurisdiction between peers
 - Silent write from Interaction Signal into profiles
 - Promotion of Ownership to a public Core Concept page (framework decision)
-- Full grant transfer / revoke CLI (follow-up under multi-Identity)
-- Space membrane export/inbound enforcement (issue #61)
+- Residual emergency grant transfer / revoke through the ordinary path
+- Persisted Space membership and full membrane enforcement (issue #61 follow-up)
+
+Ordinary grant transfer and revoke are available through
+`ie jurisdiction grant`; the residual path remains intentionally separate.
+Public Space boundary export and inbound verification are available through
+`ie space boundary`, but they do not yet create membership or enforce endpoint
+and signal policy without persisted Space state.
 
 ## Exit criteria mapping (#40)
 

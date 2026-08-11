@@ -18,12 +18,13 @@
 - **Identity creation lineage + default jurisdiction** (`docs/identity-creation-jurisdiction.md`) — creator grants, transfer, Child revocation, residual red button
 - **Surface Runtime v0 complete** (#29 closed) — CLI + HTTP + MCP shipped
 - **Geometry Receipt feed v0** (`docs/geometry-feed.md`) — hook + explicit CLI; Registry effect_on_me write-back (#8)
-- **Jurisdiction grants schema v6** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; residual_emergency non-transferable
+- **Jurisdiction grants schema v8** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; ordinary transfer/revoke audit metadata; residual_emergency non-transferable
 - **Access & Jurisdiction probes** (`docs/access-jurisdiction-probes.md`, `access_jurisdiction_profiles`, `ie jurisdiction`) — owner-gated measurement of degrees of freedom (#40 closed)
+- **Issue #61 first slice** — public Space boundary export/verification plus ordinary grant transfer/revoke CLI; verified inbound boundaries remain known but not addressable
 
 ## Next
 
-1. **Space membrane export/inbound + grant transfer/revoke CLI** — follow-ups from #40 / #61 (probes + grants schema shipped)
+1. **Persisted Space membership and membrane policy enforcement** — connect boundary descriptors to membership, endpoint, export, inbound, and signal gates
 2. **Richer Tensor / Effective Freedom derivation** from fed receipts + probes
 3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
 4. **Managed multi-identity + Space membership layer**  

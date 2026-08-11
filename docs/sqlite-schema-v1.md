@@ -2,6 +2,9 @@
 
 Status: design contract for the first DB-only local runtime.
 
+The current runtime schema version is **8**. Schema migrations are applied
+transactionally on database open and recorded in `schema_migrations`.
+
 This document is the storage contract for a fresh local installation. It is
 intentionally more precise than the v0 YAML schemas because the database is the
 canonical source of mutable state in V1.
@@ -30,8 +33,9 @@ canonical source of mutable state in V1.
 
 The runtime can export one local identity space with `ie db export`. The
 format is `identity-engineering.identity-space` version `1` and contains the
-installation and identity metadata, all current projections, and the
-append-only event, revision, and evidence tables needed for a later rebuild.
+installation and identity metadata, all current projections, grants, profiles,
+and the append-only event, revision, and evidence tables needed for a later
+rebuild.
 
 The envelope has a `payload`, `payload_sha256`, and `export_id`. Both checksum
 values are the lowercase SHA-256 of the payload's canonical UTF-8 JSON. The
@@ -138,15 +142,22 @@ as the default package; ordinary scopes are transferable and Child-revocable;
 | `scope` | `policy_admin` \| `visibility_control` \| `surface_admin` \| `grant_admin` \| `residual_emergency` |
 | `residual` | 1 for the residual emergency lever |
 | `transferable` | 1 if ordinary transfer is allowed |
-| `space_id` | Optional membrane scope (later) |
-| `granted_at` / `revoked_at` | Lifecycle |
+| `space_id` | Optional membrane scope; V1 stores it but has no membership table yet |
+| `granted_at` / `revoked_at` | Lifecycle; revoked rows remain as history |
 | `granted_by_identity_id` | Who issued the grant |
-| `note` | Audit note |
+| `revoked_by_identity_id` | Identity that revoked the grant, when revoked |
+| `note` | Grant / transfer audit note |
+| `revocation_note` | Revocation / transfer audit note |
 
 On `ie init` the runtime issues the full default package to the new Identity
 (self for V1 genesis). Multi-Identity creation will issue the package to the
 creator as actor over the new object Identity. Full semantics:
 `docs/identity-creation-jurisdiction.md`.
+
+Ordinary grants can be transferred atomically: the source row is revoked and a
+new row is issued to the target Identity. The object Identity or a matching
+ordinary `grant_admin` grant can revoke ordinary grants. The residual emergency
+grant is intentionally rejected by both ordinary paths.
 
 ### Access & Jurisdiction profiles (probes)
 
