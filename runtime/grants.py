@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 from uuid import uuid4
 
+from .context import ContextError, resolve_active_identity_row
 from .database import Database, database_path, utcnow
 
 
@@ -18,10 +19,10 @@ class GrantError(RuntimeError):
 
 
 def _local_identity(conn) -> Any:
-    row = conn.execute("SELECT * FROM identity LIMIT 1").fetchone()
-    if row is None:
-        raise GrantError("no local identity in database")
-    return row
+    try:
+        return resolve_active_identity_row(conn)
+    except ContextError as exc:
+        raise GrantError(str(exc)) from exc
 
 
 def _row_to_dict(row: Any) -> dict[str, Any]:
@@ -45,7 +46,7 @@ def list_grants(
     *,
     active_only: bool = True,
 ) -> list[dict[str, Any]]:
-    """List grants for the local Identity (as object)."""
+    """List grants for the active Identity (as object)."""
     root = Path(install_root).expanduser().resolve()
     db_path = database_path(root)
     if not db_path.is_file():
@@ -81,7 +82,7 @@ def revoke_grant(
     scope: Optional[str] = None,
     reason: str = "",
 ) -> dict[str, Any]:
-    """Revoke an ordinary (non-residual) active grant on the local Identity.
+    """Revoke an ordinary (non-residual) active grant on the active Identity.
 
     Residual emergency grants cannot be revoked by this path.
     """
@@ -159,8 +160,7 @@ def transfer_grant(
     """Transfer a transferable active grant to another actor Identity.
 
     Residual grants are never transferable. Target actor must exist in the
-    local identity table (multi-Identity installs). V1 single-Identity installs
-    can only transfer to self (no-op check fails) or a second row if present.
+    local identity table (multi-Identity installs).
     """
     if not grant_id and not scope:
         raise GrantError("pass --grant-id or --scope")
