@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 from uuid import uuid4
 
+from .context import ContextError, resolve_active_identity_row
 from .database import Database, DatabaseError, canonical_json, database_path, utcnow
 
 
@@ -73,7 +74,7 @@ def feed_receipt(
 
     v0 scope:
     - mode=interact + target=peer only
-    - writes effect_on_me_json on the peer registry entry
+    - writes effect_on_me_json on the peer registry entry (active Identity)
     - marks geometry_receipts.fed_at
     - never writes Stem, Self-Mass, or Access/Jurisdiction claims
     """
@@ -99,7 +100,6 @@ def feed_receipt(
                 }
 
             if receipt["mode"] != "interact" or receipt["target"] in {"self", ""}:
-                # Mark fed so explicit --all does not retry forever on self probes.
                 conn.execute(
                     "UPDATE geometry_receipts SET fed_at = ? WHERE receipt_id = ?",
                     (now, receipt_id),
@@ -112,9 +112,10 @@ def feed_receipt(
                     "mode": receipt["mode"],
                 }
 
-            identity = conn.execute("SELECT * FROM identity LIMIT 1").fetchone()
-            if identity is None:
-                raise GeometryFeedError("no local identity in database")
+            try:
+                identity = resolve_active_identity_row(conn)
+            except ContextError as exc:
+                raise GeometryFeedError("no local identity in database") from exc
 
             peer_handle = receipt["target"]
             entry = conn.execute(
@@ -126,7 +127,6 @@ def feed_receipt(
             ).fetchone()
 
             if entry is None:
-                # Continuity projection may lag; still mark fed to avoid loops.
                 conn.execute(
                     "UPDATE geometry_receipts SET fed_at = ? WHERE receipt_id = ?",
                     (now, receipt_id),

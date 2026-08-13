@@ -34,7 +34,10 @@ class McpSessionTests(unittest.TestCase):
         env = session.actor_envelope()
         self.assertEqual(env["actor_identity_id"], self.identity_id)
         self.assertEqual(env["local_handle"], "me")
-        self.assertNotIn("space_id", env)
+        # After #77 init always creates a local mini-Space; session may attach it
+        if session.space_id is not None:
+            self.assertEqual(env.get("space_id"), session.space_id)
+            self.assertTrue(isinstance(session.space_id, str))
 
     def test_bind_rejects_missing_db(self) -> None:
         with self.assertRaises(FileNotFoundError):
