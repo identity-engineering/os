@@ -8,6 +8,7 @@ from typing import Any, Union
 
 from .context import ContextError, resolve_active_identity_row
 from .database import Database, DatabaseError, canonical_json, database_path, sha256_text
+from .membrane import filter_export_tables, load_space_policy_from_row
 
 EXPORT_FORMAT = "identity-engineering.identity-space"
 EXPORT_FORMAT_VERSION = 1
@@ -145,6 +146,22 @@ def _payload_for_database(conn) -> dict[str, Any]:
         table: _query_rows(conn, table, identity_id, install_id)
         for table in TABLE_QUERIES
     }
+
+    # Membrane export filter (Space Boundary).
+    space_row = conn.execute(
+        """
+        SELECT s.*
+        FROM space_memberships m
+        JOIN spaces s ON s.space_id = m.space_id
+        WHERE m.identity_id = ? AND m.primary_host = 1 AND m.status = 'active'
+        LIMIT 1
+        """,
+        (identity_id,),
+    ).fetchone()
+    policy = load_space_policy_from_row(space_row)
+    membrane = filter_export_tables(list(tables.keys()), policy)
+    filtered = {name: tables[name] for name in membrane.allowed_tables if name in tables}
+
     return {
         "format": EXPORT_FORMAT,
         "format_version": EXPORT_FORMAT_VERSION,
@@ -153,8 +170,15 @@ def _payload_for_database(conn) -> dict[str, Any]:
             "install_id": install_id,
             "identity_id": identity_id,
             "local_handle": identity["local_handle"],
+            "space_id": (
+                str(space_row["space_id"]) if space_row is not None else None
+            ),
         },
-        "tables": tables,
+        "membrane": {
+            "stripped_tables": list(membrane.stripped_tables),
+            "export_mode": membrane.policy["export"]["mode"],
+        },
+        "tables": filtered,
     }
 
 
@@ -224,6 +248,7 @@ def write_identity_export(
         json.dumps(document, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+    membrane = document["payload"].get("membrane") or {}
     return {
         "destination": str(destination_path),
         "export_id": document["export_id"],
@@ -231,4 +256,5 @@ def write_identity_export(
         "table_counts": {
             table: len(rows) for table, rows in document["payload"]["tables"].items()
         },
+        "membrane_stripped_tables": membrane.get("stripped_tables") or [],
     }

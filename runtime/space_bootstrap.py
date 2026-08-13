@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Any, Optional
 from uuid import uuid4
 
-from .database import utcnow
+from .database import canonical_json, utcnow
+from .membrane import default_local_membrane_policy
 
 
 def ensure_local_space_for_identity(
@@ -39,13 +40,14 @@ def ensure_local_space_for_identity(
     ).fetchone()
     if space_row is None:
         space_id = str(uuid4())
+        policy_json = canonical_json(default_local_membrane_policy())
         connection.execute(
             """
             INSERT INTO spaces(
                 space_id, kind, hosting, parent_space_id, policy_json, created_at, updated_at
-            ) VALUES (?, 'local', 'local_device', NULL, '{}', ?, ?)
+            ) VALUES (?, 'local', 'local_device', NULL, ?, ?, ?)
             """,
-            (space_id, now, now),
+            (space_id, policy_json, now, now),
         )
     else:
         space_id = space_row[0] if not hasattr(space_row, "keys") else space_row["space_id"]
