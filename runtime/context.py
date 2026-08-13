@@ -20,6 +20,37 @@ def _db(install_root: Union[str, Path]) -> Path:
     return path
 
 
+def resolve_active_identity_row(conn) -> Any:
+    """Resolve the active Identity row on an already-open connection.
+
+    Prefer install.active_identity_id when set and valid; else oldest Identity.
+    Raises ContextError if none exists.
+    """
+    install = conn.execute("SELECT * FROM install LIMIT 1").fetchone()
+    if install is None:
+        raise ContextError("no install row")
+
+    active_id = None
+    try:
+        active_id = install["active_identity_id"]
+    except (KeyError, IndexError, TypeError):
+        active_id = None
+
+    row = None
+    if active_id:
+        row = conn.execute(
+            "SELECT * FROM identity WHERE identity_id = ?",
+            (active_id,),
+        ).fetchone()
+    if row is None:
+        row = conn.execute(
+            "SELECT * FROM identity ORDER BY created_at ASC LIMIT 1"
+        ).fetchone()
+    if row is None:
+        raise ContextError("no local identity in database")
+    return row
+
+
 def list_identities(install_root: Union[str, Path]) -> list[dict[str, Any]]:
     """All Identities in this install."""
     with Database(_db(install_root)) as database:
@@ -41,30 +72,7 @@ def get_active_identity(install_root: Union[str, Path]) -> dict[str, Any]:
     or the oldest Identity.
     """
     with Database(_db(install_root)) as database:
-        conn = database.conn
-        install = conn.execute("SELECT * FROM install LIMIT 1").fetchone()
-        if install is None:
-            raise ContextError("no install row")
-
-        active_id = None
-        try:
-            active_id = install["active_identity_id"]
-        except (KeyError, IndexError):
-            active_id = None
-
-        row = None
-        if active_id:
-            row = conn.execute(
-                "SELECT * FROM identity WHERE identity_id = ?",
-                (active_id,),
-            ).fetchone()
-        if row is None:
-            row = conn.execute(
-                "SELECT * FROM identity ORDER BY created_at ASC LIMIT 1"
-            ).fetchone()
-        if row is None:
-            raise ContextError("no local identity in database")
-        return dict(row)
+        return dict(resolve_active_identity_row(database.conn))
 
 
 def set_active_identity(
