@@ -111,3 +111,8 @@ def register(app: typer.Typer) -> None:
                 f"{r['object_kind']}:{r['object_ref']}  rev={r['revision']}  "
                 f"c={r['confidence']:.2f}  at={r['observed_at']}"
             )
+
+    # Grant plane (list / revoke / transfer) — same ownership surface as #61
+    from ie.grant_cmd import register as register_grant
+
+    register_grant(app)

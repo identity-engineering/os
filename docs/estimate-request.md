@@ -1,7 +1,9 @@
 # Estimate Request + Inbox (SQLite-first V1)
 
-Implementation of the **inbound** half of the bidirectional gravitational sensor
-(issue #31). Design lock: `docs/bidirectional-gravitational-sensor.md`.
+Status: **v0 complete** · closes issue #31
+
+Implementation of the **inbound** half of the bidirectional gravitational sensor.
+Design lock: `docs/bidirectional-gravitational-sensor.md`.
 
 ## What is shipped
 
@@ -9,7 +11,7 @@ Implementation of the **inbound** half of the bidirectional gravitational sensor
 |-------|----------|
 | Schema | `schemas/estimate-request/v0.yaml` |
 | Models | `EstimateRequest`, `RequestStatus` in `runtime/models.py` |
-| Store | SQLite table `estimate_requests` in `.ie/ie.sqlite3` |
+| Store | SQLite table `estimate_requests` in `.ie/ie.sqlite3` (V1; not YAML files) |
 | Ops | `runtime/request.py` |
 | CLI | `ie request create\|list\|show\|ignore\|quarantine` |
 | Reply link | optional `in_reply_to_request_id` on Interaction Signal → marks request answered |
@@ -56,6 +58,16 @@ ie request quarantine <request_id>
 ie signal apply --open-consent --payload reply.json
 ```
 
+## Exit criteria (#31)
+
+| Criterion | Status |
+|-----------|--------|
+| Design docs + schemas on main | yes |
+| Local store for pending requests | SQLite `estimate_requests` |
+| CLI/library create + reply path | `ie request` + `in_reply_to_request_id` |
+| Explicit non-goals | below |
+| Linked from bidirectional sensor + next.md | yes |
+
 ## Explicit non-goals (v0)
 
 - No global social graph
@@ -72,3 +84,4 @@ ie signal apply --open-consent --payload reply.json
 - `docs/identity-surface.md`
 - Issue #15 Emergent self-Mass aggregation
 - Issue #29 Surface Runtime v0
+- Issue #31 (this slice)
