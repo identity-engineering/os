@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, Union
 
+from .context import ContextError, resolve_active_identity_row
 from .database import Database, DatabaseError, canonical_json, database_path, sha256_text
 
 EXPORT_FORMAT = "identity-engineering.identity-space"
@@ -131,8 +132,11 @@ def _query_rows(conn, table: str, identity_id: str, install_id: str) -> list[dic
 
 def _payload_for_database(conn) -> dict[str, Any]:
     install = conn.execute("SELECT * FROM install LIMIT 1").fetchone()
-    identity = conn.execute("SELECT * FROM identity LIMIT 1").fetchone()
-    if install is None or identity is None:
+    try:
+        identity = resolve_active_identity_row(conn)
+    except ContextError as exc:
+        raise DatabaseError("database has no local install and identity") from exc
+    if install is None:
         raise DatabaseError("database has no local install and identity")
 
     identity_id = str(identity["identity_id"])
@@ -155,7 +159,7 @@ def _payload_for_database(conn) -> dict[str, Any]:
 
 
 def export_identity_space(install_root: Union[str, Path]) -> dict[str, Any]:
-    """Return a deterministic export envelope for one local identity space."""
+    """Return a deterministic export envelope for the active identity space."""
     root = Path(install_root).expanduser().resolve()
     if not database_path(root).is_file():
         raise DatabaseError(f"No IE database under {root}")
