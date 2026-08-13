@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Union
 
+from .context import ContextError, resolve_active_identity_row
 from .database import Database, database_path
 
 FORMULA_VERSION = "0"
@@ -58,6 +59,7 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
     """Compute Effective Freedom live from local SQLite projections.
 
     Pure derived signal. Safe to call often; does not mutate state.
+    Uses the active Identity when multiple Identities exist in the install.
     """
     root = Path(install_root).expanduser().resolve()
     db_path = database_path(root)
@@ -81,8 +83,9 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
 
     with Database(db_path) as database:
         conn = database.conn
-        identity = conn.execute("SELECT * FROM identity LIMIT 1").fetchone()
-        if identity is None:
+        try:
+            identity = resolve_active_identity_row(conn)
+        except ContextError:
             return FreedomReadout(
                 effective_freedom=BASELINE_UNBOUND,
                 unbound_dof=BASELINE_UNBOUND,
@@ -117,7 +120,6 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
                     constraint_labels += len(noted)
                 intensity_field = dof.get("constraint_intensity")
                 if isinstance(intensity_field, (int, float)):
-                    # explicit intensity on receipt contributes to samples via labels path
                     constraint_labels += max(0, int(round(float(intensity_field))))
 
         sources["receipts_window"] = receipt_count
@@ -148,7 +150,6 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
                 if isinstance(access.get(k), (int, float))
             ]
             access_mean = _mean(access_scores)
-            # High constraint/destroy scores on self = tighter binding awareness
             bind_keys = ("constrain", "destroy", "redefine_boundary")
             bind_scores = [
                 float(juris[k])
@@ -212,7 +213,6 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
                 ).fetchone()[0]
             )
         except Exception:
-            # Table may be absent on very old DBs; ignore.
             residual_count = 0
         sources["residual_grants"] = residual_count
 
@@ -222,7 +222,6 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
     if receipt_unbound is not None:
         candidates.append(receipt_unbound)
     if access_mean is not None:
-        # Access scores are 0–1; scale toward a comparable unbound unit
         candidates.append(access_mean * 2.0)
     unbound = max(candidates)
     sources["unbound_components"] = {
@@ -249,7 +248,6 @@ def compute_freedom_readout(install_root: Union[str, Path]) -> FreedomReadout:
 
     effective = unbound / (1.0 + intensity)
 
-    # Confidence: rises with receipt history + optional self probe
     confidence = 0.15
     if receipt_count > 0:
         confidence += min(0.35, receipt_count * 0.03)
