@@ -5,14 +5,15 @@
 Surface Runtime (CLI / HTTP / MCP) · Geometry Receipt + feed · Mass · Freedom
 scalar · Request inbox · Jurisdiction probes · Grant list/revoke/transfer ·
 Account ≠ Identity · Space-as-membrane contracts · Creation-time grants ·
-**Local Space rows + multi-Identity per install** (#77).
+**Local Space rows + multi-Identity per install** (#77) · active Identity on
+all local call sites.
 
 Details live in the linked docs and closed issues (#8, #15, #29, #31, #40, #44,
 #60, #61, #77).
 
 ## Now
 
-1. **Managed multi-Identity + Space membership** — account path mirrors the
+1. **#80 Managed multi-Identity + Space membership** — account path mirrors the
    same tables; installation↔identity binding (`os-managed`).
 
 ## Then
