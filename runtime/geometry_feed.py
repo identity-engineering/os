@@ -2,6 +2,10 @@
 
 Turns stored Geometry Receipts into ownership-gated Registry / Tension updates.
 Best-effort: never fails the Interaction apply path.
+
+Delivery modes (hook / explicit / adapter / none) are specified in
+docs/geometry-feed-delivery.md (OS #44). This module implements the local
+kernel paths: hook (via apply) and explicit (feed_receipt / feed_pending).
 """
 
 from __future__ import annotations
@@ -238,7 +242,12 @@ def feed_pending(
             )
 
     fed = sum(1 for r in results if r.get("status") == "fed")
-    skipped = sum(1 for r in results if str(r.get("status", "")).startswith("skipped") or r.get("status") == "already_fed")
+    skipped = sum(
+        1
+        for r in results
+        if str(r.get("status", "")).startswith("skipped")
+        or r.get("status") == "already_fed"
+    )
     errors = sum(1 for r in results if r.get("status") == "error")
     return {
         "processed": len(results),
@@ -250,6 +259,24 @@ def feed_pending(
 
 
 def feed_capability(install_root: Union[str, Path]) -> str:
-    """Return declared feed mode for status surfaces."""
-    # v0 always supports hook + explicit once this module is present.
+    """Return declared feed mode for status surfaces (OS #44).
+
+    Local Surface Runtime with a database always has the apply-hook, so the
+    capability is ``hook`` (which implies explicit is also available).
+
+    Returns ``none`` when no local database exists. Adapter mode is declared by
+    external harnesses, not by this kernel helper.
+
+    See docs/geometry-feed-delivery.md.
+    """
+    root = Path(install_root).expanduser().resolve()
+    if not database_path(root).is_file():
+        return "none"
     return "hook"
+
+
+def feed_modes_available(install_root: Union[str, Path]) -> list[str]:
+    """Modes this local install can run without an external harness."""
+    if feed_capability(install_root) == "none":
+        return []
+    return ["hook", "explicit"]
