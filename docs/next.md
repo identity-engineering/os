@@ -6,23 +6,22 @@ Surface Runtime (CLI / HTTP / MCP) · Geometry Receipt + feed · Mass · Freedom
 scalar · Request inbox · Jurisdiction probes · Grant list/revoke/transfer ·
 Account ≠ Identity · Space-as-membrane contracts · Creation-time grants ·
 **Local Space rows + multi-Identity per install** (#77) · active Identity on
-all local call sites (#79).
+all local call sites (#79) · managed multi-Identity + Space membership contract
+(#80).
 
 Details live in the linked docs and closed issues (#8, #15, #29, #31, #40, #44,
-#60, #61, #77, #79).
+#60, #61, #77, #79, #80).
 
 ## Now
 
-1. **#80 Managed multi-Identity + Space membership** — account path mirrors the
-   same tables; installation↔identity binding (`os-managed`). Design contract:
-   `docs/managed-space-identity.md`. Phase-3 auth/SQL remain separate.
+1. **#82 Space membrane export/inbound enforcement** — runtime policy on
+   `spaces.policy_json`, not only docs (`docs/space-membrane-policy.md`).
 
 ## Then
 
-2. **Space membrane export/inbound enforcement** — runtime policy, not only docs.
-3. **Distribution** — Cloudflare R2 + install channels (`ie` package dogfood).
-4. **Dimensional Freedom / denser Tensor** — when alloys carry real dimension IDs.
-5. **#73 Frequency / Resonance** — only after (4).
+2. **Distribution** — Cloudflare R2 + install channels (`ie` package dogfood).
+3. **Dimensional Freedom / denser Tensor** — when alloys carry real dimension IDs.
+4. **#73 Frequency / Resonance** — only after (3).
 
 ## Parked / later
 
