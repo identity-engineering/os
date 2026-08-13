@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from runtime.database import DatabaseError, initialize_database
 
-from .paths import HEADER_NAME
+from .paths import HEADER_NAME, STANDARD_SKILL_NAMES, bundled_skills_dir
 
 
 LEGACY_STATE_NAMES = (
@@ -30,6 +30,28 @@ def _remove_legacy_state(root: Path) -> None:
             shutil.rmtree(path)
         else:
             path.unlink()
+
+
+def install_standard_skills(target: Path, *, force: bool = False) -> list[str]:
+    """Copy Context Layer standard skills into <install>/skills/.
+
+    Returns the list of skill names installed or refreshed.
+    """
+    source_root = bundled_skills_dir()
+    installed: list[str] = []
+    for name in STANDARD_SKILL_NAMES:
+        src = source_root / name / "SKILL.md"
+        if not src.is_file():
+            continue
+        dest_dir = target / "skills" / name
+        dest = dest_dir / "SKILL.md"
+        if dest.exists() and not force:
+            installed.append(name)
+            continue
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        installed.append(name)
+    return installed
 
 
 def init_install(
@@ -77,6 +99,8 @@ def init_install(
     except DatabaseError as exc:
         raise SystemExit(str(exc)) from exc
 
+    skills_installed = install_standard_skills(target, force=force or reset)
+
     tier = (account_info or {}).get("tier") or "free"
     readme = target / "README.md"
     if not readme.exists() or force or reset:
@@ -84,21 +108,27 @@ def init_install(
             f"# IE install - `{handle}`\n\n"
             f"Created by `ie init` (tier: {tier}).\n\n"
             "Canonical mutable state lives in `.ie/ie.sqlite3`.\n\n"
+            "Human skills (Context Layer) live under `skills/`. "
+            "Agents must use the `ie` CLI or MCP for geometry reads/writes.\n\n"
             "Commands: `ie status`, `ie db info`, `ie signal apply`, "
-            "`ie request list`, `ie registry list`, `ie mass`\n",
+            "`ie mature`, `ie request list`, `ie registry list`, `ie mass`\n",
             encoding="utf-8",
         )
 
     agent_doc = target / "IE.md"
     if not agent_doc.exists() or force or reset:
+        skill_lines = "\n".join(f"  - `skills/{name}/SKILL.md`" for name in skills_installed)
         agent_doc.write_text(
             f"# Local IE Surface: `{handle}`\n\n"
             "This install is DB-only. Read mutable state from `.ie/ie.sqlite3` "
-            "through the `ie` CLI or runtime API.\n\n"
+            "through the `ie` CLI or runtime API / local MCP.\n\n"
             "- Discovery: `.ie/ie.sqlite3`\n"
             "- Public metadata: `ie status --json` and the local card surface\n"
-            "- Writes: use CLI/runtime operations; do not edit the database directly\n"
-            "- Evidence: use root-relative paths and hashes\n",
+            "- Writes: use CLI/runtime/MCP operations; do not edit the database directly\n"
+            "- Evidence: use root-relative paths and hashes\n"
+            "- Context Layer skills (human command interface; agent executes via CLI/MCP):\n"
+            f"{skill_lines}\n"
+            "\nSee package docs: `docs/context-layer.md`, `docs/agent-contract-v1.md`.\n",
             encoding="utf-8",
         )
 
