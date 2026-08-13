@@ -6,12 +6,24 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from io import StringIO
 
 from runtime.database import initialize_database
 from runtime.mcp_handler import McpSurface, handle_rpc, TOOL_DEFS
-from runtime.mcp_session import IdentitySession, bind_local_session
+from runtime.mcp_session import bind_local_session
 from runtime.models import ApplyStatus
+
+EXPECTED_TOOLS = {
+    "ie_status",
+    "ie_card",
+    "ie_mass",
+    "ie_freedom",
+    "ie_signal_apply",
+    "ie_geometry_feed",
+    "ie_grants_list",
+    "ie_requests_list",
+    "ie_registry_list",
+    "ie_identity_list",
+}
 
 
 class McpSessionTests(unittest.TestCase):
@@ -34,7 +46,6 @@ class McpSessionTests(unittest.TestCase):
         env = session.actor_envelope()
         self.assertEqual(env["actor_identity_id"], self.identity_id)
         self.assertEqual(env["local_handle"], "me")
-        # After #77 init always creates a local mini-Space; session may attach it
         if session.space_id is not None:
             self.assertEqual(env.get("space_id"), session.space_id)
             self.assertTrue(isinstance(session.space_id, str))
@@ -66,10 +77,7 @@ class McpToolTests(unittest.TestCase):
 
     def test_tools_list_has_expected_names(self) -> None:
         names = {t["name"] for t in TOOL_DEFS}
-        self.assertEqual(
-            names,
-            {"ie_status", "ie_card", "ie_mass", "ie_signal_apply", "ie_registry_list"},
-        )
+        self.assertEqual(names, EXPECTED_TOOLS)
 
     def test_status_includes_actor(self) -> None:
         result = self.surface.call_tool("ie_status", {})
@@ -87,13 +95,51 @@ class McpToolTests(unittest.TestCase):
         self.assertIn("actor", result)
         self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
 
+    def test_freedom_includes_actor(self) -> None:
+        result = self.surface.call_tool("ie_freedom", {})
+        self.assertIn("actor", result)
+        self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
+        self.assertIn("effective_freedom", result)
+        self.assertNotIn("sources", result)
+        detailed = self.surface.call_tool("ie_freedom", {"detail": True})
+        self.assertIn("sources", detailed)
+
+    def test_geometry_feed_includes_actor(self) -> None:
+        result = self.surface.call_tool("ie_geometry_feed", {"limit": 5})
+        self.assertIn("actor", result)
+        self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
+
+    def test_grants_list_includes_actor(self) -> None:
+        result = self.surface.call_tool("ie_grants_list", {})
+        self.assertIn("actor", result)
+        self.assertIn("grants", result)
+        self.assertIsInstance(result["grants"], list)
+
+    def test_requests_list_includes_actor(self) -> None:
+        result = self.surface.call_tool("ie_requests_list", {})
+        self.assertIn("actor", result)
+        self.assertIn("requests", result)
+        self.assertIsInstance(result["requests"], list)
+
+    def test_requests_list_rejects_bad_status(self) -> None:
+        with self.assertRaises(ValueError):
+            self.surface.call_tool("ie_requests_list", {"status": "nope"})
+
     def test_registry_list_includes_actor(self) -> None:
         result = self.surface.call_tool("ie_registry_list", {})
         self.assertIn("actor", result)
         self.assertIn("peers", result)
 
+    def test_identity_list_marks_active(self) -> None:
+        result = self.surface.call_tool("ie_identity_list", {})
+        self.assertIn("actor", result)
+        identities = result["identities"]
+        self.assertTrue(identities)
+        active = [i for i in identities if i.get("active")]
+        self.assertEqual(len(active), 1)
+        self.assertEqual(active[0]["identity_id"], self.identity_id)
+
     def test_signal_apply_forces_to_bound_identity(self) -> None:
-        # Attempt cross-identity target; tool must force destination to bound handle.
         signal = {
             "from": "peer-alice",
             "to": "someone-else",
@@ -106,9 +152,6 @@ class McpToolTests(unittest.TestCase):
         )
         self.assertIn("actor", result)
         self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
-        # Receipt should reflect applied state for the bound Identity
-        status = result.get("status") or result.get("receipt", {}).get("status")
-        # apply_from_dict returns a receipt whose to_dict has status
         self.assertIn(
             result.get("status"),
             {ApplyStatus.APPLIED.value, "applied", ApplyStatus.PARTIAL.value, "partial"},
@@ -140,6 +183,7 @@ class McpRpcTests(unittest.TestCase):
         self.assertEqual(resp["id"], 1)
         self.assertIn("result", resp)
         self.assertEqual(resp["result"]["serverInfo"]["name"], "ie-os-local")
+        self.assertEqual(resp["result"]["serverInfo"]["version"], "1")
 
     def test_tools_list(self) -> None:
         resp = handle_rpc(
@@ -148,7 +192,8 @@ class McpRpcTests(unittest.TestCase):
         )
         assert resp is not None
         tools = resp["result"]["tools"]
-        self.assertEqual(len(tools), 5)
+        self.assertEqual(len(tools), len(EXPECTED_TOOLS))
+        self.assertEqual({t["name"] for t in tools}, EXPECTED_TOOLS)
 
     def test_tools_call_status(self) -> None:
         resp = handle_rpc(
@@ -165,6 +210,21 @@ class McpRpcTests(unittest.TestCase):
         self.assertFalse(result.get("isError"))
         structured = result.get("structuredContent") or {}
         self.assertIn("actor", structured)
+
+    def test_tools_call_freedom(self) -> None:
+        resp = handle_rpc(
+            self.surface,
+            {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {"name": "ie_freedom", "arguments": {}},
+            },
+        )
+        assert resp is not None
+        self.assertFalse(resp["result"].get("isError"))
+        structured = resp["result"].get("structuredContent") or {}
+        self.assertIn("effective_freedom", structured)
 
     def test_notification_returns_none(self) -> None:
         resp = handle_rpc(

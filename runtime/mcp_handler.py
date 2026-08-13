@@ -3,7 +3,7 @@
 Implements a minimal subset of the Model Context Protocol over newline-delimited
 JSON-RPC 2.0 on stdin/stdout. Tools wrap the same runtime handlers as CLI/HTTP.
 
-Session always authenticates as the install Identity. Results include
+Session always authenticates as the install's *active* Identity. Results include
 actor_identity_id. Cross-Identity write is not exposed in V1 tools.
 """
 
@@ -17,13 +17,19 @@ from typing import Any, Optional, TextIO
 
 from ie.status_cmd import collect_status
 from runtime.apply import apply_from_dict
+from runtime.context import list_identities
+from runtime.freedom import compute_freedom_readout
+from runtime.grants import list_grants
+from runtime.geometry_feed import feed_pending, feed_receipt
 from runtime.mass import build_public_card, compute_mass_readout
 from runtime.mcp_session import IdentitySession, bind_local_session
+from runtime.models import RequestStatus
 from runtime.policy import LocalPolicy
+from runtime.request import list_inbound_requests
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "ie-os-local"
-SERVER_VERSION = "0"
+SERVER_VERSION = "1"
 
 TOOL_DEFS: list[dict[str, Any]] = [
     {
@@ -61,6 +67,24 @@ TOOL_DEFS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "ie_freedom",
+        "description": (
+            "Effective Freedom readout: unbound DoF / (1 + constraint intensity). "
+            "Derived live; never a write."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "boolean",
+                    "description": "Include source component breakdown",
+                    "default": False,
+                }
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
         "name": "ie_signal_apply",
         "description": (
             "Apply an Interaction Signal into the bound Identity's foreign-estimate "
@@ -84,8 +108,72 @@ TOOL_DEFS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "ie_geometry_feed",
+        "description": (
+            "Feed Geometry Receipts into Registry effect_on_me (explicit path). "
+            "Same semantics as `ie geometry feed`."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "receipt_id": {
+                    "type": "string",
+                    "description": "Feed one specific Geometry Receipt id",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max pending receipts when not targeting one id",
+                    "default": 50,
+                },
+                "force": {
+                    "type": "boolean",
+                    "description": "Re-feed even if already marked fed",
+                    "default": False,
+                },
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_grants_list",
+        "description": "List jurisdiction grants on the bound Identity.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "all": {
+                    "type": "boolean",
+                    "description": "Include revoked grants",
+                    "default": False,
+                }
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_requests_list",
+        "description": "List inbound estimate-request inbox items for the bound Identity.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "Filter: pending|ignored|quarantined|answered|expired",
+                }
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
         "name": "ie_registry_list",
         "description": "List Registry peer handles for the bound Identity.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "ie_identity_list",
+        "description": (
+            "List Identities in this install and mark which one is active "
+            "(session binding target). Read-only."
+        ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
 ]
@@ -103,13 +191,27 @@ class McpSurface:
             return self._card()
         if name == "ie_mass":
             return self._mass(detail=bool(args.get("detail", False)))
+        if name == "ie_freedom":
+            return self._freedom(detail=bool(args.get("detail", False)))
         if name == "ie_signal_apply":
             signal = args.get("signal")
             if not isinstance(signal, dict):
                 raise ValueError("ie_signal_apply requires signal object")
             return self._signal_apply(signal, open_consent=bool(args.get("open_consent", False)))
+        if name == "ie_geometry_feed":
+            return self._geometry_feed(
+                receipt_id=args.get("receipt_id"),
+                limit=int(args.get("limit", 50)),
+                force=bool(args.get("force", False)),
+            )
+        if name == "ie_grants_list":
+            return self._grants_list(all_grants=bool(args.get("all", False)))
+        if name == "ie_requests_list":
+            return self._requests_list(status=args.get("status"))
         if name == "ie_registry_list":
             return self._registry_list()
+        if name == "ie_identity_list":
+            return self._identity_list()
         raise ValueError(f"unknown tool: {name}")
 
     def _status(self) -> dict[str, Any]:
@@ -135,6 +237,14 @@ class McpSurface:
         body["identity_id"] = self.session.identity_id
         return self.session.with_actor(body)
 
+    def _freedom(self, *, detail: bool) -> dict[str, Any]:
+        readout = compute_freedom_readout(self.session.install_root)
+        body = readout.to_dict()
+        if not detail:
+            body.pop("sources", None)
+        body["identity_id"] = self.session.identity_id
+        return self.session.with_actor(body)
+
     def _signal_apply(self, signal: dict[str, Any], *, open_consent: bool) -> dict[str, Any]:
         payload = dict(signal)
         if "transport" not in payload:
@@ -155,12 +265,65 @@ class McpSurface:
         body["identity_id"] = self.session.identity_id
         return self.session.with_actor(body)
 
+    def _geometry_feed(
+        self,
+        *,
+        receipt_id: Optional[str],
+        limit: int,
+        force: bool,
+    ) -> dict[str, Any]:
+        root = self.session.install_root
+        if receipt_id:
+            result = feed_receipt(root, str(receipt_id), force=force)
+        else:
+            result = feed_pending(root, limit=max(1, limit), force=force)
+        body = dict(result) if isinstance(result, dict) else {"result": result}
+        body["identity_id"] = self.session.identity_id
+        return self.session.with_actor(body)
+
+    def _grants_list(self, *, all_grants: bool) -> dict[str, Any]:
+        rows = list_grants(self.session.install_root, active_only=not all_grants)
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "grants": rows,
+            }
+        )
+
+    def _requests_list(self, *, status: Optional[str]) -> dict[str, Any]:
+        st_filter = None
+        if status:
+            try:
+                st_filter = RequestStatus(str(status).strip().lower())
+            except ValueError as exc:
+                raise ValueError(
+                    "status must be one of: pending|ignored|quarantined|answered|expired"
+                ) from exc
+        rows = list_inbound_requests(self.session.install_root, status=st_filter)
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "requests": [r.to_dict() for r in rows],
+            }
+        )
+
     def _registry_list(self) -> dict[str, Any]:
         peers = collect_status(self.session.install_root).get("registry_peers") or []
         return self.session.with_actor(
             {
                 "identity_id": self.session.identity_id,
                 "peers": list(peers),
+            }
+        )
+
+    def _identity_list(self) -> dict[str, Any]:
+        identities = list_identities(self.session.install_root)
+        for item in identities:
+            item["active"] = item.get("identity_id") == self.session.identity_id
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "identities": identities,
             }
         )
 
@@ -285,7 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--space-id",
         default=None,
-        help="Optional space_id stamp on actor envelope (membrane not enforced in V1)",
+        help="Optional space_id stamp on actor envelope",
     )
     args = parser.parse_args(argv)
 
