@@ -3,8 +3,9 @@
 Implements a minimal subset of the Model Context Protocol over newline-delimited
 JSON-RPC 2.0 on stdin/stdout. Tools wrap the same runtime handlers as CLI/HTTP.
 
-Session always authenticates as the install's *active* Identity. Results include
-actor_identity_id. Cross-Identity write is not exposed in V1 tools.
+Session authenticates as one Identity (default: install active; optional
+--identity-id / --handle). Results include actor_identity_id. Cross-Identity
+write is not exposed in local tools.
 """
 
 from __future__ import annotations
@@ -171,8 +172,8 @@ TOOL_DEFS: list[dict[str, Any]] = [
     {
         "name": "ie_identity_list",
         "description": (
-            "List Identities in this install and mark which one is active "
-            "(session binding target). Read-only."
+            "List Identities in this install. Marks session-bound Identity as "
+            "active for this MCP process (not necessarily install.active). Read-only."
         ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
@@ -217,6 +218,7 @@ class McpSurface:
     def _status(self) -> dict[str, Any]:
         info = collect_status(self.session.install_root)
         info["identity_id"] = self.session.identity_id
+        info["session_handle"] = self.session.local_handle
         return self.session.with_actor(info)
 
     def _card(self) -> dict[str, Any]:
@@ -249,7 +251,6 @@ class McpSurface:
         payload = dict(signal)
         if "transport" not in payload:
             payload["transport"] = "mcp"
-        # Force destination to bound Identity — no cross-Identity apply via this tool.
         payload["to"] = self.session.local_handle
         payload["to_handle"] = self.session.local_handle
 
@@ -319,7 +320,9 @@ class McpSurface:
     def _identity_list(self) -> dict[str, Any]:
         identities = list_identities(self.session.install_root)
         for item in identities:
+            # "active" here means session-bound, not necessarily install.active
             item["active"] = item.get("identity_id") == self.session.identity_id
+            item["session_bound"] = item["active"]
         return self.session.with_actor(
             {
                 "identity_id": self.session.identity_id,
@@ -360,7 +363,8 @@ def handle_rpc(surface: McpSurface, message: dict[str, Any]) -> Optional[dict[st
                 "instructions": (
                     "IE OS local Surface. Session is bound to one Identity. "
                     "Tools write only that Identity's geometry. "
-                    f"actor_identity_id={surface.session.identity_id}"
+                    f"actor_identity_id={surface.session.identity_id} "
+                    f"handle={surface.session.local_handle}"
                 ),
             },
         }
@@ -450,6 +454,16 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Optional space_id stamp on actor envelope",
     )
+    parser.add_argument(
+        "--identity-id",
+        default=None,
+        help="Bind this local identity_id (default: install active Identity)",
+    )
+    parser.add_argument(
+        "--handle",
+        default=None,
+        help="Bind this local_handle (default: install active Identity)",
+    )
     args = parser.parse_args(argv)
 
     if args.install_root:
@@ -459,7 +473,12 @@ def main(argv: list[str] | None = None) -> int:
 
         root = require_ie_root()
 
-    session = bind_local_session(root, space_id=args.space_id)
+    session = bind_local_session(
+        root,
+        space_id=args.space_id,
+        identity_id=args.identity_id,
+        handle=args.handle,
+    )
     return serve_stdio(session)
 
 

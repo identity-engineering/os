@@ -20,7 +20,6 @@ def _resolve_ie_command() -> list[str]:
     which = shutil.which("ie")
     if which:
         return [which, "surface", "mcp"]
-    # Fall back to the running interpreter + module path.
     return [sys.executable, "-m", "runtime.mcp_handler"]
 
 
@@ -41,14 +40,29 @@ def register(app: typer.Typer) -> None:
             "--space-id",
             help="Optional space_id stamp on actor envelope",
         ),
+        identity_id: Optional[str] = typer.Option(
+            None,
+            "--identity-id",
+            help="Bind this local identity_id (default: install active)",
+        ),
+        handle: Optional[str] = typer.Option(
+            None,
+            "--handle",
+            help="Bind this local_handle (default: install active)",
+        ),
     ) -> None:
-        """Run local stdio MCP Surface bound to the install Identity."""
+        """Run local stdio MCP Surface bound to one Identity in the install."""
         root = path if path is not None else require_ie_root()
-        # Validate binding early so failures surface before the stdio loop.
-        bind_local_session(root, space_id=space_id)
+        bind_local_session(
+            root, space_id=space_id, identity_id=identity_id, handle=handle
+        )
         argv = ["--install", str(root)]
         if space_id:
             argv.extend(["--space-id", space_id])
+        if identity_id:
+            argv.extend(["--identity-id", identity_id])
+        if handle:
+            argv.extend(["--handle", handle])
         raise SystemExit(mcp_main(argv))
 
     @surface_app.command("mcp-config")
@@ -69,38 +83,46 @@ def register(app: typer.Typer) -> None:
             "--name",
             help="Server key / display name in the client config",
         ),
+        identity_id: Optional[str] = typer.Option(
+            None,
+            "--identity-id",
+            help="Pin MCP session to this local identity_id",
+        ),
+        handle: Optional[str] = typer.Option(
+            None,
+            "--handle",
+            help="Pin MCP session to this local_handle",
+        ),
     ) -> None:
         """Print a ready-to-paste MCP client config for the local install."""
         root = (path if path is not None else require_ie_root()).expanduser().resolve()
-        # Validate that the install can bind (fails fast with a clear error).
-        bind_local_session(root)
+        session = bind_local_session(
+            root, identity_id=identity_id, handle=handle
+        )
 
         cmd = _resolve_ie_command()
-        # Prefer explicit path so clients do not depend on active-root discovery.
         if cmd[-2:] == ["surface", "mcp"]:
             args = ["surface", "mcp", "--path", str(root)]
             command = cmd[0]
         else:
-            # python -m runtime.mcp_handler --install <root>
             command = cmd[0]
             args = cmd[1:] + ["--install", str(root)]
+
+        if identity_id:
+            args.extend(["--identity-id", identity_id])
+        elif handle:
+            args.extend(["--handle", handle])
 
         fmt = format.strip().lower()
         if fmt not in {"claude", "cursor", "generic"}:
             raise SystemExit("--format must be one of: claude | cursor | generic")
 
-        if fmt == "claude":
-            # Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json
-            payload = {
-                "mcpServers": {
-                    name: {
-                        "command": command,
-                        "args": args,
-                    }
-                }
-            }
-        elif fmt == "cursor":
-            # Cursor mcp.json style
+        notes = (
+            f"Session binds to identity_id={session.identity_id} "
+            f"handle={session.local_handle}."
+        )
+
+        if fmt in {"claude", "cursor"}:
             payload = {
                 "mcpServers": {
                     name: {
@@ -115,10 +137,7 @@ def register(app: typer.Typer) -> None:
                 "command": command,
                 "args": args,
                 "transport": "stdio",
-                "notes": (
-                    "Wire this stdio process into any MCP-capable client. "
-                    "Session binds to the install's active Identity."
-                ),
+                "notes": notes,
             }
 
         typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))

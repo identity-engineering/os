@@ -4,7 +4,9 @@ Local Free installs expose the same Surface Runtime handlers over **stdio JSON-R
 
 ## Binding rule
 
-- Session authenticates as the install's **active Identity** (`IdentitySession`).
+- Session authenticates as **one** Identity in the install.
+- Default: install `active_identity_id`.
+- Override for process lifetime: `--identity-id` or `--handle` (does **not** mutate install active).
 - Every tool result includes `actor` with `actor_identity_id`.
 - `ie_signal_apply` forces `to` / `to_handle` to the bound Identity. Cross-Identity write is not exposed in local tools.
 - Optional `space_id` may be stamped on the actor envelope.
@@ -14,15 +16,13 @@ See `docs/account-identity-model.md` and `docs/space-model.md`.
 ## Run
 
 ```bash
-# Against the active install (IE_ROOT or nearest .ie/ie.sqlite3)
-python -m runtime.mcp_handler
-
-# Explicit path
+# Against the active install Identity
+ie surface mcp
 python -m runtime.mcp_handler --install ~/ie
 
-# CLI entry (same process)
-ie surface mcp
-ie surface mcp --path ~/ie
+# Pin a non-active local Identity for this process only
+ie surface mcp --path ~/ie --handle agent-runtime
+ie surface mcp --identity-id <uuid>
 ```
 
 Wire any MCP-capable agent/client to the stdio process. Protocol version: `2024-11-05`.
@@ -30,12 +30,12 @@ Wire any MCP-capable agent/client to the stdio process. Protocol version: `2024-
 ### Zero-friction config
 
 ```bash
-ie surface mcp-config                 # Claude Desktop style (default)
-ie surface mcp-config --format cursor
-ie surface mcp-config --format generic --path ~/ie
+ie surface mcp-config
+ie surface mcp-config --format cursor --handle agent-runtime
+ie surface mcp-config --format generic --identity-id <uuid> --path ~/ie
 ```
 
-Prints a ready-to-paste JSON snippet with absolute install path so the client does not depend on active-root discovery.
+Prints a ready-to-paste JSON snippet with absolute install path and optional Identity pin.
 
 ## Tools
 
@@ -50,14 +50,14 @@ Prints a ready-to-paste JSON snippet with absolute install path so the client do
 | `ie_grants_list` | Jurisdiction grants on the bound Identity |
 | `ie_requests_list` | Inbound estimate-request inbox |
 | `ie_registry_list` | Peer handles |
-| `ie_identity_list` | Identities in this install + active marker |
+| `ie_identity_list` | Identities in this install; marks session-bound |
 
 All tools share the same policy, receipts, and geometry paths as CLI/HTTP.
 
 ## Non-goals (current local surface)
 
-- Managed-hosted MCP (belongs in `os-managed`)
-- MCP session switch across Identities (active only; list is read-only)
+- Managed-hosted MCP (see #86, `os-managed`)
+- In-process Identity switch without restart (restart with `--identity-id` instead)
 - `ie_mature` via MCP (source-file contract → follow-up)
 - Auto-approve critical Surface policy changes
 - Full MCP resource/prompt surfaces beyond tools
@@ -69,16 +69,19 @@ All tools share the same policy, receipts, and geometry paths as CLI/HTTP.
 - [x] Local MCP server runs against a Free install
 - [x] Tools cannot bypass Identity binding
 - [x] Tests for apply + at least one read path via MCP
-- [x] Docs updated; #29 MCP checkbox closable
 
-### Owner surface (#84)
+### Owner surface (#84) — done
 
-- [x] Owner tools: freedom, geometry feed, grants, requests, identity list
-- [x] `ie surface mcp-config` helper
-- [x] Tests extended; docs + `next.md` aligned
+- [x] Owner tools + `ie surface mcp-config`
+
+### Multi-Identity bind (#87)
+
+- [x] `--identity-id` / `--handle` session bind without mutating install active
+- [x] mcp-config can pin Identity
+- [x] Tests for alternate bind
 
 ## Related
 
 - `runtime/mcp_session.py`, `runtime/mcp_handler.py`, `ie/mcp_cmd.py`
 - `docs/agent-contract-v1.md`, `docs/realization-surface-runtime.md`
-- Issue #60 (closed), #84, #29
+- Issues #60, #84, #86, #87, #29
