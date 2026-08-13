@@ -3,7 +3,8 @@
 Status: **v0 implemented** (hook + explicit) · OS #8
 
 Related: `docs/tensor.md`, `docs/geometry-hook.md`, `docs/probes-as-bridge.md`,
-`docs/effective-freedom.md`, issue #8, issue #44 (delivery modes)
+`docs/effective-freedom.md`, `docs/geometry-feed-delivery.md` (#44),
+issue #8, issue #44 (delivery modes)
 
 ## Core claim
 
@@ -24,23 +25,29 @@ Without the feed the Surface is a sensor; with the feed it becomes metabolism.
 | relative_mass_proxy / interaction_density | Registry `effect_on_me_json` | owner | observational snapshot + tension_sum; revisioned |
 | existence / continuity notes | already on Registry via signal path | owner | no double-write |
 | Membrane policy observation | observational only | — | never becomes Access/Jurisdiction claim |
-| derived Effective Freedom | live readout + optional profile | owner | deferred (needs #40 probes) |
+| derived Effective Freedom | live readout + optional profile | owner | deferred (needs continuous probe inputs) |
 | new dimension candidates | Metric Stem catalogue | owner explicit | not auto-promoted in v0 |
 
 Self-Mass remains **never** written from a self Geometry Receipt.
 
 ## Delivery modes
 
+Field→sink mapping is this file. **How** the feed is delivered (hook / explicit /
+adapter / none), honesty rules, capability declaration, and the harness adapter
+sequence are specified in **`docs/geometry-feed-delivery.md`** (OS #44).
+
 | Mode | Status |
 |------|--------|
 | **hook** | shipped — after successful apply + persist |
 | **explicit** | shipped — `ie geometry feed` |
-| **adapter** | documented only |
-| **none / lagging** | supported via opt-out `emit_geometry_receipt=False` |
+| **adapter** | contract locked — harness sequence in delivery doc |
+| **none / lagging** | supported via no-DB or opt-out `emit_geometry_receipt=False` |
+
+Local status: `geometry_feed: hook` (implies explicit available).
 
 ## Implementation (v0)
 
-- `runtime/geometry_feed.py` — `feed_receipt`, `feed_pending`, `feed_capability`
+- `runtime/geometry_feed.py` — `feed_receipt`, `feed_pending`, `feed_capability`, `feed_modes_available`
 - Schema migration 5 — `geometry_receipts.fed_at` for idempotency
 - Hook wired in `runtime/apply.py` (best-effort; never fails apply)
 - CLI: `ie geometry feed [--receipt-id | --all] [--force]`
@@ -62,11 +69,13 @@ Self-Mass remains **never** written from a self Geometry Receipt.
 - [x] Hook path after Interact remains best-effort and never fails apply
 - [x] Tests for write path + idempotent re-feed
 - [x] Linked from `docs/next.md`, `docs/tensor.md`
+- [x] Delivery modes contract (#44) in `docs/geometry-feed-delivery.md`
 
 ## Related
 
 - Issue #8
 - Issue #44 (delivery modes)
+- `docs/geometry-feed-delivery.md`
 - `docs/tensor.md`
 - `docs/geometry-hook.md`
 - `docs/effective-freedom.md`

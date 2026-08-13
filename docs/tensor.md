@@ -36,6 +36,9 @@ The **intended** primary update path is the **Geometry Receipt** produced by the
 	commit supplied Registry and Metric Stem changes; no Geometry Receipt causes
 	an inferred rewrite. Continuous derived Tension/Tensor feed is specified in
 	`docs/geometry-feed.md` and tracked as **OS #8**.
+- **How** the feed is delivered (hook / explicit / adapter / none) and what may
+	honestly be claimed in each mode is specified in
+	`docs/geometry-feed-delivery.md` (OS #44).
 - Receipts never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
 
 ## Storage implication
@@ -53,3 +56,4 @@ Skills are storage-agnostic.
 - Curvature = later derived quantity
 - Geometry Receipt = the continuous Probe bridge that keeps the Tensor alive
 - Feed = ownership-gated write-back from Receipt → alloys / Tension / Effective Freedom (`docs/geometry-feed.md`)
+- Delivery modes = honesty layer for harnesses without an apply-hook (`docs/geometry-feed-delivery.md`)

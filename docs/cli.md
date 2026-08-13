@@ -83,6 +83,11 @@ ie geometry feed --force         # re-feed already marked receipts
 
 Hook path runs automatically after successful `ie signal apply`.
 
+`ie status` reports `geometry_feed: hook` on a local install with a database
+(implies explicit is also available). Delivery modes, honesty rules, and the
+harness **adapter** sequence are specified in `docs/geometry-feed-delivery.md`
+(OS #44). Field→sink mapping remains in `docs/geometry-feed.md` (OS #8).
+
 ### TIM mapping (short)
 
 - **Think** — no CLI. Phase label for inward, non-emitting work (plan-mode, private memory, prompts).
@@ -155,3 +160,4 @@ does not rewrite append-only audit history or policy history.
 - `docs/surface-runtime-local.md`
 - `docs/access-jurisdiction-probes.md`
 - `docs/geometry-feed.md`
+- `docs/geometry-feed-delivery.md`

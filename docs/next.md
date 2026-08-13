@@ -18,6 +18,7 @@
 - **Identity creation lineage + default jurisdiction** (`docs/identity-creation-jurisdiction.md`) — creator grants, transfer, Child revocation, residual red button
 - **Surface Runtime v0 complete** (#29 closed) — CLI + HTTP + MCP shipped
 - **Geometry Receipt feed v0** (`docs/geometry-feed.md`) — hook + explicit CLI; Registry effect_on_me write-back (#8)
+- **Geometry feed delivery modes** (`docs/geometry-feed-delivery.md`) — hook / explicit / adapter / none honesty + adapter sequence (#44)
 - **Jurisdiction grants schema v6** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; residual_emergency non-transferable
 - **Access & Jurisdiction probes** (`docs/access-jurisdiction-probes.md`, `access_jurisdiction_profiles`, `ie jurisdiction`) — owner-gated measurement of degrees of freedom (#40 closed)
 
@@ -31,6 +32,6 @@
 
 ## Related issues
 
-#8 (Tensor feed — v0 shipped on this branch), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — closed), #31 (request/inbox), #40 (Access/Jurisdiction), #44 (feed delivery modes), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), #61 (probes + Space membrane), Cloudflare R2 releases.
+#8 (Tensor feed — v0 shipped), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — closed), #31 (request/inbox), #40 (Access/Jurisdiction — closed), #44 (feed delivery modes), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), #61 (probes + Space membrane), #73 (Frequency / Resonance — after richer Tensor), Cloudflare R2 releases.
 
 Design note: `docs/effective-freedom.md`.
