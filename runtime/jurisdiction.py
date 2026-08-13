@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 from uuid import uuid4
 
+from .context import ContextError, resolve_active_identity_row
 from .database import Database, DatabaseError, canonical_json, database_path, utcnow
 
 
@@ -71,10 +72,10 @@ def _normalize_layer(layer: dict[str, Any], allowed: tuple[str, ...], label: str
 
 
 def _local_identity(conn) -> Any:
-    row = conn.execute("SELECT * FROM identity LIMIT 1").fetchone()
-    if row is None:
-        raise JurisdictionError("no local identity in database")
-    return row
+    try:
+        return resolve_active_identity_row(conn)
+    except ContextError as exc:
+        raise JurisdictionError(str(exc)) from exc
 
 
 def write_profile(
@@ -87,7 +88,7 @@ def write_profile(
     notes: str = "",
     source: str = "owner_probe",
 ) -> dict[str, Any]:
-    """Owner-gated write of an Access + Jurisdiction profile (V1: local Identity only)."""
+    """Owner-gated write of an Access + Jurisdiction profile (active Identity)."""
     if not (0.0 <= float(confidence) <= 1.0):
         raise JurisdictionError("confidence must be in [0, 1]")
 
@@ -218,7 +219,7 @@ def get_profile(
 
 
 def list_profiles(install_root: Union[str, Path]) -> list[dict[str, Any]]:
-    """List latest profile per object for the local Identity."""
+    """List latest profile per object for the active Identity."""
     root = Path(install_root).expanduser().resolve()
     db_path = database_path(root)
     if not db_path.is_file():
