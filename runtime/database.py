@@ -13,7 +13,7 @@ from uuid import uuid4
 
 DB_DIR_NAME = ".ie"
 DB_FILENAME = "ie.sqlite3"
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 class DatabaseError(RuntimeError):
@@ -626,6 +626,8 @@ MIGRATIONS = (
     (5, "geometry_receipt_fed_at", GEOMETRY_FEED_MIGRATION),
     (6, "jurisdiction_grants_and_lineage", JURISDICTION_GRANTS_MIGRATION),
     (7, "access_jurisdiction_profiles", ACCESS_JURISDICTION_PROFILES_MIGRATION),
+    # v8 applied via Python helper (identity UNIQUE drop + spaces)
+    (8, "local_space_multi_identity", "PYTHON:space_bootstrap.apply_local_space_multi_identity_migration"),
 )
 
 
@@ -667,14 +669,30 @@ def migrate(connection: sqlite3.Connection) -> int:
             continue
         checksum = sha256_text(sql)
         try:
-            connection.executescript(
-                "BEGIN IMMEDIATE;\n"
-                + sql
-                + "\nINSERT INTO schema_migrations(version, name, checksum, applied_at) "
-                f"VALUES ({version}, {json.dumps(name)}, {json.dumps(checksum)}, {json.dumps(utcnow())});\n"
-                f"PRAGMA user_version = {version};\nCOMMIT;"
-            )
+            if version == 8:
+                connection.execute("BEGIN IMMEDIATE")
+                from .space_bootstrap import apply_local_space_multi_identity_migration
+
+                apply_local_space_multi_identity_migration(connection)
+                connection.execute(
+                    "INSERT INTO schema_migrations(version, name, checksum, applied_at) "
+                    "VALUES (?, ?, ?, ?)",
+                    (version, name, checksum, utcnow()),
+                )
+                connection.execute(f"PRAGMA user_version = {version}")
+                connection.commit()
+            else:
+                connection.executescript(
+                    "BEGIN IMMEDIATE;\n"
+                    + sql
+                    + "\nINSERT INTO schema_migrations(version, name, checksum, applied_at) "
+                    f"VALUES ({version}, {json.dumps(name)}, {json.dumps(checksum)}, {json.dumps(utcnow())});\n"
+                    f"PRAGMA user_version = {version};\nCOMMIT;"
+                )
         except sqlite3.Error as exc:
+            connection.rollback()
+            raise DatabaseError(f"Migration {version} failed: {exc}") from exc
+        except Exception as exc:
             connection.rollback()
             raise DatabaseError(f"Migration {version} failed: {exc}") from exc
         current = version
@@ -849,6 +867,14 @@ def initialize_database(
                 granted_by_identity_id=identity_id,
                 granted_at=now,
                 note="v1-genesis-creation",
+            )
+            from .space_bootstrap import ensure_local_space_for_identity
+
+            ensure_local_space_for_identity(
+                connection,
+                install_id=install_id,
+                identity_id=identity_id,
+                created_at=now,
             )
     finally:
         connection.close()
