@@ -234,10 +234,26 @@ class SQLiteStore:
             yield database
 
     def identity(self) -> Any:
+        """Resolve the active Identity for this install (OS #77)."""
         with self.open() as database:
-            row = database.conn.execute(
-                "SELECT * FROM identity LIMIT 1"
-            ).fetchone()
+            conn = database.conn
+            install = conn.execute("SELECT * FROM install LIMIT 1").fetchone()
+            active_id = None
+            if install is not None:
+                try:
+                    active_id = install["active_identity_id"]
+                except (KeyError, IndexError, TypeError):
+                    active_id = None
+            row = None
+            if active_id:
+                row = conn.execute(
+                    "SELECT * FROM identity WHERE identity_id = ?",
+                    (active_id,),
+                ).fetchone()
+            if row is None:
+                row = conn.execute(
+                    "SELECT * FROM identity ORDER BY created_at ASC LIMIT 1"
+                ).fetchone()
         if row is None:
             raise DatabaseError(f"IE database has no local identity: {self.path}")
         return row
