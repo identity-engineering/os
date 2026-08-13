@@ -16,6 +16,21 @@ from .policy import LocalPolicy
 from .sqlite_store import SQLiteStore
 
 
+def _membrane_policy_for_install(registry_root: Union[str, Path]) -> Optional[dict]:
+    """Load primary Space membrane policy when Space rows exist."""
+    try:
+        from .context import get_active_identity, get_primary_space_for_identity
+        from .membrane import load_space_policy_from_row
+
+        identity = get_active_identity(registry_root)
+        space = get_primary_space_for_identity(registry_root, identity["identity_id"])
+        if space is None:
+            return None
+        return load_space_policy_from_row(space)
+    except Exception:  # noqa: BLE001 — membrane is additive; never fail apply bootstrap
+        return None
+
+
 def apply_interaction_signal(
     signal: InteractionSignal,
     *,
@@ -65,14 +80,33 @@ def apply_interaction_signal(
 
     fields_to_apply, rejected, quarantine = policy.evaluate(signal)
 
+    # Space membrane inbound filter (additive to Surface LocalPolicy).
+    membrane_stripped: list[str] = []
+    membrane_policy = _membrane_policy_for_install(registry_root)
+    if membrane_policy is not None and fields_to_apply:
+        from .membrane import filter_inbound_fields
+
+        membrane = filter_inbound_fields(fields_to_apply, membrane_policy)
+        membrane_stripped = list(membrane.stripped_fields)
+        if membrane_stripped:
+            allowed_set = set(membrane.allowed_fields)
+            fields_to_apply = [f for f in fields_to_apply if f in allowed_set]
+            for name in membrane_stripped:
+                rejected.append(
+                    {"field": name, "reason": "space membrane inbound deny"}
+                )
+
     if not fields_to_apply and rejected:
+        reason = "policy refused all fields"
+        if membrane_stripped:
+            reason += f"; membrane_stripped={','.join(membrane_stripped)}"
         receipt = Receipt.create(
             ApplyStatus.REJECTED,
             signal.from_handle,
             signal.to_handle,
             event_id=event_id,
             rejected=rejected,
-            reason="policy refused all fields",
+            reason=reason,
             quarantine=quarantine,
         )
         store.persist_signal(
@@ -116,6 +150,10 @@ def apply_interaction_signal(
     if "relation_pull" in fields_to_apply and signal.relation_pull is not None:
         applied.append("relation_pull")
 
+    reason = "applied to foreign-estimate zone" if applied else "no fields applied"
+    if membrane_stripped:
+        reason += f"; membrane_stripped={','.join(membrane_stripped)}"
+
     receipt = Receipt.create(
         ApplyStatus.APPLIED if not rejected else ApplyStatus.PARTIAL,
         signal.from_handle,
@@ -123,7 +161,7 @@ def apply_interaction_signal(
         event_id=event_id,
         applied=applied,
         rejected=rejected,
-        reason="applied to foreign-estimate zone" if applied else "no fields applied",
+        reason=reason,
         quarantine=quarantine,
     )
 
