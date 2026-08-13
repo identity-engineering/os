@@ -277,15 +277,18 @@ def status(
         raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
     info = collect_status(root)
     from runtime.geometry_feed import feed_capability
+    from runtime.freedom import compute_freedom_readout
+    from runtime.mass import compute_mass_readout
 
     info["geometry_feed"] = feed_capability(root)
+    freedom = compute_freedom_readout(root)
+    info["effective_freedom"] = freedom.effective_freedom
+    info["freedom_confidence"] = freedom.confidence
     if json_out:
         typer.echo(status_json(info))
         return
     typer.echo(format_status(info))
     typer.echo(f"  geometry_feed: {info['geometry_feed']}")
-    from runtime.mass import compute_mass_readout
-
     readout = compute_mass_readout(root)
     mass_s = (
         f"{readout.emergent_self_mass:.2f}"
@@ -296,6 +299,50 @@ def status(
         f"  self-Mass:  {mass_s}  "
         f"(estimators={readout.estimator_count}, volume={readout.volume_count})"
     )
+    typer.echo(
+        f"  effective_freedom: {freedom.effective_freedom:.4f}  "
+        f"(unbound={freedom.unbound_dof:.3f}, intensity={freedom.constraint_intensity:.3f}, "
+        f"c={freedom.confidence:.2f})"
+    )
+
+
+@app.command("freedom")
+def freedom(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(
+        False, "--json", help="Print full FreedomReadout as JSON"
+    ),
+    detail: bool = typer.Option(
+        False, "--detail", "-d", help="Show source components (human output)"
+    ),
+) -> None:
+    """Effective Freedom: unbound DoF / (1 + constraint intensity).
+
+    Derived live from Geometry Receipts, geometry-feed tension, quarantines,
+    residual grants, and optional self Access/Jurisdiction probe.
+    Never self-declared; no primary storage. See docs/effective-freedom.md.
+    """
+    root = path.resolve() if path else require_ie_root()
+    if not database_path(root).is_file():
+        raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
+
+    from runtime.freedom import compute_freedom_readout
+
+    readout = compute_freedom_readout(root)
+    if json_out:
+        typer.echo(json.dumps(readout.to_dict(), indent=2, ensure_ascii=False))
+        return
+
+    typer.echo(f"effective freedom: {readout.effective_freedom:.6f}")
+    typer.echo(f"  unbound DoF:           {readout.unbound_dof:.6f}")
+    typer.echo(f"  constraint intensity:  {readout.constraint_intensity:.6f}")
+    typer.echo(f"  confidence:            {readout.confidence:.4f}")
+    typer.echo(f"  formula:               v{readout.formula_version}")
+    for note in readout.notes:
+        typer.echo(f"  note: {note}")
+    if detail:
+        typer.echo("\nsources:")
+        typer.echo(json.dumps(readout.sources, indent=2, ensure_ascii=False))
 
 
 def _database_root(path: Optional[Path]) -> Path:
@@ -848,15 +895,7 @@ def mature(
     ),
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
 ) -> None:
-    """Mature: commit one directed, source-backed local learning step.
-
-    Stem, Workspace, Registry, Trajectory, evidence, Geometry, and explicit
-    reassessment requests are committed atomically. Emergent Self-Mass is never
-    written by this command.
-
-    Think is not a CLI: it is a phase label (inward, non-emitting) provided by
-    substrate + prompts. Interact is tools/MCP/signals (see `ie signal apply`).
-    """
+    """Mature: commit one directed, source-backed local learning step."""
     root = path.resolve() if path else require_ie_root()
     if not database_path(root).is_file():
         raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
@@ -967,12 +1006,7 @@ def mass(
         False, "--detail", "-d", help="Per-contributor table (human output)"
     ),
 ) -> None:
-    """Emergent self-Mass from foreign-estimate zone (never self-declared).
-
-    Weighted mean of received coarse_mass_estimate values:
-    weight = (sender_Mass/100) * confidence * depth_factor(accumulated_depth).
-    See docs/mass.md.
-    """
+    """Emergent self-Mass from foreign-estimate zone (never self-declared)."""
     root = path.resolve() if path else require_ie_root()
     if not database_path(root).is_file():
         raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
@@ -1043,14 +1077,16 @@ def catalogue(
 def reindex(
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
 ) -> None:
-    """Recompute derived readouts (volume / emergent self-Mass). Live only in v0."""
+    """Recompute derived readouts (volume / emergent self-Mass / freedom). Live only in v0."""
     root = path.resolve() if path else require_ie_root()
     if not database_path(root).is_file():
         raise SystemExit(f"No .ie/ie.sqlite3 under {root}")
 
+    from runtime.freedom import compute_freedom_readout
     from runtime.mass import compute_mass_readout
 
     readout = compute_mass_readout(root)
+    freedom = compute_freedom_readout(root)
     mass_s = (
         f"{readout.emergent_self_mass:.4f}"
         if readout.emergent_self_mass is not None
@@ -1060,6 +1096,10 @@ def reindex(
     typer.echo(f"  emergent self-Mass: {mass_s}")
     typer.echo(f"  estimators:         {readout.estimator_count}")
     typer.echo(f"  volume count:       {readout.volume_count}")
+    typer.echo(
+        f"  effective freedom:  {freedom.effective_freedom:.6f}  "
+        f"(c={freedom.confidence:.2f})"
+    )
 
 
 if __name__ == "__main__":
