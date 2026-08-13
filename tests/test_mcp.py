@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from runtime.database import initialize_database
+from runtime.database import Database, database_path, initialize_database
 from runtime.mcp_handler import McpSurface, handle_rpc, TOOL_DEFS
 from runtime.mcp_session import bind_local_session
 from runtime.models import ApplyStatus
+from runtime.space_bootstrap import create_additional_identity
 
 EXPECTED_TOOLS = {
     "ie_status",
@@ -24,6 +24,20 @@ EXPECTED_TOOLS = {
     "ie_registry_list",
     "ie_identity_list",
 }
+
+
+def _add_second_identity(install: Path, handle: str = "other") -> str:
+    with Database(database_path(install)) as database:
+        with database.transaction() as conn:
+            install_row = conn.execute("SELECT install_id FROM install LIMIT 1").fetchone()
+            result = create_additional_identity(
+                conn,
+                install_id=install_row["install_id"],
+                handle=handle,
+                preferred_name=handle.title(),
+                substrate="human",
+            )
+    return str(result["identity_id"])
 
 
 class McpSessionTests(unittest.TestCase):
@@ -49,6 +63,31 @@ class McpSessionTests(unittest.TestCase):
         if session.space_id is not None:
             self.assertEqual(env.get("space_id"), session.space_id)
             self.assertTrue(isinstance(session.space_id, str))
+
+    def test_bind_by_identity_id(self) -> None:
+        other_id = _add_second_identity(self.install, handle="other")
+        session = bind_local_session(self.install, identity_id=other_id)
+        self.assertEqual(session.identity_id, other_id)
+        self.assertEqual(session.local_handle, "other")
+        # install active remains the first Identity
+        active = bind_local_session(self.install)
+        self.assertEqual(active.identity_id, self.identity_id)
+
+    def test_bind_by_handle(self) -> None:
+        other_id = _add_second_identity(self.install, handle="agent")
+        session = bind_local_session(self.install, handle="agent")
+        self.assertEqual(session.identity_id, other_id)
+        self.assertEqual(session.local_handle, "agent")
+
+    def test_bind_rejects_unknown_handle(self) -> None:
+        with self.assertRaises(RuntimeError):
+            bind_local_session(self.install, handle="does-not-exist")
+
+    def test_bind_rejects_both_selectors(self) -> None:
+        with self.assertRaises(ValueError):
+            bind_local_session(
+                self.install, identity_id=self.identity_id, handle="me"
+            )
 
     def test_bind_rejects_missing_db(self) -> None:
         with self.assertRaises(FileNotFoundError):
@@ -130,14 +169,15 @@ class McpToolTests(unittest.TestCase):
         self.assertIn("actor", result)
         self.assertIn("peers", result)
 
-    def test_identity_list_marks_active(self) -> None:
-        result = self.surface.call_tool("ie_identity_list", {})
-        self.assertIn("actor", result)
+    def test_identity_list_marks_session_bound(self) -> None:
+        other_id = _add_second_identity(self.install, handle="other")
+        session = bind_local_session(self.install, identity_id=other_id)
+        surface = McpSurface(session)
+        result = surface.call_tool("ie_identity_list", {})
         identities = result["identities"]
-        self.assertTrue(identities)
-        active = [i for i in identities if i.get("active")]
-        self.assertEqual(len(active), 1)
-        self.assertEqual(active[0]["identity_id"], self.identity_id)
+        bound = [i for i in identities if i.get("session_bound")]
+        self.assertEqual(len(bound), 1)
+        self.assertEqual(bound[0]["identity_id"], other_id)
 
     def test_signal_apply_forces_to_bound_identity(self) -> None:
         signal = {
