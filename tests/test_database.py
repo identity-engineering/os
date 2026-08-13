@@ -13,6 +13,7 @@ from typer.testing import CliRunner
 from ie.cli import app
 from runtime.database import (
     Database,
+    SCHEMA_VERSION,
     backup_database,
     database_info,
     database_integrity_check,
@@ -70,7 +71,6 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 },
             )
 
-            # Migration 7: profiles table exists
             tables = {
                 row[0]
                 for row in connection.execute(
@@ -78,12 +78,26 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchall()
             }
             self.assertIn("access_jurisdiction_profiles", tables)
+            self.assertIn("spaces", tables)
+            self.assertIn("space_memberships", tables)
+
+            # Local mini-Space + membership created on init (#77)
+            space_count = connection.execute("SELECT COUNT(*) FROM spaces").fetchone()[0]
+            self.assertEqual(space_count, 1)
+            membership = connection.execute(
+                "SELECT primary_host, status FROM space_memberships LIMIT 1"
+            ).fetchone()
+            self.assertEqual(dict(membership), {"primary_host": 1, "status": "active"})
+            install = connection.execute(
+                "SELECT active_identity_id FROM install LIMIT 1"
+            ).fetchone()
+            self.assertIsNotNone(install["active_identity_id"])
 
         info = database_info(db_path)
-        self.assertEqual(info["schema_version"], 7)
+        self.assertEqual(info["schema_version"], SCHEMA_VERSION)
         self.assertEqual(info["foreign_keys"], 1)
         self.assertEqual(info["journal_mode"], "wal")
-        self.assertGreaterEqual(info["table_count"], 22)
+        self.assertGreaterEqual(info["table_count"], 24)
         with Database(db_path) as database:
             for table in ("registry_entry_revisions", "workspace_item_revisions"):
                 self.assertEqual(
@@ -109,7 +123,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             ).fetchone()
             self.assertEqual(dict(row), {"title": "A", "content": "B"})
             migrations = database.conn.execute(
-                "SELECT version, name FROM schema_migrations"
+                "SELECT version, name FROM schema_migrations ORDER BY version"
             ).fetchall()
             self.assertEqual(
                 [tuple(row) for row in migrations],
@@ -121,6 +135,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
                     (5, "geometry_receipt_fed_at"),
                     (6, "jurisdiction_grants_and_lineage"),
                     (7, "access_jurisdiction_profiles"),
+                    (8, "local_space_multi_identity"),
                 ],
             )
 
@@ -288,18 +303,30 @@ class DatabaseLifecycleTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
-            self.assertEqual(database.conn.execute("PRAGMA user_version").fetchone()[0], 7)
+            self.assertEqual(
+                database.conn.execute("PRAGMA user_version").fetchone()[0], SCHEMA_VERSION
+            )
             # Jurisdiction package backfilled for the stub identity
             grant_count = database.conn.execute(
                 "SELECT COUNT(*) FROM identity_grants WHERE object_identity_id = 'id-1'"
             ).fetchone()[0]
             self.assertEqual(grant_count, 5)
-            # Profiles table present after migration 6
+            # Profiles table present after migration 7
             self.assertEqual(
                 database.conn.execute(
                     "SELECT COUNT(*) FROM access_jurisdiction_profiles"
                 ).fetchone()[0],
                 0,
+            )
+            # v8: spaces + membership for the stub identity
+            self.assertEqual(
+                database.conn.execute("SELECT COUNT(*) FROM spaces").fetchone()[0], 1
+            )
+            self.assertEqual(
+                database.conn.execute(
+                    "SELECT COUNT(*) FROM space_memberships WHERE identity_id = 'id-1'"
+                ).fetchone()[0],
+                1,
             )
 
     def test_existing_database_is_not_overwritten(self):
@@ -332,7 +359,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--json"]
         )
         self.assertEqual(info.exit_code, 0, info.output)
-        self.assertEqual(json.loads(info.output)["schema_version"], 7)
+        self.assertEqual(json.loads(info.output)["schema_version"], SCHEMA_VERSION)
 
         integrity = runner.invoke(
             app, ["db", "integrity-check", "--path", str(self.root), "--json"]
@@ -344,7 +371,7 @@ class DatabaseLifecycleTests(unittest.TestCase):
             app, ["db", "info", "--path", str(self.root), "--no-json"]
         )
         self.assertEqual(info_text.exit_code, 0, info_text.output)
-        self.assertIn("schema_version: 7", info_text.output)
+        self.assertIn(f"schema_version: {SCHEMA_VERSION}", info_text.output)
         self.assertFalse(info_text.output.lstrip().startswith("{"))
 
         integrity_text = runner.invoke(
