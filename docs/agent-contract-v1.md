@@ -24,6 +24,13 @@ When multiple Identities exist under one account or install, the agent must
 know which `identity_id` (or local handle) it is bound to. Context switch is
 explicit.
 
+## Context Layer skills (human interface)
+
+Standard skills live under `<install>/skills/<name>/SKILL.md` (see
+`docs/context-layer.md`). Humans invoke them (e.g. `/mature`). **Agents read
+the skill text and execute CLI/MCP commands** listed there. Skills are not a
+second write API.
+
 ## MCP binding (local V1)
 
 Agents that speak MCP may attach to the local Surface via stdio:
@@ -33,7 +40,8 @@ ie surface mcp
 # or: python -m runtime.mcp_handler --install <root>
 ```
 
-Session is bound to the single install Identity. Every tool result carries
+Session is bound to one Identity (default install active; optional
+`--identity-id` / `--handle`). Every tool result carries
 `actor.actor_identity_id`. `ie_signal_apply` forces the destination to the
 bound Identity. See `docs/mcp-surface-v0.md`.
 
@@ -102,6 +110,7 @@ Mature is an owned learning operation on **a specific Identity**.
   default is refuse.
 - Critical policy or Surface changes still follow the critical-approval path in
   `docs/identity-surface.md`.
+- Prefer the **mature** skill text + `ie mature` CLI for human-triggered sessions.
 
 A Mature request should include:
 
