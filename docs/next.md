@@ -21,17 +21,21 @@
 - **Geometry feed delivery modes** (`docs/geometry-feed-delivery.md`) — hook / explicit / adapter / none honesty + adapter sequence (#44)
 - **Jurisdiction grants schema v6** (`identity_grants` + `creator_identity_id`) — creation-time package issued on init; residual_emergency non-transferable
 - **Access & Jurisdiction probes** (`docs/access-jurisdiction-probes.md`, `access_jurisdiction_profiles`, `ie jurisdiction`) — owner-gated measurement of degrees of freedom (#40 closed)
+- **Effective Freedom scalar readout v0** (`docs/effective-freedom.md`, `ie freedom`) — derived live; dimensional Freedom still open
+- **Estimate request + inbox v0** (`docs/estimate-request.md`, `ie request`) — bidirectional sensor inbound half (#31 closed)
+- **Probes ↔ Space membrane alignment + grant list/revoke/transfer CLI** (`ie grant`, #61 closed)
 
 ## Next
 
-1. **Space membrane export/inbound + grant transfer/revoke CLI** — follow-ups from #40 / #61 (probes + grants schema shipped)
-2. **Richer Tensor / Effective Freedom derivation** from fed receipts + probes
-3. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
-4. **Managed multi-identity + Space membership layer**  
-   Identity rows, space membership, installation→identity binding, grant table — Open Core contracts + private `os-managed`
+1. **Dimensional Effective Freedom** — per Metric-Stem dimension once receipt/feed alloys carry denser dimension IDs (scalar stays summary only)
+2. **Cloudflare R2** under org domain + automated date-tag publish + `brew install` dogfood
+3. **Managed multi-identity + Space membership layer**  
+   Identity rows, space membership, installation→identity binding — Open Core contracts + private `os-managed`
+4. **Space membrane export/inbound enforcement** (runtime, beyond probe documentation)
+5. **Frequency / Resonance suggestions** (#73) — after dimensional Tensor density improves
 
 ## Related issues
 
-#8 (Tensor feed — v0 shipped), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — closed), #31 (request/inbox), #40 (Access/Jurisdiction — closed), #44 (feed delivery modes), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), #61 (probes + Space membrane), #73 (Frequency / Resonance — after richer Tensor), Cloudflare R2 releases.
+#8 (Tensor feed — closed), #15 (self-Mass shipped), #18 (CLI), #29 (Surface Runtime — closed), #31 (request/inbox — closed), #40 (Access/Jurisdiction — closed), #44 (feed delivery modes — closed), #45 (TIM foundation), #11 (multi-substrate), #60 (MCP binding — closed), #61 (probes + Space membrane — closed), #73 (Frequency / Resonance), Cloudflare R2 releases.
 
 Design note: `docs/effective-freedom.md`.

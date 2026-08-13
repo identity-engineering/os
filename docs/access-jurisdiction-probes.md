@@ -1,6 +1,6 @@
 # Access & Jurisdiction probes
 
-Status: operational contract (v0, closes issue #40)
+Status: operational contract (v0, closes issue #40; Space membrane alignment closes #61)
 
 Related: `docs/identity-creation-jurisdiction.md`, `docs/account-identity-model.md`,
 `docs/space-model.md`, `docs/metric-stem.md`, Framework Ownership blog + gap #32
@@ -80,6 +80,10 @@ Profiles are **owned learning state**. They are never written by inbound
 Interaction Signals. Foreign estimates and Registry `perceived_ownership_json`
 may *inspire* a later owner probe; they do not auto-populate this table.
 
+Object kind `space` uses `object_ref = space_id` when the observer measures
+membrane-relative Access (e.g. reach limited by parent Space). Membership rows
+are not required for the probe itself; enforcement stays on the membrane plane.
+
 ## Storage
 
 Table `access_jurisdiction_profiles` (SQLite-first V1).
@@ -96,7 +100,6 @@ commits a probe.
 ## Write path (owner-gated)
 
 ```bash
-# Commit an Access + Jurisdiction profile for a peer (or self)
 ie jurisdiction probe --object peer:alice \
   --access '{"reach":0.8,"use":0.3,"observe":0.9,"affected_by":0.6}' \
   --jurisdiction '{"decide_goals":0.1,"constrain":0.2,"transfer":0.0,"destroy":0.0,"redefine_boundary":0.1}' \
@@ -116,6 +119,21 @@ Actor is always the local Identity in V1. Cross-Identity writes require an
 active grant (`grant_admin` or equivalent) and are deferred until multi-Identity
 creation lands.
 
+## Grant plane (CLI)
+
+Creation-time and later jurisdiction grants are actionable:
+
+```bash
+ie grant list
+ie grant list --all          # include revoked
+ie grant revoke --scope surface_admin --reason "narrow surface"
+ie grant transfer --scope policy_admin --to-actor <identity_id>
+```
+
+Residual emergency grants are non-transferable and cannot be revoked on the
+ordinary path. Transfer requires the target actor Identity to exist locally
+(multi-Identity). See `docs/identity-creation-jurisdiction.md`.
+
 ## Relation to creation package and residual
 
 - Creation-time grants (`identity_grants`) answer "who may act".
@@ -125,12 +143,28 @@ creation lands.
 - Child revocation of ordinary grants is grant-plane; probes simply re-measure
   after the fact.
 
-## Relation to Space membrane
+## Relation to Space membrane (#61)
 
-Space membrane policy (export / inbound) is a separate enforcement surface
-(`docs/space-model.md`, issue #61). A probe may record membrane-relative Access
-(e.g. `reach` limited by parent Space) but does not itself enforce membrane
-rules. Known ≠ addressable remains grant + membrane, not a probe output alone.
+Three planes stay distinct:
+
+| Plane | Question | Home |
+|-------|----------|------|
+| **Identity grants** | Who may act on whose geometry / Surface? | `identity_grants` |
+| **Space membrane** | What may enter / leave a Space? | `docs/space-model.md` |
+| **Account roles** | Billing / plan only | IE product account |
+
+Space membrane policy (export / inbound) is a **jurisdiction surface** for the
+Space Identity and its admins, not a substitute for Identity-level grants.
+
+- A probe with `object_kind=space` may record membrane-relative Access
+  (`reach` limited by parent membrane, `use` gated by membership).
+- Probes do **not** enforce membrane rules. Known ≠ addressable remains
+  grant + membrane together.
+- Write path into profiles remains owner/grant-gated. No Interaction Signal
+  path may rewrite Stem jurisdiction or membrane policy.
+- Account roles never appear as Access/Jurisdiction scores.
+
+Framework Ownership blog remains conceptual reference; measurement stays in OS.
 
 ## Metric Stem / dimensions
 
@@ -142,12 +176,15 @@ dimensions via Mature / dimension discovery after a probe is committed.
 
 - Automatic legal ownership claims
 - Forced mutual estimation of Access/Jurisdiction between peers
+- Forced cross-Space estimation
 - Silent write from Interaction Signal into profiles
 - Promotion of Ownership to a public Core Concept page (framework decision)
-- Full grant transfer / revoke CLI (follow-up under multi-Identity)
-- Space membrane export/inbound enforcement (issue #61)
+- Full network membrane enforcement runtime (documented; runtime follow-up)
+- Treating Account plan roles as Identity Jurisdiction
 
-## Exit criteria mapping (#40)
+## Exit criteria mapping
+
+### #40
 
 | Criterion | Status |
 |-----------|--------|
@@ -157,11 +194,21 @@ dimensions via Mature / dimension discovery after a probe is committed.
 | Linked from Stem / Metric / next.md | yes |
 | Cross-ref framework gap #32 + Ownership blog | yes |
 
+### #61
+
+| Criterion | Status |
+|-----------|--------|
+| Design section references Space membrane | this section |
+| Explicit non-goals (no legal claims; no forced cross-Space estimation) | yes |
+| Linked from next.md | yes |
+| Grant list / revoke / transfer CLI | `ie grant …` |
+
 ## Related
 
-- Issue #40 (this contract)
+- Issue #40 (probes contract)
 - Issue #61 (probes + Space membrane alignment)
 - `docs/identity-creation-jurisdiction.md` — grants + residual
+- `docs/space-model.md` — membrane host
 - `docs/sqlite-schema-v1.md` — table definition
 - Framework: [Ownership as Relative Jurisdiction](https://identity-engineering.org/blog/ownership-as-relative-jurisdiction/)
 - Framework gap #32
