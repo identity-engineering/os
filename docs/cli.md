@@ -44,6 +44,11 @@ ie init --path ~/ie --account no_account --name Jonas --handle jonas -y
 
 `ie init` remembers the created install as the active local root (`$XDG_CONFIG_HOME/ie-os/active-root` or `~/.config/ie-os/active-root`).
 
+It also installs the **Context Layer** standard skills under `skills/`
+(`mature`, `status`, `signal`, `card`, `propose-to-standard`). Humans invoke
+those skills in a coding agent or chat; agents execute the listed CLI/MCP
+commands. See `docs/context-layer.md`.
+
 V1 does not migrate existing `HEADER.yaml`, `STEM.yaml`, Registry, trajectory,
 or other legacy YAML state. If a legacy install is detected, initialization
 stops; back it up or export it manually before using `ie init --reset --yes`,
@@ -161,3 +166,4 @@ does not rewrite append-only audit history or policy history.
 - `docs/access-jurisdiction-probes.md`
 - `docs/geometry-feed.md`
 - `docs/geometry-feed-delivery.md`
+- `docs/context-layer.md`

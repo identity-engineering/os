@@ -1,4 +1,5 @@
 recursive-include templates/personal *
+recursive-include templates/skills *
 recursive-include ie/templates *
 include README.md
 include LICENSE

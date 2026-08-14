@@ -11,6 +11,13 @@ from runtime.database import database_path
 HEADER_NAME = "HEADER.yaml"
 CONFIG_DIR_NAME = "ie-os"
 ACTIVE_ROOT_NAME = "active-root"
+STANDARD_SKILL_NAMES = (
+    "mature",
+    "status",
+    "signal",
+    "card",
+    "propose-to-standard",
+)
 
 
 def active_root_config_path() -> Path:
@@ -71,6 +78,25 @@ def bundled_templates_dir() -> Path:
     raise FileNotFoundError(
         "Could not find templates/personal. Reinstall ie-os "
         "(wheel must include ie/templates/personal; see docs/release.md)."
+    )
+
+
+def bundled_skills_dir() -> Path:
+    """Standard skill templates (Context Layer v0).
+
+    Search order mirrors bundled_templates_dir.
+    """
+    here = Path(__file__).resolve().parent
+    candidates = [
+        package_root() / "templates" / "skills",
+        here / "templates" / "skills",
+    ]
+    for path in candidates:
+        if path.is_dir():
+            return path
+    raise FileNotFoundError(
+        "Could not find templates/skills. Reinstall ie-os "
+        "(see docs/context-layer.md)."
     )
 
 
