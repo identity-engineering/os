@@ -18,7 +18,7 @@ mutated through CLI / runtime / HTTP / MCP.
   `templates/skills/<name>/SKILL.md` and are copied to
   `<install-root>/skills/<name>/SKILL.md` on `ie init`.
 - Harness vendors (`.claude/`, `.github/`, `.grok/`, chat skill stores) may
-  mirror or point at these files; adapters deepen under #5.
+  mirror or point at these files; adapters deepen under #5 / #95.
 
 ### Division of labor (locked)
 
@@ -34,17 +34,19 @@ Skills must not instruct agents to edit SQLite or bypass Surface policy.
 
 | Skill | Purpose |
 |-------|---------|
-| `mature` | Source-backed learning commit via `ie mature` |
+| `mature` | Self-Mature; inbound standard/foreign sources via Mature (see `docs/mature.md`) |
 | `status` | Install / Identity summary |
-| `signal` | Interaction Signal apply |
+| `signal` | Interact; Foreign-Mature carrier |
 | `card` | Public card readout |
-| `propose-to-standard` | Feedback issue/PR toward open OS/framework standard |
+| `propose-to-standard` | Standard-Mature outbound (Signal-first) |
 
 ## Storage
 
 - **v0:** local files under the install root (`skills/`).
-- **Next:** Notion adapter (and other user stores) without changing the
-  Identity-binding rule.
+- **Next:** ContextStore adapters (#95, #96), including Notion read-first.
+
+Inbound updates from the open standard are **Mature over sources**, not silent
+file overwrite of personalized skills (`docs/mature.md`, #92).
 
 ## Discovery
 
@@ -54,6 +56,5 @@ Skills must not instruct agents to edit SQLite or bypass Surface policy.
 
 ## Related
 
-- Issues #90 (this layer), #91 (subagent vs Identity), #92 (standard evolve),
-  #5 (environment format contracts), #9 (TIM merge)
-- `docs/tim-cycle.md`, `docs/account-identity-model.md`
+- Issues #90, #91, #92, #95, #96, #5, #9
+- `docs/mature.md`, `docs/tim-cycle.md`, `docs/account-identity-model.md`
