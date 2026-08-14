@@ -1,6 +1,6 @@
 # Identity Context Layer (v0)
 
-Status: operational contract · 13.08.2026 · Issue #90
+Status: operational contract · 13.08.2026 · Issue #90 · Store adapters #95/#96
 
 ## Role
 
@@ -42,9 +42,9 @@ Skills must not instruct agents to edit SQLite or bypass Surface policy.
 
 ## Storage
 
-- **v0:** local files under the install root (`skills/`).
-- **Next:** Notion adapter (and other user stores) without changing the
-  Identity-binding rule.
+- **v0 default:** local files under the install root (`skills/`) via **ContextStore** `local_fs`.
+- **Notion:** ContextStore adapter (`docs/context-store.md`, #96) — read-first.
+- Config: `.ie/context_store.json`; CLI `ie context` / `ie adapters`.
 
 ## Discovery
 
@@ -54,6 +54,5 @@ Skills must not instruct agents to edit SQLite or bypass Surface policy.
 
 ## Related
 
-- Issues #90 (this layer), #91 (subagent vs Identity), #92 (standard evolve),
-  #5 (environment format contracts), #9 (TIM merge)
-- `docs/tim-cycle.md`, `docs/account-identity-model.md`
+- Issues #90, #91, #92, #95, #96, #5, #9
+- `docs/tim-cycle.md`, `docs/account-identity-model.md`, `docs/context-store.md`
