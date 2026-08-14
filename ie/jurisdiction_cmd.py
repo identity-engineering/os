@@ -114,6 +114,8 @@ def register(app: typer.Typer) -> None:
 
     from ie.grant_cmd import register as register_grant
     from ie.identity_cmd import register as register_identity
+    from ie.context_cmd import register as register_context
 
     register_grant(app)
     register_identity(app)
+    register_context(app)
