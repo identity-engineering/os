@@ -57,6 +57,32 @@ ie request list --json
 ie db info --json
 ```
 
+An MCP-capable agent may use the same local Surface Runtime after installing
+the optional SDK extra:
+
+```text
+pip install ie-os[mcp]
+ie-mcp --install /path/to/install --transport stdio
+```
+
+The MCP process is bound once at startup to the one local V1 Identity. The
+optional `--identity-id` is an assertion, not a context switch. MCP tools do
+not accept an identity selector, and every structured result includes
+`actor_identity_id`, `identity_id`, and `space_id`. Local Free V1 has no
+membrane tables yet; passing `--space-id` therefore fails closed instead of
+silently treating the request as account-root access.
+
+The initial local MCP tool set is:
+
+- `get_status`
+- `get_public_card`
+- `get_mass`
+- `list_inbound_requests`
+- `receive_interaction_signal`
+
+Mature and policy-changing Surface operations remain on the existing CLI and
+runtime paths until their approval and grant envelopes are exposed explicitly.
+
 Every JSON result should identify the relevant schema version and stable IDs.
 Agents should use receipt IDs, event IDs, Mature IDs, and revision numbers when
 referring to state rather than relying on display text or file paths.

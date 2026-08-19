@@ -2,15 +2,30 @@
 
 from __future__ import annotations
 
+import asyncio
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
 
 from runtime.database import Database, database_path, initialize_database
 from runtime.mcp_handler import McpSurface, handle_rpc, TOOL_DEFS
+from runtime.mcp_server import MCPBindingError, MCPIdentityBinding, create_mcp_server
 from runtime.mcp_session import bind_local_session
 from runtime.models import ApplyStatus
 from runtime.space_bootstrap import create_additional_identity
+
+MCP_AVAILABLE = importlib.util.find_spec("mcp") is not None
+
+
+def _structured(result):
+    value = getattr(result, "structuredContent", None)
+    if value is None:
+        value = getattr(result, "structured_content", None)
+    if value is None:
+        raise AssertionError(f"MCP result has no structured content: {result!r}")
+    return value
+
 
 EXPECTED_TOOLS = {
     "ie_status",
@@ -69,7 +84,6 @@ class McpSessionTests(unittest.TestCase):
         session = bind_local_session(self.install, identity_id=other_id)
         self.assertEqual(session.identity_id, other_id)
         self.assertEqual(session.local_handle, "other")
-        # install active remains the first Identity
         active = bind_local_session(self.install)
         self.assertEqual(active.identity_id, self.identity_id)
 
@@ -272,6 +286,75 @@ class McpRpcTests(unittest.TestCase):
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
         )
         self.assertIsNone(resp)
+
+
+class MCPBindingTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.install = Path(self._tmp.name) / "install"
+        initialize_database(self.install, handle="me", preferred_name="Me")
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_binding_is_canonical_and_space_context_fails_closed(self):
+        binding = MCPIdentityBinding.from_install(self.install)
+        self.assertEqual(binding.local_handle, "me")
+        self.assertTrue(binding.identity_id)
+
+        with self.assertRaisesRegex(MCPBindingError, "identity binding mismatch"):
+            MCPIdentityBinding.from_install(self.install, identity_id="other")
+        with self.assertRaisesRegex(MCPBindingError, "unenforced membrane context"):
+            MCPIdentityBinding.from_install(self.install, space_id="space-1")
+
+    @unittest.skipUnless(MCP_AVAILABLE, "install ie-os[mcp] to run protocol dispatch tests")
+    def test_read_and_apply_dispatch_use_bound_identity(self):
+        binding = MCPIdentityBinding.from_install(self.install)
+        server = create_mcp_server(binding)
+        tool_names = {tool.name for tool in asyncio.run(server.list_tools())}
+        self.assertIn("get_public_card", tool_names)
+        self.assertIn("receive_interaction_signal", tool_names)
+
+        card_result = asyncio.run(server.call_tool("get_public_card", {}))
+        card = _structured(card_result)
+        self.assertEqual(card["actor_identity_id"], binding.identity_id)
+        self.assertEqual(card["result"]["local_handle"], "me")
+
+        apply_result = asyncio.run(
+            server.call_tool(
+                "receive_interaction_signal",
+                {
+                    "payload": {
+                        "from": "alice",
+                        "to": "me",
+                        "timestamp": "2026-08-09T10:00:00+00:00",
+                        "existence": True,
+                        "interaction_depth_delta": 0.2,
+                    }
+                },
+            )
+        )
+        receipt = _structured(apply_result)
+        self.assertEqual(receipt["actor_identity_id"], binding.identity_id)
+        self.assertEqual(receipt["result"]["status"], "applied")
+
+        rejected_result = asyncio.run(
+            server.call_tool(
+                "receive_interaction_signal",
+                {
+                    "payload": {
+                        "from": "alice",
+                        "to": "someone-else",
+                        "timestamp": "2026-08-09T10:01:00+00:00",
+                        "existence": True,
+                        "interaction_depth_delta": 0.2,
+                    }
+                },
+            )
+        )
+        rejected = _structured(rejected_result)
+        self.assertEqual(rejected["actor_identity_id"], binding.identity_id)
+        self.assertEqual(rejected["result"]["status"], "rejected")
 
 
 if __name__ == "__main__":
