@@ -17,6 +17,12 @@ The surface can be bound to:
 
 Same semantics, different bindings.
 
+The local MCP binding starts one process for one validated `identity_id` and
+uses the same apply, card, mass, status, and request handlers as the CLI. It
+does not accept an identity selector per tool call. Local Free V1 rejects an
+explicit `space_id` until membrane enforcement exists, rather than silently
+falling back to an account-root context.
+
 The Surface belongs to an **Identity**, not to an IE Account. An account may
 hold many Identities; each has its own Surface, Registry frame, and Public
 Card. See `docs/account-identity-model.md`.

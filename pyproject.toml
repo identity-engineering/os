@@ -16,10 +16,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["build>=1.2", "pytest>=8.0"]
+mcp = ["mcp>=2.0,<3"]
+dev = ["build>=1.2", "pytest>=8.0", "mcp>=2.0,<3"]
 
 [project.scripts]
 ie = "ie.cli:app"
+ie-mcp = "runtime.mcp_server:main"
 
 [project.urls]
 Homepage = "https://identity-engineering.org"
