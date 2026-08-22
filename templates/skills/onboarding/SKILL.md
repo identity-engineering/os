@@ -28,12 +28,13 @@ Update this skill file (or a session note) as the capture progresses.
 ## Current live session notes (2026-08-22)
 
 - Managed Identity already bound: `jonas-managed`
-- Perceived Identities so far:
-  - Identity Engineering (framework itself as Identity)
-  - Grok Chat (agent the human works with heavily) – current conversation partner should act as this Identity
-  - GitHub Copilot on iMac (candidate, still uncertain)
-- Human self is distinct from all of the above.
+- Perceived Identities:
+  1. **Identity Engineering** (framework as Identity) — priority high, create first
+  2. **Grok Chat** (agent the human works with heavily) — current conversation partner acts as this Identity; priority high, create second
+  3. **GitHub Copilot (iMac)** — candidate, still uncertain
+- Decision (user 2026-08-22): A + B → create Identity Engineering and Grok Chat next.
+- Note: Managed MCP OAuth currently forbids `ie_context_put` (FORBIDDEN). Capture stays here until write scope is granted or local CLI is used.
 
 ## Next expected move
 
-Continue enumerating, then decide which Identities get first Surface / Registry entries.
+Guide user on how to create the two Identities (local CLI path or wait for Managed multi-Identity create surface).
