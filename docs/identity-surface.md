@@ -1,7 +1,8 @@
 # Identity Surface
 
 Locked 28.07.2026  
-Multi-identity account model linked 08.08.2026
+Multi-identity account model linked 08.08.2026  
+Approval Request + Notification Channel linked 22.08.2026
 
 ## Core claim
 
@@ -112,8 +113,11 @@ The IE standard must support, out of the box:
 
 1. **Clear owner** of the access policy (Identity handle / account membership role)
 2. **Approval requests** for critical changes (readable surface: what is requested, by whom, what scope)
-3. **Revoke** functions that actually cut access and can quarantine prior writes where feasible
-4. Separation between "AI that acts as its own Identity under grants" and "the human Identity" — an agent Identity is not a silent mode of the human
+3. **Notification Channel** so the Owner Identity is actually reached (push / app / other)
+4. **Revoke** functions that actually cut access and can quarantine prior writes where feasible
+5. Separation between "AI that acts as its own Identity under grants" and "the human Identity" — an agent Identity is not a silent mode of the human
+
+**Approval Request** and **Request Inbox** are the same primitive: an Identity is asked for confirmation. Estimate requests are one kind; critical Surface / connector / grant actions are other kinds. Full contract: `docs/approval-request-notification.md`.
 
 Speaking with "my AI" is interaction between Identities (or between harnesses bound to different Identities), not automatic elevation to the human's jurisdiction.
 
@@ -127,9 +131,14 @@ Speaking with "my AI" is interaction between Identities (or between harnesses bo
 
 Stricter Identities may set everything to pending review. More open Identities may widen grants per peer.
 
-## Estimate requests (inbox)
+## Request Inbox (unified)
 
-Inbound `request_estimate` never auto-answers. Load is inbox pressure, not mandatory estimation work. See `docs/estimate-request.md` and `docs/bidirectional-gravitational-sensor.md`.
+Inbound requests never auto-answer. Load is inbox pressure, not mandatory work.
+
+- **Estimate kind** (v0): see `docs/estimate-request.md`
+- **All kinds** (Approval Request): see `docs/approval-request-notification.md`
+
+Critical actions by an owned Identity create an Approval Request to the Owner / `policy_admin` holder; Notification Channels on that Identity deliver the ping (e.g. mobile push as the human Owner Identity).
 
 ## Identity as app
 
@@ -145,9 +154,10 @@ An idea-Identity can have a surface too (often narrower). A runtime-Identity oft
 ## Related docs
 
 - `docs/account-identity-model.md` — Account ≠ Identity; harness binding; grants
+- `docs/approval-request-notification.md` — unified Approval Request + Notification Channel
 - `docs/communication.md` — transport vs payload vs receipt
 - `docs/local-entry.md` — AGENTS.md / local discoverability (not the inter-identity protocol)
 - `docs/interaction-signal.md` — payload fields
 - `docs/foreign-estimate-zone.md` — where applies land
-- `docs/estimate-request.md` — inbound request + inbox
+- `docs/estimate-request.md` — inbound estimate request + inbox (v0 specialization)
 - `docs/realization-surface-runtime.md` — how this is implemented without every user coding a server
