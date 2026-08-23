@@ -93,7 +93,7 @@ Hook path runs automatically after successful `ie signal apply`.
 harness **adapter** sequence are specified in `docs/geometry-feed-delivery.md`
 (OS #44). Field→sink mapping remains in `docs/geometry-feed.md` (OS #8).
 
-### TIM mapping (short)
+### IE phase mapping (short)
 
 - **Think** — no CLI. Phase label for inward, non-emitting work (plan-mode, private memory, prompts).
 - **Interact** — `ie signal apply` + tools/MCP/APIs/scripts (cross-membrane).
@@ -159,7 +159,7 @@ does not rewrite append-only audit history or policy history.
 - `docs/local-operations-v1.md`
 - `docs/storage-tiers.md`
 - `docs/open-core.md`
-- `docs/tim-cycle.md`
+- `docs/probe-cycle.md`
 - `docs/living-form.md`
 - `docs/distribution.md`
 - `docs/surface-runtime-local.md`

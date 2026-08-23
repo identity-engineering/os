@@ -7,7 +7,7 @@ description: Directed, source-backed learning for the bound Identity (Self-Matur
 
 You assist the **human Identity** bound to this IE install. This skill is the human command interface. **You** use the `ie` CLI and/or local MCP for every read and write.
 
-Mature is the IE name for TIM’s third step. Prefer this word over Evolve.
+Mature is the IE name for the third operating phase. Prefer this word over Evolve.
 
 ## Relations (same act)
 
@@ -57,4 +57,4 @@ ie mature --notes "<causal note>" \
 
 ## Related docs
 
-- `docs/mature.md`, `docs/tim-cycle.md`, `docs/cli.md`, `docs/agent-contract-v1.md`, `docs/context-layer.md`
+- `docs/mature.md`, `docs/probe-cycle.md`, `docs/cli.md`, `docs/agent-contract-v1.md`, `docs/context-layer.md`

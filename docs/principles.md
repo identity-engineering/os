@@ -53,7 +53,7 @@ Local install is a mini-Space. CLI free personal / paid collective tiers later �
 
 **In:**
 
-- Think · Interact · Mature as Probe phases under Relativity (`docs/tim-cycle.md`)  
+- Think · Interact · Mature as Probe phases under Relativity (`docs/probe-cycle.md`)
 - Living-form lens: Identity as operative form with membrane (Surface / Space) and metabolism (Interaction → Geometry Receipt) (`docs/living-form.md`)  
 - Explicit split: Identity ≠ agentic loop (loop may be nuclear machinery inside the form)
 

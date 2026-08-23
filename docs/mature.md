@@ -1,11 +1,11 @@
-# Mature (TIM cycle · IE OS)
+# Mature (IE operating cycle · IE OS)
 
 Status: operational contract · 14.08.2026 · Issue #92
 
 ## Naming
 
 **Mature** is the name. Do not use Evolve for this layer. Mature is the third
-TIM step and the existing CLI/MCP surface (`ie mature`).
+operating phase and the existing CLI/MCP surface (`ie mature`).
 
 ## One act, three relations
 
@@ -72,5 +72,5 @@ Agents read skill text and execute via CLI/MCP only.
 
 ## Related
 
-- `docs/tim-cycle.md`, `docs/context-layer.md`, `docs/agent-contract-v1.md`
+- `docs/probe-cycle.md`, `docs/context-layer.md`, `docs/agent-contract-v1.md`
 - Issues #92, #90, #9

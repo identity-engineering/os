@@ -183,8 +183,8 @@ and speaks the Surface is an Identity:
 4. maintain Registry and learning state from its frame,
 5. sleep or destroy under explicit lifecycle rules.
 
-No special "worker mode" bypasses geometry. TIM-style cloud runtime ideas
-land here as substrate `runtime`, not as an infra side channel.
+No special "worker mode" bypasses geometry. Legacy cloud-runtime ideas land
+here as substrate `runtime`, not as an infra side channel.
 
 ## Explicit non-goals of this contract
 

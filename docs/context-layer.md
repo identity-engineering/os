@@ -57,4 +57,4 @@ file overwrite of personalized skills (`docs/mature.md`, #92).
 ## Related
 
 - Issues #90, #91, #92, #95, #96, #5, #9
-- `docs/mature.md`, `docs/tim-cycle.md`, `docs/account-identity-model.md`
+- `docs/mature.md`, `docs/probe-cycle.md`, `docs/account-identity-model.md`

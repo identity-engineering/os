@@ -32,4 +32,4 @@ Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtim
 
 - **#86** Managed / remote MCP (Phase-3 auth).
 - **#91** Subagent vs Identity · **#93** Organism principles · **#5** harness mirrors.
-- TIM foundation (#45), multi-substrate (#11), public /os (#21), Phase 3–5 billing.
+- IE operating-cycle foundation (#45), multi-substrate (#11), public /os (#21), Phase 3–5 billing.

@@ -1,17 +1,17 @@
-# TIM Cycle as IE Probe Modes (Discipline Cross)
+# IE Operating Cycle as Probe Modes (Discipline Cross)
 
 Working definition · 01.08.2026 · Foundation lock 05.08.2026 · Recalibrated same day
 
 ## Status
 
-TIM (Think · Interact · Mature) organizes Interaction under Relativity relative to the Identity membrane (Surface). Biology supplies the operational lens; it does not replace geometric primitives.
+The IE operating cycle (Think · Interact · Mature) organizes Interaction under Relativity relative to the Identity membrane (Surface). Biology supplies the operational lens; it does not replace geometric primitives.
 
 **Recalibration:** Think is a phase *label* (substrate + prompts), not a first-class CLI. Mature is the single self-evolve entry point. Interact is the cross-membrane tool/signal surface.
 
 This doc defines the **discipline cross**:
 
 - **Layer A — Geometry (IE Core):** Mass, Curvature, Stem, Relativity, Causal Entropy, …  
-- **Layer B — Operational cycle (TIM):** Think / Interact / Mature as phase organization  
+- **Layer B — IE operating cycle:** Think / Interact / Mature as phase organization
 - **Layer C — Living-form perspective:** Cell / organism as *lens* on how B metabolizes A  
 
 See `docs/living-form.md` for the cell mapping and the June 2026 article grounding.
@@ -21,7 +21,7 @@ See `docs/living-form.md` for the cell mapping and the June 2026 article groundi
 There is no clean split "question vs action".  
 Self-talk, prompts, tool calls, ownership moves, and learning reviews are all Interaction under Relativity — measurement and potential reshape at once.
 
-TIM names three **phases by observer-reference to the membrane**:
+The cycle names three **phases by observer-reference to the membrane**:
 
 | Mode | Relative to membrane | Probe character | Geometry focus |
 |------|----------------------|-----------------|----------------|
@@ -86,7 +86,7 @@ Invariants:
 
 ## Discipline cross (short form)
 
-> **TIM is the biology-inspired operations discipline of Identity Engineering.**  
+> **The IE operating cycle is the biology-inspired operations discipline of Identity Engineering.**
 > It organizes Interaction (under Relativity) into Self- and Other-phases and treats Identity as a living operative form.  
 > It does not introduce new geometric primitives. It specifies how geometry *lives* and metabolizes through continuous Probes.
 
@@ -106,10 +106,10 @@ Mature specifically bridges Causal Entropy (design telos) and Stem continuity: i
 
 ## What stays out
 
-- TIM as a product brand  
+- The operating cycle as a product brand
 - `ie probe think` / Think as isolation runtime  
 - Sensory / immunity / organism **agents** as shipped modules  
-- Claim that TIM is empirical biology  
+- Claim that the operating cycle is empirical biology
 - Identity = agentic loop  
 - Mature as automatic backprop of the reasoning loop
 
