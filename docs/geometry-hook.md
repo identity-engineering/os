@@ -8,7 +8,7 @@ Updated 02.08.2026 — storage-only feed path; Mass sources; membrane stub
 After every Interaction (and later after internal Think / Mature events) the OS runs **Geometry Extraction** and produces a local **Geometry Receipt**.
 
 Operational form of Questions as Probes: continuous bridge from agentic / human happening to relative IE geometry.  
-See `docs/probes-as-bridge.md`, `docs/tim-cycle.md`, `docs/living-form.md`.
+See `docs/probes-as-bridge.md`, `docs/probe-cycle.md`, `docs/living-form.md`.
 
 ## When it runs
 
@@ -79,6 +79,6 @@ If an extractor raises, the error is written into Geometry Receipt `notes` (`ext
 - `schemas/geometry-receipt/v0.yaml`  
 - `runtime/geometry.py`  
 - `docs/probes-as-bridge.md`  
-- `docs/tim-cycle.md`  
+- `docs/probe-cycle.md`
 - `docs/living-form.md`  
 - OS #8 (Tensor update protocol), OS #40 (Access & Jurisdiction)  

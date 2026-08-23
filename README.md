@@ -18,7 +18,7 @@ Managed continuity in the IE-managed Space remains closed. See [`docs/open-core.
 - Personal-first **mini-Space**: initialize one local Space and the next interaction already updates geometry
 - Core contracts: Stem, Trajectory, relative Mass, local Registry, Privacy defaults
 - Local Surface Runtime: Interaction Signals → Foreign Estimates, Registry continuity, receipts, **always-on Geometry Extraction** on Interact
-- **TIM cycle** (Think · Interact · Mature) as Probe phases under Relativity
+- **IE operating cycle** (Think · Interact · Mature) as Probe phases under Relativity
 - **Living-form lens**: Identity as operative form with membrane (Surface / Boundary) and metabolism (Interaction → Geometry Receipt); agentic loop may be nuclear machinery inside — not the Identity itself
 - **Account ≠ Identity**: geometry lives on Identities; an IE Account is optional continuity/billing on the managed path
 - Foundation for environment adapters and free personal / paid collective tiers
@@ -42,7 +42,7 @@ Geometry Receipt as continuous Probe bridge, Stem, Surface as membrane,
 Ownership as relative degrees of freedom, multi-substrate symmetry, Privacy by design.
 
 See `docs/space-model.md`, `docs/account-identity-model.md`, `docs/probes-as-bridge.md`,
-`docs/tim-cycle.md`, `docs/living-form.md`.
+`docs/probe-cycle.md`, `docs/living-form.md`.
 
 ## Minimal structure
 
@@ -57,7 +57,7 @@ os/
 │   ├── space-model.md
 │   ├── account-identity-model.md
 │   ├── probes-as-bridge.md
-│   ├── tim-cycle.md
+│   ├── probe-cycle.md
 │   ├── living-form.md
 │   ├── geometry-hook.md
 │   └── …
@@ -69,7 +69,7 @@ os/
 - Local Registry + Metric Stem + Interaction Signal
 - Local mini-Space Surface Runtime (apply, receipts, thin HTTP; SQLite store)
 - Geometry Receipt + always-on Interact hook (local storage; Tensor feed **#8**)
-- TIM grounded as Probe modes; living-form lens (cell nucleus article integrated)
+- Think/Interact/Mature grounded as Probe modes; living-form lens (cell nucleus article integrated)
 - Emergent self-Mass + public card + bidirectional sensor
 - Atomic Mature learning, persistent policy, DB integrity and backup commands
 - Space membrane + Account ≠ Identity contracts locked; multi-Space / multi-Identity capacity next
@@ -87,7 +87,7 @@ See `docs/next.md` and `docs/open-core.md`.
 | `docs/storage-tiers.md` | Free / managed / governed Space tiers |
 | `docs/principles.md` | Invariants |
 | `docs/probes-as-bridge.md` | Probes as continuous geometry process |
-| `docs/tim-cycle.md` | Think / Interact / Mature as Probe modes |
+| `docs/probe-cycle.md` | Think / Interact / Mature as Probe modes |
 | `docs/living-form.md` | Identity as living form; cell/organism lens |
 | `docs/geometry-hook.md` | Always-on extraction after Interact |
 | `docs/mass.md` | Emergent self-Mass + public card |

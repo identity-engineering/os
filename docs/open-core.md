@@ -23,7 +23,7 @@ Space / Account contracts in `docs/space-model.md` and `docs/account-identity-mo
 
 | Layer | Contents | Visibility |
 |-------|----------|------------|
-| **Open Core** | Schemas, local Surface Runtime, Geometry Receipt, Registry contracts, Interaction Signal, TIM as Probe phases, living-form lens, Free local mini-Space (SQLite store), `ie` CLI for local operations, contract templates, tests, Space + Account≠Identity architecture docs | Public (this repository) |
+| **Open Core** | Schemas, local Surface Runtime, Geometry Receipt, Registry contracts, Interaction Signal, IE operating cycle as Probe phases, living-form lens, Free local mini-Space (SQLite store), `ie` CLI for local operations, contract templates, tests, Space + Account≠Identity architecture docs | Public (this repository) |
 | **Managed / Pro** | Hosted SQL adapters, multi-device sync, account auth beyond stub, billing, SLA, multi-Identity capacity under accounts, collective/organisational governed Spaces, Pro Surface features | Private (separate repository or private modules) |
 
 ## Why this cut
@@ -41,7 +41,7 @@ Space / Account contracts in `docs/space-model.md` and `docs/account-identity-mo
    Geometry lives on Identities. Accounts are product auth/plan only. Open Core must not imply “account required to be an Identity”.
 
 5. **Alignment with prior decisions**  
-   Same logic as the TIM Open Core strategy (core open, advanced features + hosted platform closed).
+   Same logic as the IE Open Core strategy (core open, advanced features + hosted platform closed).
 
 ## Implementation rules
 

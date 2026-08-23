@@ -16,9 +16,9 @@ Every Interaction Signal (chat message, prompt, agent call, internal thought, ow
 
 Thoughts are Self-Interactions: I ask myself a question, answer it, and thereby further construct the relative perception of my own Stem. That is already Probe + action in one.
 
-## TIM cycle + living-form lens
+## IE operating cycle + living-form lens
 
-See `docs/tim-cycle.md` (discipline cross) and `docs/living-form.md` (cell / organism perspective).
+See `docs/probe-cycle.md` (discipline cross) and `docs/living-form.md` (cell / organism perspective).
 
 | Mode | Probe character | What is measured / reshaped |
 |------|-----------------|-----------------------------|
@@ -52,7 +52,7 @@ Storage of the bridge artifact is shipped; continuous write-back into the Tensor
 
 - Schema: `schemas/geometry-receipt/v0.yaml`  
 - Hook: `docs/geometry-hook.md` (default **on** after Interact)  
-- TIM: `docs/tim-cycle.md`  
+- IE operating cycle: `docs/probe-cycle.md`
 - Living form: `docs/living-form.md`  
 - Implementation: `runtime/geometry.py` + always-on path in `runtime/apply.py`
 
@@ -86,7 +86,7 @@ It is **not** Access/Jurisdiction geometry. Full Ownership operationalization: *
 
 - No full catalogue of "good questions"  
 - No high-fidelity Curvature/Frequency extraction in v0  
-- No TIM organism-agent layer in v0  
+- No organism-agent layer in v0
 - No Identity = LLM loop  
 - No automatic Tensor/Registry rewrite from Geometry Receipts in v0 (see #8)  
 - No Access/Jurisdiction scores from membrane stubs in v0 (see #40)
@@ -97,7 +97,7 @@ It is **not** Access/Jurisdiction geometry. Full Ownership operationalization: *
 2. Think / Mature entry points (`target=self`).  
 3. **Feed Geometry Receipt into Tension / Tensor / Registry** — **#8**.  
 4. **Access & Jurisdiction probes / membrane policy** — **#40**.  
-5. Optional public framework note: Probes as process; TIM as operational phase split; living-form as lens.  
+5. Optional public framework note: Probes as process; the IE operating phase split; living-form as lens.
 6. Richer extractors behind the same interface.
 
-See `schemas/geometry-receipt/v0.yaml`, `docs/geometry-hook.md`, `docs/tim-cycle.md`, `docs/living-form.md`.
+See `schemas/geometry-receipt/v0.yaml`, `docs/geometry-hook.md`, `docs/probe-cycle.md`, `docs/living-form.md`.

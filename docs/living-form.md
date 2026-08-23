@@ -44,9 +44,9 @@ Two persistent "DNA" layers stay distinct:
 1. **Model DNA** — weights of a reasoning system  
 2. **Identity DNA** — Stem + Registry + Metric Stem (relative geometry)
 
-## TIM as cellular metabolic phases
+## Think, Interact, Mature as cellular metabolic phases
 
-Everything is Interaction under Relativity. TIM organizes Interaction by observer-reference relative to the membrane:
+Everything is Interaction under Relativity. The IE operating cycle organizes Interaction by observer-reference relative to the membrane:
 
 | Phase | Relative to membrane | Meaning |
 |-------|----------------------|---------|
@@ -64,7 +64,7 @@ causality automatically. Closest biological readings (lens only):
 
 It is **not** backpropagation of the agentic loop. Backprop is nuclear machinery. Mature is membrane-relative recording of the persistent Bauplan under Ownership discipline.
 
-See `docs/tim-cycle.md` for purpose statements and write-path matrix.
+See `docs/probe-cycle.md` for purpose statements and write-path matrix.
 
 ## Higher scale (organism) — without premature agent import
 
@@ -104,7 +104,7 @@ The same living-form contracts apply to human, runtime / Physical-AI, and idea/o
 
 ## Related
 
-- `docs/tim-cycle.md`  
+- `docs/probe-cycle.md`
 - `docs/probes-as-bridge.md`  
 - `docs/geometry-hook.md`  
 - Issue #45  
