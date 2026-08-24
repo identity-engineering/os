@@ -161,7 +161,13 @@ def consent_required(envelope: dict) -> bool:
 # ---------------------------------------------------------------------------
 # Consent grants (mass-/stem-altering)
 # ---------------------------------------------------------------------------
-
+#
+# Semantics: target allows sender to deliver impactHints of the listed classes.
+# A consent-grant message is sent BY the granter (future impact target)
+# TO the grantee (future impact sender):
+#   from = granter = target_id of the grant record
+#   to   = grantee = sender_id of the grant record
+#
 
 def _consent_key(target_id: str, sender_id: str) -> str:
     return f"{target_id}__{sender_id}"
@@ -225,8 +231,12 @@ def has_consent(
     return bool(needed) and needed.issubset(granted)
 
 
-def _apply_consent_grant_if_present(install_root: Path, env: dict, target: str) -> None:
-    """If this is a consent-grant signal, persist the grant after delivery."""
+def _apply_consent_grant_if_present(install_root: Path, env: dict, message_to: str) -> None:
+    """If this is a consent-grant signal, persist the grant after delivery.
+
+    Granter = env['from'] (becomes target_id of the grant).
+    Grantee = message_to   (becomes sender_id of the grant).
+    """
     signal = env.get("signal") or {}
     if signal.get("type") != "consent-grant":
         return
@@ -246,10 +256,10 @@ def _apply_consent_grant_if_present(install_root: Path, env: dict, target: str) 
         classes = list(IMPACT_CLASSES)
     grant_consent(
         install_root,
-        target_id=target,
-        sender_id=env["from"],
+        target_id=env["from"],
+        sender_id=message_to,
         impact_classes=classes,
-        granted_by=target,
+        granted_by=env["from"],
     )
 
 
@@ -338,7 +348,7 @@ def send_envelope(install_root: Path, envelope: dict) -> SendResult:
                 from_id=target,
                 reason=(
                     "impactHints require explicit consent "
-                    "(send consent-grant first, or missing grant for "
+                    "(granter must send consent-grant first; missing grant for "
                     + ",".join(hints)
                     + ")"
                 ),
