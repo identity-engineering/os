@@ -19,6 +19,8 @@ UUID_V7_RE = re.compile(
     re.IGNORECASE,
 )
 
+IMPACT_CLASSES = ("mass-altering", "stem-altering")
+
 
 class MessagingError(Exception):
     """User-facing messaging error."""
@@ -36,13 +38,10 @@ def _new_uuid_v7() -> str:
     to RFC 9562, but unique and time-sortable for local use.
     """
     ts_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-    # 48-bit timestamp
     time_hi = (ts_ms >> 16) & 0xFFFFFFFF
     time_mid = ts_ms & 0xFFFF
     rand = uuid.uuid4().int
-    # version 7 nibble
     version_and_rand = 0x7000 | ((rand >> 62) & 0x0FFF)
-    # variant 10xx
     variant_and_rand = 0x8000 | ((rand >> 48) & 0x3FFF)
     node = rand & 0xFFFFFFFFFFFF
     return (
@@ -57,7 +56,7 @@ def messaging_root(install_root: Path) -> Path:
 
 def ensure_layout(install_root: Path) -> Path:
     root = messaging_root(install_root)
-    for sub in ("cards", "inbox", "outbox", "receipts"):
+    for sub in ("cards", "inbox", "outbox", "receipts", "consents"):
         (root / sub).mkdir(parents=True, exist_ok=True)
     return root
 
@@ -149,7 +148,6 @@ def recognition_allows(card: dict, sender_id: str, signal_type: str) -> tuple[bo
         return False, "default reject-unknown"
     if default == "manual":
         return False, "default manual – requires explicit consent"
-    # accept-known: only allowlist (already checked) or same owner scope later
     if default == "accept-known":
         return False, "default accept-known – sender not on allowlist"
     return False, f"unknown recognition default: {default}"
@@ -157,7 +155,112 @@ def recognition_allows(card: dict, sender_id: str, signal_type: str) -> tuple[bo
 
 def consent_required(envelope: dict) -> bool:
     hints = envelope.get("impactHints") or []
-    return any(h in ("mass-altering", "stem-altering") for h in hints)
+    return any(h in IMPACT_CLASSES for h in hints)
+
+
+# ---------------------------------------------------------------------------
+# Consent grants (mass-/stem-altering)
+# ---------------------------------------------------------------------------
+#
+# Semantics: target allows sender to deliver impactHints of the listed classes.
+# A consent-grant message is sent BY the granter (future impact target)
+# TO the grantee (future impact sender):
+#   from = granter = target_id of the grant record
+#   to   = grantee = sender_id of the grant record
+#
+
+def _consent_key(target_id: str, sender_id: str) -> str:
+    return f"{target_id}__{sender_id}"
+
+
+def _consent_path(install_root: Path, target_id: str, sender_id: str) -> Path:
+    return messaging_root(install_root) / "consents" / f"{_consent_key(target_id, sender_id)}.json"
+
+
+def grant_consent(
+    install_root: Path,
+    *,
+    target_id: str,
+    sender_id: str,
+    impact_classes: list[str],
+    granted_by: Optional[str] = None,
+) -> dict:
+    """Record that target allows sender for the given impact classes."""
+    ensure_layout(install_root)
+    classes = sorted({c for c in impact_classes if c in IMPACT_CLASSES})
+    if not classes:
+        raise MessagingError("impact_classes must include mass-altering and/or stem-altering")
+
+    path = _consent_path(install_root, target_id, sender_id)
+    existing: dict = {}
+    if path.is_file():
+        try:
+            existing = _read_json(path)
+        except (OSError, json.JSONDecodeError):
+            existing = {}
+
+    merged = sorted(set(existing.get("impactClasses") or []) | set(classes))
+    record = {
+        "targetId": target_id,
+        "senderId": sender_id,
+        "impactClasses": merged,
+        "grantedBy": granted_by or target_id,
+        "updatedAt": _utc_now(),
+        "createdAt": existing.get("createdAt") or _utc_now(),
+    }
+    _write_json(path, record)
+    return record
+
+
+def has_consent(
+    install_root: Path,
+    *,
+    target_id: str,
+    sender_id: str,
+    impact_classes: list[str],
+) -> bool:
+    path = _consent_path(install_root, target_id, sender_id)
+    if not path.is_file():
+        return False
+    try:
+        record = _read_json(path)
+    except (OSError, json.JSONDecodeError):
+        return False
+    granted = set(record.get("impactClasses") or [])
+    needed = {c for c in impact_classes if c in IMPACT_CLASSES}
+    return bool(needed) and needed.issubset(granted)
+
+
+def _apply_consent_grant_if_present(install_root: Path, env: dict, message_to: str) -> None:
+    """If this is a consent-grant signal, persist the grant after delivery.
+
+    Granter = env['from'] (becomes target_id of the grant).
+    Grantee = message_to   (becomes sender_id of the grant).
+    """
+    signal = env.get("signal") or {}
+    if signal.get("type") != "consent-grant":
+        return
+    payload = env.get("payload") or {}
+    classes: list[str] = []
+    inline = payload.get("inline")
+    if isinstance(inline, str):
+        try:
+            body = json.loads(inline)
+            if isinstance(body, dict):
+                raw = body.get("impactClasses") or body.get("impactHints") or []
+                if isinstance(raw, list):
+                    classes = [str(c) for c in raw]
+        except json.JSONDecodeError:
+            pass
+    if not classes:
+        classes = list(IMPACT_CLASSES)
+    grant_consent(
+        install_root,
+        target_id=env["from"],
+        sender_id=message_to,
+        impact_classes=classes,
+        granted_by=env["from"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +291,7 @@ def _target_id(to_field: Any) -> str:
 
 
 def send_envelope(install_root: Path, envelope: dict) -> SendResult:
-    """Validate, recognition-check, persist to outbox + target inbox, emit receipt."""
+    """Validate, recognition-check, consent-gate, persist, emit receipt."""
     ensure_layout(install_root)
     env = dict(envelope)
 
@@ -232,27 +335,37 @@ def send_envelope(install_root: Path, envelope: dict) -> SendResult:
         return SendResult(envelope=env, receipt=receipt, status="rejected")
 
     if consent_required(env):
-        # Skeleton: mass-/stem-altering always needs a prior consent-grant message.
-        # We reject with a clear reason so the sender can request consent.
-        receipt = _make_receipt(
-            env,
-            receipt_type="rejected",
-            from_id=target,
-            reason="impactHints require explicit consent (mass-altering or stem-altering)",
-        )
-        _persist_receipt(install_root, receipt)
-        _write_json(
-            messaging_root(install_root) / "outbox" / f"{env['messageId']}.json", env
-        )
-        return SendResult(envelope=env, receipt=receipt, status="rejected")
+        hints = [h for h in (env.get("impactHints") or []) if h in IMPACT_CLASSES]
+        if not has_consent(
+            install_root,
+            target_id=target,
+            sender_id=env["from"],
+            impact_classes=hints,
+        ):
+            receipt = _make_receipt(
+                env,
+                receipt_type="rejected",
+                from_id=target,
+                reason=(
+                    "impactHints require explicit consent "
+                    "(granter must send consent-grant first; missing grant for "
+                    + ",".join(hints)
+                    + ")"
+                ),
+            )
+            _persist_receipt(install_root, receipt)
+            _write_json(
+                messaging_root(install_root) / "outbox" / f"{env['messageId']}.json", env
+            )
+            return SendResult(envelope=env, receipt=receipt, status="rejected")
 
-    # Deliver locally: same Space store acts as both outbox and inbox
     _write_json(
         messaging_root(install_root) / "outbox" / f"{env['messageId']}.json", env
     )
     _write_json(
         messaging_root(install_root) / "inbox" / f"{env['messageId']}.json", env
     )
+    _apply_consent_grant_if_present(install_root, env, target)
     receipt = _make_receipt(
         env, receipt_type="delivered", from_id=target, reason="local delivery"
     )
