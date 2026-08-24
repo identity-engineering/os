@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -66,7 +67,6 @@ class MessagingTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
-        # messaging only needs the directory tree; no full IE install required
         (self.root / ".ie").mkdir()
 
     def tearDown(self) -> None:
@@ -144,14 +144,16 @@ class MessagingTests(unittest.TestCase):
         self.assertEqual(result.status, "delivered")
 
     def test_consent_grant_signal_persists_grant(self) -> None:
+        # B (granter) sends consent-grant TO A (grantee).
+        # After that, A may send stem-altering messages TO B.
+        register_card(self.root, _card(ID_A, "alice", default="accept-all"))
         register_card(self.root, _card(ID_B, "bob", default="accept-all"))
-        import json
 
         result = send_envelope(
             self.root,
             _envelope(
-                ID_A,
-                ID_B,
+                ID_B,  # granter
+                ID_A,  # grantee
                 signal_type="consent-grant",
                 inline=json.dumps({"impactClasses": ["stem-altering"]}),
             ),
@@ -165,7 +167,6 @@ class MessagingTests(unittest.TestCase):
                 impact_classes=["stem-altering"],
             )
         )
-        # still no mass-altering
         self.assertFalse(
             has_consent(
                 self.root,
@@ -174,6 +175,13 @@ class MessagingTests(unittest.TestCase):
                 impact_classes=["mass-altering"],
             )
         )
+
+        # A can now deliver stem-altering to B
+        follow = send_envelope(
+            self.root,
+            _envelope(ID_A, ID_B, impact_hints=["stem-altering"]),
+        )
+        self.assertEqual(follow.status, "delivered")
 
 
 if __name__ == "__main__":
