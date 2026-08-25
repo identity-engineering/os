@@ -1,6 +1,6 @@
 # Identity-Native Messaging Layer (Local)
 
-**Status:** Phase 3 skeleton  
+**Status:** Phase 3 + HTTP surface  
 **Framework gap:** [framework#102](https://github.com/identity-engineering/framework/issues/102)  
 **Tracking:** [#107](https://github.com/identity-engineering/os/issues/107)
 
@@ -15,16 +15,16 @@ It does **not** replace Interaction Signals.
 | Interaction Signal (existing) | Geometry exchange (Mass estimates, depth, Mature linkage) |
 | Identity Messaging (this) | General Identity-to-Identity communication (tasks, context, consent, coordination) |
 
-## Phase 3 scope (skeleton)
+## Current scope
 
 1. Register / list Identity Cards (file store under `.ie/messaging/cards/`)
-2. Send an Envelope (stored under `.ie/messaging/outbox/` + target inbox)
-3. List inbox / show message
-4. Recognition check against the target Card’s `recognitionPolicy`
-5. Emit a simple Receipt
-6. CLI: `ie messaging …`
+2. Send an Envelope (outbox + inbox + receipt)
+3. Recognition check against the target Card’s `recognitionPolicy`
+4. Consent grants for `mass-altering` / `stem-altering`
+5. CLI: `ie messaging …`
+6. Local HTTP surface: `ie messaging serve` / `python -m runtime.messaging_http`
 
-Out of scope for this skeleton: network transport, A2A adapter, collective Regulation execution, metabolization hooks into Mature.
+Still out of scope: A2A adapter, collective Regulation execution, metabolization hooks into Mature, Managed Space federation.
 
 ## Design principles (binding)
 
@@ -36,14 +36,12 @@ Out of scope for this skeleton: network transport, A2A adapter, collective Regul
 
 ## Schema source of truth
 
-Conceptual schemas live in the framework branch:
+Conceptual schemas live in the framework repo:
 
 - `docs/messaging/06-identity-card-schema.md`
 - `docs/messaging/07-message-envelope-schema.md`
 
-OS copies minimal JSON schemas under `schemas/messaging/` for runtime validation later.
-
-## CLI (Phase 3)
+## CLI
 
 ```
 ie messaging card register --file card.json
@@ -52,7 +50,22 @@ ie messaging card show <identityId>
 ie messaging send --file envelope.json
 ie messaging inbox
 ie messaging show <messageId>
+ie messaging serve --port 7420
 ```
+
+## HTTP surface (default `127.0.0.1:7420`)
+
+```
+GET  /ie/v0/messaging/health
+GET  /ie/v0/messaging/cards
+GET  /ie/v0/messaging/cards/<identityId>
+POST /ie/v0/messaging/cards
+POST /ie/v0/messaging/messages
+GET  /ie/v0/messaging/inbox
+GET  /ie/v0/messaging/messages/<messageId>
+```
+
+Also: `python -m runtime.messaging_http --install <root> --port 7420`
 
 ## Storage layout (local Space)
 
@@ -63,6 +76,13 @@ ie messaging show <messageId>
     inbox/          # received envelopes
     outbox/         # sent envelopes
     receipts/       # delivery / recognition / rejection receipts
+    consents/       # mass-/stem-altering grants (target__sender.json)
 ```
 
 All paths are under the IE install root resolved by `ie.paths`.
+
+## Consent semantics
+
+- A `consent-grant` message is sent **by the granter** (future impact target) **to the grantee** (future impact sender).
+- Grant record: `targetId = from`, `senderId = to`.
+- Subsequent envelopes with `impactHints` including `mass-altering` or `stem-altering` require a matching grant or are rejected.
