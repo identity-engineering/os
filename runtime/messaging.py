@@ -1,4 +1,4 @@
-"""Identity-Native Messaging – local skeleton (Phase 3).
+"""Identity-Native Messaging – local runtime.
 
 File-backed store under <install>/.ie/messaging/.
 Does not replace Interaction Signals; sits alongside them.
@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -20,6 +21,7 @@ UUID_V7_RE = re.compile(
 )
 
 IMPACT_CLASSES = ("mass-altering", "stem-altering")
+REGULATION_MODES = ("fan-out", "specialist", "central")
 
 
 class MessagingError(Exception):
@@ -56,7 +58,7 @@ def messaging_root(install_root: Path) -> Path:
 
 def ensure_layout(install_root: Path) -> Path:
     root = messaging_root(install_root)
-    for sub in ("cards", "inbox", "outbox", "receipts", "consents"):
+    for sub in ("cards", "inbox", "outbox", "receipts", "consents", "damping"):
         (root / sub).mkdir(parents=True, exist_ok=True)
     return root
 
@@ -94,6 +96,17 @@ def register_card(install_root: Path, card: dict) -> dict:
         raise MessagingError("card.endpoints.messaging is required")
     if card.get("version") != "0.1":
         raise MessagingError("card.version must be '0.1' for this skeleton")
+
+    # Soft-validate regulation block when present
+    reg = card.get("regulation")
+    if reg is not None:
+        if not isinstance(reg, dict):
+            raise MessagingError("card.regulation must be an object")
+        routing = reg.get("routing")
+        if routing is not None and routing not in REGULATION_MODES:
+            raise MessagingError(
+                f"card.regulation.routing must be one of {REGULATION_MODES}"
+            )
 
     card = dict(card)
     card.setdefault("updatedAt", _utc_now())
@@ -161,13 +174,7 @@ def consent_required(envelope: dict) -> bool:
 # ---------------------------------------------------------------------------
 # Consent grants (mass-/stem-altering)
 # ---------------------------------------------------------------------------
-#
-# Semantics: target allows sender to deliver impactHints of the listed classes.
-# A consent-grant message is sent BY the granter (future impact target)
-# TO the grantee (future impact sender):
-#   from = granter = target_id of the grant record
-#   to   = grantee = sender_id of the grant record
-#
+
 
 def _consent_key(target_id: str, sender_id: str) -> str:
     return f"{target_id}__{sender_id}"
@@ -264,6 +271,95 @@ def _apply_consent_grant_if_present(install_root: Path, env: dict, message_to: s
 
 
 # ---------------------------------------------------------------------------
+# Collective Regulation + Damping
+# ---------------------------------------------------------------------------
+
+
+def resolve_regulation_targets(
+    install_root: Path, collective_card: dict
+) -> tuple[list[str], str]:
+    """Decide delivery targets for a collective Identity.
+
+    Returns (target_identity_ids, routing_mode).
+    Modes:
+      central    – only the collective itself
+      specialist – first registered specialist (fallback: collective)
+      fan-out    – all registered specialists + collective inbox
+    """
+    collective_id = collective_card["identityId"]
+    reg = collective_card.get("regulation") or {}
+    routing = reg.get("routing") or "central"
+    specialists = [s for s in (reg.get("specialists") or []) if isinstance(s, str)]
+
+    if routing == "central" or collective_card.get("type") != "collective":
+        return [collective_id], "central"
+
+    registered = [s for s in specialists if get_card(install_root, s) is not None]
+
+    if routing == "specialist":
+        if registered:
+            return [registered[0]], "specialist"
+        return [collective_id], "specialist-fallback-central"
+
+    if routing == "fan-out":
+        # Collective keeps a copy; each registered specialist gets a routed copy.
+        targets = [collective_id] + registered
+        # de-dupe preserving order
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for t in targets:
+            if t not in seen:
+                seen.add(t)
+                ordered.append(t)
+        return ordered, "fan-out"
+
+    return [collective_id], f"unknown-routing:{routing}"
+
+
+def _damping_path(install_root: Path, collective_id: str) -> Path:
+    return messaging_root(install_root) / "damping" / f"{collective_id}.json"
+
+
+def damping_allows(install_root: Path, collective_card: dict) -> tuple[bool, str]:
+    """Enforce regulation.damping.maxMessagesPerWindow if configured."""
+    reg = collective_card.get("regulation") or {}
+    damping = reg.get("damping") or {}
+    max_n = damping.get("maxMessagesPerWindow")
+    window_s = damping.get("windowSeconds")
+    if not max_n or not window_s:
+        return True, "no damping"
+    try:
+        max_n = int(max_n)
+        window_s = int(window_s)
+    except (TypeError, ValueError):
+        return True, "invalid damping config ignored"
+
+    collective_id = collective_card["identityId"]
+    path = _damping_path(install_root, collective_id)
+    now = time.time()
+    timestamps: list[float] = []
+    if path.is_file():
+        try:
+            data = _read_json(path)
+            timestamps = [float(t) for t in (data.get("timestamps") or [])]
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            timestamps = []
+
+    cutoff = now - window_s
+    timestamps = [t for t in timestamps if t >= cutoff]
+    if len(timestamps) >= max_n:
+        return False, (
+            f"damping: max {max_n} messages per {window_s}s "
+            f"(have {len(timestamps)})"
+        )
+
+    timestamps.append(now)
+    ensure_layout(install_root)
+    _write_json(path, {"timestamps": timestamps, "updatedAt": _utc_now()})
+    return True, "ok"
+
+
+# ---------------------------------------------------------------------------
 # Send / Inbox / Receipts
 # ---------------------------------------------------------------------------
 
@@ -272,14 +368,18 @@ def _apply_consent_grant_if_present(install_root: Path, env: dict, message_to: s
 class SendResult:
     envelope: dict
     receipt: dict
-    status: str  # delivered | rejected
+    status: str  # delivered | rejected | partial
+    deliveries: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
-        return {
+        out = {
             "status": self.status,
             "envelope": self.envelope,
             "receipt": self.receipt,
         }
+        if self.deliveries:
+            out["deliveries"] = self.deliveries
+        return out
 
 
 def _target_id(to_field: Any) -> str:
@@ -290,8 +390,58 @@ def _target_id(to_field: Any) -> str:
     raise MessagingError("envelope.to must be identityId string or {collectiveId}")
 
 
+def _deliver_to(
+    install_root: Path,
+    env: dict,
+    delivery_target: str,
+    *,
+    via_collective: Optional[str] = None,
+    routing: Optional[str] = None,
+) -> dict:
+    """Write one inbox copy (and optional routed metadata). Returns delivery record."""
+    copy = dict(env)
+    if via_collective and delivery_target != via_collective:
+        # Distinct messageId for specialist copies so inbox entries don't collide.
+        copy["messageId"] = _new_uuid_v7()
+        copy["routedFrom"] = via_collective
+        copy["originalMessageId"] = env["messageId"]
+        if routing:
+            copy["regulationRouting"] = routing
+
+    member_card = get_card(install_root, delivery_target)
+    if member_card is None:
+        return {
+            "target": delivery_target,
+            "status": "skipped",
+            "reason": "no local card",
+        }
+
+    # Member may still refuse via own Recognition (except the collective itself
+    # which already passed Recognition).
+    if via_collective and delivery_target != via_collective:
+        allowed, reason = recognition_allows(
+            member_card, env["from"], (env.get("signal") or {}).get("type", "")
+        )
+        if not allowed:
+            return {
+                "target": delivery_target,
+                "status": "rejected",
+                "reason": f"member recognition: {reason}",
+            }
+
+    _write_json(
+        messaging_root(install_root) / "inbox" / f"{copy['messageId']}.json", copy
+    )
+    _apply_consent_grant_if_present(install_root, copy, delivery_target)
+    return {
+        "target": delivery_target,
+        "status": "delivered",
+        "messageId": copy["messageId"],
+    }
+
+
 def send_envelope(install_root: Path, envelope: dict) -> SendResult:
-    """Validate, recognition-check, consent-gate, persist, emit receipt."""
+    """Validate, recognition-check, consent-gate, regulate, persist, emit receipt."""
     ensure_layout(install_root)
     env = dict(envelope)
 
@@ -359,18 +509,60 @@ def send_envelope(install_root: Path, envelope: dict) -> SendResult:
             )
             return SendResult(envelope=env, receipt=receipt, status="rejected")
 
+    # Damping only for collective targets
+    if card.get("type") == "collective":
+        ok, damp_reason = damping_allows(install_root, card)
+        if not ok:
+            receipt = _make_receipt(
+                env, receipt_type="rejected", from_id=target, reason=damp_reason
+            )
+            _persist_receipt(install_root, receipt)
+            _write_json(
+                messaging_root(install_root) / "outbox" / f"{env['messageId']}.json", env
+            )
+            return SendResult(envelope=env, receipt=receipt, status="rejected")
+
+    delivery_targets, routing = resolve_regulation_targets(install_root, card)
     _write_json(
         messaging_root(install_root) / "outbox" / f"{env['messageId']}.json", env
     )
-    _write_json(
-        messaging_root(install_root) / "inbox" / f"{env['messageId']}.json", env
-    )
-    _apply_consent_grant_if_present(install_root, env, target)
+
+    deliveries: list[dict] = []
+    via = target if card.get("type") == "collective" else None
+    for tid in delivery_targets:
+        deliveries.append(
+            _deliver_to(
+                install_root,
+                env,
+                tid,
+                via_collective=via,
+                routing=routing if via else None,
+            )
+        )
+
+    delivered_n = sum(1 for d in deliveries if d.get("status") == "delivered")
+    if delivered_n == 0:
+        status = "rejected"
+        receipt_type = "rejected"
+        reason = "regulation produced no successful deliveries"
+    elif delivered_n < len(deliveries):
+        status = "partial"
+        receipt_type = "delivered"
+        reason = f"regulation={routing}; {delivered_n}/{len(deliveries)} delivered"
+    else:
+        status = "delivered"
+        receipt_type = "delivered"
+        reason = f"local delivery (regulation={routing})" if via else "local delivery"
+
     receipt = _make_receipt(
-        env, receipt_type="delivered", from_id=target, reason="local delivery"
+        env, receipt_type=receipt_type, from_id=target, reason=reason
     )
+    if deliveries:
+        receipt["deliveries"] = deliveries
     _persist_receipt(install_root, receipt)
-    return SendResult(envelope=env, receipt=receipt, status="delivered")
+    return SendResult(
+        envelope=env, receipt=receipt, status=status, deliveries=deliveries
+    )
 
 
 def _make_receipt(
