@@ -192,6 +192,37 @@ def messaging_show(
     typer.echo(json.dumps(msg, indent=2, ensure_ascii=False))
 
 
+@messaging_app.command("metabolize")
+def messaging_metabolize(
+    message_id: str = typer.Argument(..., help="messageId to metabolize"),
+    notes: str = typer.Option("", "--notes", help="Metabolization notes"),
+    classification: Optional[str] = typer.Option(
+        None, "--classification", help="Override classification label"
+    ),
+    mature: bool = typer.Option(
+        False,
+        "--mature",
+        help="Also commit a Mature step (requires IE sqlite install)",
+    ),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """Metabolize an accepted message (Biology Single); optional Mature."""
+    root = _root(path)
+    from runtime.messaging_metabolize import metabolize_message
+
+    try:
+        result = metabolize_message(
+            root,
+            message_id,
+            notes=notes,
+            classification=classification,
+            commit_mature=mature,
+        )
+    except MessagingError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+
+
 @messaging_app.command("serve")
 def messaging_serve(
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),

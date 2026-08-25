@@ -1,6 +1,6 @@
 # Identity-Native Messaging Layer (Local)
 
-**Status:** Phase 3 + HTTP + A2A + Collective Regulation  
+**Status:** Phase 3 + HTTP + A2A + Regulation + Metabolize  
 **Framework gap:** [framework#102](https://github.com/identity-engineering/framework/issues/102)  
 **Tracking:** [#107](https://github.com/identity-engineering/os/issues/107)
 
@@ -21,9 +21,10 @@ It does **not** replace Interaction Signals.
 2. Recognition + consent grants
 3. CLI + local HTTP surface
 4. A2A adapter (discovery only)
-5. **Collective Regulation** – `central` / `specialist` / `fan-out` + damping
+5. Collective Regulation (`central` / `specialist` / `fan-out` + damping)
+6. **Metabolization** – record processing of an accepted message; optional Mature commit
 
-Still out of scope: metabolization hooks into Mature, Managed Space federation, full A2A task protocol.
+Still out of scope: Managed Space federation, full A2A task protocol, auto-metabolize policies.
 
 ## Design principles (binding)
 
@@ -33,38 +34,37 @@ Still out of scope: metabolization hooks into Mature, Managed Space federation, 
 4. Causal Entropic Forces – mass-/stem-altering requires explicit consent.
 5. Feature branch + explicit approval before merge to main.
 
-## Collective Regulation
+## Metabolization (Biology Single)
 
-On a Card with `type: "collective"` and a `regulation` block:
+After delivery, the receiving Identity may metabolize a message:
+
+```
+ie messaging metabolize <messageId> --notes "…" [--classification task] [--mature]
+```
+
+- Always writes `.ie/messaging/metabolized/<messageId>.json`
+- Emits a `metabolized` receipt toward the original sender
+- With `--mature`: snapshots the envelope under `trajectory/messaging/` and runs `commit_mature` (stem + workspace observation)
+
+## Collective Regulation
 
 | `routing` | Behaviour |
 |-----------|-----------|
-| `central` | Deliver only to the collective inbox |
-| `specialist` | Deliver to the first *registered* specialist (fallback: collective) |
-| `fan-out` | Deliver to collective **and** every registered specialist |
+| `central` | Collective inbox only |
+| `specialist` | First registered specialist |
+| `fan-out` | Collective + all registered specialists |
 
-Specialists still apply their own Recognition policy. Routed specialist copies get `routedFrom`, `originalMessageId`, and a fresh `messageId`.
-
-Optional damping:
-
-```json
-"regulation": {
-  "routing": "fan-out",
-  "specialists": ["…", "…"],
-  "damping": { "maxMessagesPerWindow": 20, "windowSeconds": 60 }
-}
-```
+Optional `damping.maxMessagesPerWindow` / `windowSeconds`.
 
 ## CLI
 
 ```
 ie messaging card register --file card.json
-ie messaging card list
 ie messaging a2a export <identityId>
-ie messaging a2a import-card --file agent-card.json
 ie messaging send --file envelope.json
 ie messaging inbox
-ie messaging serve --port 7420 --identity <identityId>
+ie messaging metabolize <messageId> --mature
+ie messaging serve --port 7420
 ```
 
 ## HTTP surface (default `127.0.0.1:7420`)
@@ -80,12 +80,6 @@ POST /ie/v0/messaging/import-agent-card
 GET  /.well-known/agent-card.json
 ```
 
-## A2A mapping notes
-
-- Export puts IE fields under `x-ie`.
-- Import accepts A2A v1.0 `supportedInterfaces` and legacy top-level `url`.
-- Discovery-only – no A2A task runtime.
-
 ## Storage layout
 
 ```
@@ -95,11 +89,6 @@ GET  /.well-known/agent-card.json
   outbox/
   receipts/
   consents/
-  damping/          # per-collective rate windows
+  damping/
+  metabolized/
 ```
-
-## Consent semantics
-
-- `consent-grant` is sent **by the granter** (future impact target) **to the grantee**.
-- Grant record: `targetId = from`, `senderId = to`.
-- `mass-altering` / `stem-altering` require a matching grant.
