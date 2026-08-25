@@ -13,6 +13,9 @@ Routes:
 - POST /ie/v0/messaging/messages
 - GET  /ie/v0/messaging/inbox
 - GET  /ie/v0/messaging/messages/<messageId>
+- GET  /ie/v0/messaging/agent-card/<identityId>
+- POST /ie/v0/messaging/import-agent-card
+- GET  /.well-known/agent-card.json  (primary card if configured)
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
+from .a2a_adapter import agent_card_to_identity_card, identity_card_to_agent_card
 from .messaging import (
     MessagingError,
     get_card,
@@ -36,9 +40,15 @@ from .messaging import (
 
 
 class MessagingHTTPServer(HTTPServer):
-    def __init__(self, server_address, install_root: Path):
+    def __init__(
+        self,
+        server_address,
+        install_root: Path,
+        primary_identity_id: Optional[str] = None,
+    ):
         super().__init__(server_address, _make_handler())
         self.install_root = install_root
+        self.primary_identity_id = primary_identity_id
 
 
 def _make_handler():
@@ -67,6 +77,10 @@ def _make_handler():
                 return None, "expected JSON object"
             return payload, None
 
+        def _public_base(self) -> str:
+            host = self.headers.get("Host") or f"127.0.0.1:{self.server.server_address[1]}"
+            return f"http://{host}"
+
         def do_GET(self) -> None:
             path = urlparse(self.path).path.rstrip("/") or "/"
             root = self.server.install_root
@@ -82,8 +96,54 @@ def _make_handler():
                 )
                 return
 
+            if path in ("/.well-known/agent-card.json", "/.well-known/agent-card"):
+                primary = self.server.primary_identity_id
+                if not primary:
+                    cards = list_cards(root)
+                    if len(cards) == 1:
+                        primary = cards[0].get("identityId")
+                if not primary:
+                    self._send_json(
+                        404,
+                        {
+                            "error": "no primary Identity Card; pass --identity or register exactly one card"
+                        },
+                    )
+                    return
+                card = get_card(root, primary)
+                if card is None:
+                    self._send_json(404, {"error": "primary card not found"})
+                    return
+                try:
+                    agent = identity_card_to_agent_card(
+                        card,
+                        messaging_base_url=f"{self._public_base()}/ie/v0/messaging",
+                    )
+                except MessagingError as exc:
+                    self._send_json(400, {"error": str(exc)})
+                    return
+                self._send_json(200, agent)
+                return
+
             if path == "/ie/v0/messaging/cards":
                 self._send_json(200, {"cards": list_cards(root)})
+                return
+
+            if path.startswith("/ie/v0/messaging/agent-card/"):
+                identity_id = path[len("/ie/v0/messaging/agent-card/") :]
+                card = get_card(root, identity_id)
+                if card is None:
+                    self._send_json(404, {"error": "card not found"})
+                    return
+                try:
+                    agent = identity_card_to_agent_card(
+                        card,
+                        messaging_base_url=f"{self._public_base()}/ie/v0/messaging",
+                    )
+                except MessagingError as exc:
+                    self._send_json(400, {"error": str(exc)})
+                    return
+                self._send_json(200, agent)
                 return
 
             if path.startswith("/ie/v0/messaging/cards/"):
@@ -128,6 +188,16 @@ def _make_handler():
                 self._send_json(201, stored)
                 return
 
+            if path == "/ie/v0/messaging/import-agent-card":
+                try:
+                    card = agent_card_to_identity_card(body)
+                    stored = register_card(root, card)
+                except MessagingError as exc:
+                    self._send_json(400, {"error": str(exc)})
+                    return
+                self._send_json(201, stored)
+                return
+
             if path == "/ie/v0/messaging/messages":
                 try:
                     result = send_envelope(root, body)
@@ -148,14 +218,22 @@ def serve(
     *,
     host: str = "127.0.0.1",
     port: int = 7420,
+    primary_identity_id: Optional[str] = None,
 ) -> None:
-    httpd = MessagingHTTPServer((host, port), install_root=install_root)
+    httpd = MessagingHTTPServer(
+        (host, port),
+        install_root=install_root,
+        primary_identity_id=primary_identity_id,
+    )
     print(f"IE OS messaging surface on http://{host}:{port}")
     print(f"  GET  /ie/v0/messaging/health")
     print(f"  GET  /ie/v0/messaging/cards")
     print(f"  POST /ie/v0/messaging/cards")
     print(f"  POST /ie/v0/messaging/messages")
     print(f"  GET  /ie/v0/messaging/inbox")
+    print(f"  GET  /ie/v0/messaging/agent-card/<id>")
+    print(f"  POST /ie/v0/messaging/import-agent-card")
+    print(f"  GET  /.well-known/agent-card.json")
     print(f"  install: {install_root}")
     try:
         httpd.serve_forever()
@@ -176,10 +254,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=7420)
+    parser.add_argument(
+        "--identity",
+        dest="primary_identity_id",
+        default=None,
+        help="Primary identityId for /.well-known/agent-card.json",
+    )
     args = parser.parse_args(argv)
 
-    serve(Path(args.install_root), host=args.host, port=args.port)
+    serve(
+        Path(args.install_root),
+        host=args.host,
+        port=args.port,
+        primary_identity_id=args.primary_identity_id,
+    )
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
