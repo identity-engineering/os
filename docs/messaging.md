@@ -1,6 +1,6 @@
 # Identity-Native Messaging Layer (Local)
 
-**Status:** Phase 3 + HTTP surface  
+**Status:** Phase 3 + HTTP + A2A adapter  
 **Framework gap:** [framework#102](https://github.com/identity-engineering/framework/issues/102)  
 **Tracking:** [#107](https://github.com/identity-engineering/os/issues/107)
 
@@ -17,14 +17,14 @@ It does **not** replace Interaction Signals.
 
 ## Current scope
 
-1. Register / list Identity Cards (file store under `.ie/messaging/cards/`)
-2. Send an Envelope (outbox + inbox + receipt)
-3. Recognition check against the target Card’s `recognitionPolicy`
-4. Consent grants for `mass-altering` / `stem-altering`
-5. CLI: `ie messaging …`
-6. Local HTTP surface: `ie messaging serve` / `python -m runtime.messaging_http`
+1. Register / list Identity Cards
+2. Send Envelope (outbox + inbox + receipt)
+3. Recognition + consent grants
+4. CLI: `ie messaging …`
+5. Local HTTP surface
+6. **A2A adapter** – Identity Card ↔ Agent Card mapping (discovery only; no A2A task runtime)
 
-Still out of scope: A2A adapter, collective Regulation execution, metabolization hooks into Mature, Managed Space federation.
+Still out of scope: collective Regulation execution, metabolization hooks into Mature, Managed Space federation, full A2A task protocol.
 
 ## Design principles (binding)
 
@@ -47,10 +47,12 @@ Conceptual schemas live in the framework repo:
 ie messaging card register --file card.json
 ie messaging card list
 ie messaging card show <identityId>
+ie messaging a2a export <identityId>
+ie messaging a2a import-card --file agent-card.json
 ie messaging send --file envelope.json
 ie messaging inbox
 ie messaging show <messageId>
-ie messaging serve --port 7420
+ie messaging serve --port 7420 --identity <identityId>
 ```
 
 ## HTTP surface (default `127.0.0.1:7420`)
@@ -63,23 +65,31 @@ POST /ie/v0/messaging/cards
 POST /ie/v0/messaging/messages
 GET  /ie/v0/messaging/inbox
 GET  /ie/v0/messaging/messages/<messageId>
+GET  /ie/v0/messaging/agent-card/<identityId>
+POST /ie/v0/messaging/import-agent-card
+GET  /.well-known/agent-card.json
 ```
 
-Also: `python -m runtime.messaging_http --install <root> --port 7420`
+`/.well-known/agent-card.json` uses `--identity` if set, otherwise the sole registered card.
+
+## A2A mapping notes
+
+- Export puts IE fields under `x-ie` so pure A2A clients can ignore them.
+- Import accepts A2A v1.0 `supportedInterfaces` and legacy top-level `url`.
+- Skills map to IE `capabilities`; reverse on export.
+- This adapter is **discovery-only** – it does not implement A2A Tasks / streaming.
 
 ## Storage layout (local Space)
 
 ```
 .ie/
   messaging/
-    cards/          # one JSON file per identityId
-    inbox/          # received envelopes
-    outbox/         # sent envelopes
-    receipts/       # delivery / recognition / rejection receipts
-    consents/       # mass-/stem-altering grants (target__sender.json)
+    cards/
+    inbox/
+    outbox/
+    receipts/
+    consents/
 ```
-
-All paths are under the IE install root resolved by `ie.paths`.
 
 ## Consent semantics
 

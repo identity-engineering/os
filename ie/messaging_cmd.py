@@ -1,4 +1,4 @@
-"""ie messaging – Identity-Native Messaging CLI (Phase 3 skeleton)."""
+"""ie messaging – Identity-Native Messaging CLI."""
 
 from __future__ import annotations
 
@@ -21,9 +21,11 @@ from runtime.messaging import (
     send_envelope,
 )
 
-messaging_app = typer.Typer(help="Identity-Native Messaging (local skeleton)")
+messaging_app = typer.Typer(help="Identity-Native Messaging")
 card_app = typer.Typer(help="Identity Card operations")
+a2a_app = typer.Typer(help="A2A Agent Card import/export")
 messaging_app.add_typer(card_app, name="card")
+messaging_app.add_typer(a2a_app, name="a2a")
 
 
 def _root(path: Optional[Path]) -> Path:
@@ -97,6 +99,45 @@ def card_show(
     typer.echo(json.dumps(card, indent=2, ensure_ascii=False))
 
 
+@a2a_app.command("export")
+def a2a_export(
+    identity_id: str = typer.Argument(..., help="identityId"),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """Export an Identity Card as an A2A Agent Card (JSON)."""
+    root = _root(path)
+    card = get_card(root, identity_id)
+    if card is None:
+        raise SystemExit(f"No card for {identity_id!r}")
+    from runtime.a2a_adapter import identity_card_to_agent_card
+
+    try:
+        agent = identity_card_to_agent_card(card)
+    except MessagingError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(agent, indent=2, ensure_ascii=False))
+
+
+@a2a_app.command("import-card")
+def a2a_import_card(
+    file: Optional[Path] = typer.Option(
+        None, "--file", "-f", help="A2A Agent Card JSON (default: stdin)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path"),
+) -> None:
+    """Import an A2A Agent Card into the local Identity Card store."""
+    root = _root(path)
+    agent = _load_json(file)
+    from runtime.a2a_adapter import agent_card_to_identity_card
+
+    try:
+        card = agent_card_to_identity_card(agent)
+        stored = register_card(root, card)
+    except MessagingError as exc:
+        raise SystemExit(str(exc)) from exc
+    typer.echo(json.dumps(stored, indent=2, ensure_ascii=False))
+
+
 @messaging_app.command("send")
 def messaging_send(
     file: Optional[Path] = typer.Option(
@@ -156,12 +197,15 @@ def messaging_serve(
     path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
     host: str = typer.Option("127.0.0.1", "--host"),
     port: int = typer.Option(7420, "--port"),
+    identity: Optional[str] = typer.Option(
+        None, "--identity", help="Primary identityId for /.well-known/agent-card.json"
+    ),
 ) -> None:
     """Start the local messaging HTTP surface (stdlib)."""
     root = _root(path)
     from runtime.messaging_http import serve
 
-    serve(root, host=host, port=port)
+    serve(root, host=host, port=port, primary_identity_id=identity)
 
 
 def register(app: typer.Typer) -> None:
