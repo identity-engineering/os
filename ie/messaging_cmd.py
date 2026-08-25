@@ -151,5 +151,18 @@ def messaging_show(
     typer.echo(json.dumps(msg, indent=2, ensure_ascii=False))
 
 
+@messaging_app.command("serve")
+def messaging_serve(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    host: str = typer.Option("127.0.0.1", "--host"),
+    port: int = typer.Option(7420, "--port"),
+) -> None:
+    """Start the local messaging HTTP surface (stdlib)."""
+    root = _root(path)
+    from runtime.messaging_http import serve
+
+    serve(root, host=host, port=port)
+
+
 def register(app: typer.Typer) -> None:
     app.add_typer(messaging_app, name="messaging")
