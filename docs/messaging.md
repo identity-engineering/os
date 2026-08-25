@@ -1,6 +1,6 @@
 # Identity-Native Messaging Layer (Local)
 
-**Status:** Phase 3 + HTTP + A2A adapter  
+**Status:** Phase 3 + HTTP + A2A + Collective Regulation  
 **Framework gap:** [framework#102](https://github.com/identity-engineering/framework/issues/102)  
 **Tracking:** [#107](https://github.com/identity-engineering/os/issues/107)
 
@@ -17,14 +17,13 @@ It does **not** replace Interaction Signals.
 
 ## Current scope
 
-1. Register / list Identity Cards
-2. Send Envelope (outbox + inbox + receipt)
-3. Recognition + consent grants
-4. CLI: `ie messaging …`
-5. Local HTTP surface
-6. **A2A adapter** – Identity Card ↔ Agent Card mapping (discovery only; no A2A task runtime)
+1. Identity Cards + send / inbox / receipts
+2. Recognition + consent grants
+3. CLI + local HTTP surface
+4. A2A adapter (discovery only)
+5. **Collective Regulation** – `central` / `specialist` / `fan-out` + damping
 
-Still out of scope: collective Regulation execution, metabolization hooks into Mature, Managed Space federation, full A2A task protocol.
+Still out of scope: metabolization hooks into Mature, Managed Space federation, full A2A task protocol.
 
 ## Design principles (binding)
 
@@ -34,24 +33,37 @@ Still out of scope: collective Regulation execution, metabolization hooks into M
 4. Causal Entropic Forces – mass-/stem-altering requires explicit consent.
 5. Feature branch + explicit approval before merge to main.
 
-## Schema source of truth
+## Collective Regulation
 
-Conceptual schemas live in the framework repo:
+On a Card with `type: "collective"` and a `regulation` block:
 
-- `docs/messaging/06-identity-card-schema.md`
-- `docs/messaging/07-message-envelope-schema.md`
+| `routing` | Behaviour |
+|-----------|-----------|
+| `central` | Deliver only to the collective inbox |
+| `specialist` | Deliver to the first *registered* specialist (fallback: collective) |
+| `fan-out` | Deliver to collective **and** every registered specialist |
+
+Specialists still apply their own Recognition policy. Routed specialist copies get `routedFrom`, `originalMessageId`, and a fresh `messageId`.
+
+Optional damping:
+
+```json
+"regulation": {
+  "routing": "fan-out",
+  "specialists": ["…", "…"],
+  "damping": { "maxMessagesPerWindow": 20, "windowSeconds": 60 }
+}
+```
 
 ## CLI
 
 ```
 ie messaging card register --file card.json
 ie messaging card list
-ie messaging card show <identityId>
 ie messaging a2a export <identityId>
 ie messaging a2a import-card --file agent-card.json
 ie messaging send --file envelope.json
 ie messaging inbox
-ie messaging show <messageId>
 ie messaging serve --port 7420 --identity <identityId>
 ```
 
@@ -60,39 +72,34 @@ ie messaging serve --port 7420 --identity <identityId>
 ```
 GET  /ie/v0/messaging/health
 GET  /ie/v0/messaging/cards
-GET  /ie/v0/messaging/cards/<identityId>
 POST /ie/v0/messaging/cards
 POST /ie/v0/messaging/messages
 GET  /ie/v0/messaging/inbox
-GET  /ie/v0/messaging/messages/<messageId>
 GET  /ie/v0/messaging/agent-card/<identityId>
 POST /ie/v0/messaging/import-agent-card
 GET  /.well-known/agent-card.json
 ```
 
-`/.well-known/agent-card.json` uses `--identity` if set, otherwise the sole registered card.
-
 ## A2A mapping notes
 
-- Export puts IE fields under `x-ie` so pure A2A clients can ignore them.
+- Export puts IE fields under `x-ie`.
 - Import accepts A2A v1.0 `supportedInterfaces` and legacy top-level `url`.
-- Skills map to IE `capabilities`; reverse on export.
-- This adapter is **discovery-only** – it does not implement A2A Tasks / streaming.
+- Discovery-only – no A2A task runtime.
 
-## Storage layout (local Space)
+## Storage layout
 
 ```
-.ie/
-  messaging/
-    cards/
-    inbox/
-    outbox/
-    receipts/
-    consents/
+.ie/messaging/
+  cards/
+  inbox/
+  outbox/
+  receipts/
+  consents/
+  damping/          # per-collective rate windows
 ```
 
 ## Consent semantics
 
-- A `consent-grant` message is sent **by the granter** (future impact target) **to the grantee** (future impact sender).
+- `consent-grant` is sent **by the granter** (future impact target) **to the grantee**.
 - Grant record: `targetId = from`, `senderId = to`.
-- Subsequent envelopes with `impactHints` including `mass-altering` or `stem-altering` require a matching grant or are rejected.
+- `mass-altering` / `stem-altering` require a matching grant.
