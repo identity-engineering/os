@@ -119,14 +119,14 @@ jobs:
           set -euo pipefail
           url="https://identity-engineering.org/releases/ie-os/${VERSION}/ie_os-${VERSION}.tar.gz"
           headers="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors --dump-header - --output /dev/null "$url")"
-          remote_size="$(printf '%s\n' "$headers" | awk 'tolower($1) == "content-length:" {print $2}' | tr -d '\r' | tail -n 1)"
-          cache_control="$(printf '%s\n' "$headers" | awk 'tolower($1) == "cache-control:" {$1=""; sub(/^ /, ""); print}' | tr -d '\r' | tail -n 1)"
-          [[ "$remote_size" == "$LOCAL_SIZE" ]]
-          [[ "$cache_control" == *immutable* ]]
-          remote_sha256="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url" | sha256sum | awk '{print $1}')"
-          [[ "$remote_sha256" == "$LOCAL_SHA256" ]]
-          echo "Artifact URL: $url"
-          echo "sha256 for Formula: $LOCAL_SHA256"
+          remote_size="$(printf '%s\n' "$headers" | awk 'tolower($1) == \"content-length:\" {print $2}' | tr -d '\r' | tail -n 1)"
+          cache_control="$(printf '%s\n' "$headers" | awk 'tolower($1) == \"cache-control:\" {$1=\"\"; sub(/^ /, \"\"); print}' | tr -d '\r' | tail -n 1)"
+          [[ \"$remote_size\" == \"$LOCAL_SIZE\" ]]
+          [[ \"$cache_control\" == *immutable* ]]
+          remote_sha256="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors \"$url\" | sha256sum | awk '{print $1}')"
+          [[ \"$remote_sha256\" == \"$LOCAL_SHA256\" ]]
+          echo \"Artifact URL: $url\"
+          echo \"sha256 for Formula: $LOCAL_SHA256\"
 
       - name: GitHub Release on os
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
@@ -162,26 +162,45 @@ jobs:
             echo "Homebrew formula already points to ${VERSION}."
             exit 0
           fi
-          git -C homebrew-tap switch --create "$branch"
+          if git -C homebrew-tap show-ref --verify --quiet "refs/heads/${branch}"; then
+            git -C homebrew-tap switch "$branch"
+          else
+            git -C homebrew-tap switch --create "$branch"
+          fi
           git -C homebrew-tap config user.name "identity-engineering release bot"
           git -C homebrew-tap config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C homebrew-tap add Formula/ie-os.rb
           git -C homebrew-tap commit -m "ie-os ${VERSION}"
-          open_prs="$(gh pr list \
+          git -C homebrew-tap push --set-upstream origin "$branch"
+          pr_number="$(gh pr list \
             --repo identity-engineering/homebrew-tap \
             --head "$branch" \
             --base main \
             --state open \
             --json number \
-            --jq 'length')"
-          if [[ "$open_prs" != "0" ]]; then
-            echo "Homebrew formula PR for ${VERSION} already exists."
-            exit 0
+            --jq '.[0].number // empty')"
+          if [[ -z "$pr_number" ]]; then
+            pr_number="$(gh pr create \
+              --repo identity-engineering/homebrew-tap \
+              --base main \
+              --head "$branch" \
+              --title "ie-os ${VERSION}" \
+              --body "Updates the ie-os Homebrew formula to ${VERSION}." \
+              --json number \
+              --jq '.number')"
           fi
-          git -C homebrew-tap push origin "HEAD:refs/heads/${branch}"
-          gh pr create \
+          gh pr merge "$pr_number" \
             --repo identity-engineering/homebrew-tap \
-            --base main \
-            --head "$branch" \
-            --title "ie-os ${VERSION}" \
-            --body "Updates the ie-os Homebrew formula to ${VERSION}."
+            --squash \
+            --delete-branch
+          gh pr list \
+            --repo identity-engineering/homebrew-tap \
+            --state open \
+            --json number,title \
+            --jq '.[] | select(.title | test("^ie-os ")) | .number' \
+          | while read -r stale; do
+              [[ -n "$stale" ]] || continue
+              gh pr close "$stale" \
+                --repo identity-engineering/homebrew-tap \
+                --comment "Superseded by ie-os ${VERSION}."
+            done

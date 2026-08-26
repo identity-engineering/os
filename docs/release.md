@@ -102,7 +102,8 @@ The tag workflow accepts the date-tag shape only. It then:
 4. uploads both files to Cloudflare R2 under `releases/ie-os/YYYY.M.D/`
 5. verifies the public tarball size, checksum, and immutable cache header
 6. creates the GitHub Release on `identity-engineering/os`
-7. updates `Formula/ie-os.rb` and opens a pull request against `homebrew-tap/main`
+7. updates `Formula/ie-os.rb`, opens a pull request against `homebrew-tap/main`,
+   squash-merges that PR, and closes any older open formula PRs
 
 The public URLs are:
 
@@ -126,8 +127,9 @@ the repository secret `IE_RELEASE_TOKEN` in `identity-engineering/os`:
 - `Pull requests: Read and write` on `identity-engineering/homebrew-tap`
 - `Actions: Read` on `identity-engineering/os`
 
-The token is used to create the date tag and to push the Homebrew formula
-commit. The workflow never force-pushes a tag or a tap branch.
+The token is used to create the date tag, push the Homebrew formula branch,
+and squash-merge the formula pull request. The workflow never force-pushes a
+tag or a tap branch.
 
 ### R2 secrets
 
@@ -145,14 +147,15 @@ kept as a non-secret account endpoint in the workflow.
 
 Protect `main` and require the four CI checks listed above for pull requests.
 Protect `v*` tags against updates and deletion. Protect `homebrew-tap/main` and
-require a pull request for formula changes. The release token creates a
-versioned formula branch and pull request; it does not need a bypass for the
-protected default branch.
+require a pull request for formula changes. The release token still opens a
+versioned formula PR (audit trail for the URL + sha256). In solo-maintainer
+mode it squash-merges that PR in the same job so `brew upgrade ie-os` tracks
+the daily tag without a manual merge queue. Do not require a second reviewer
+on the tap until a second maintainer exists; extra required checks on the tap
+will stall the merge again.
 
-The repositories currently use solo-maintainer mode: a pull request is
-required, but no second-person approval is required because the organization
-has one active collaborator. Once a second maintainer is added, raise the
-required approval count to one and enable code-owner reviews.
+Once a second maintainer is added, raise the required approval count on `os`
+and enable code-owner reviews there. Keep tap formula merges bot-owned.
 
 ## First run
 
