@@ -119,14 +119,14 @@ jobs:
           set -euo pipefail
           url="https://identity-engineering.org/releases/ie-os/${VERSION}/ie_os-${VERSION}.tar.gz"
           headers="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors --dump-header - --output /dev/null "$url")"
-          remote_size="$(printf '%s\n' "$headers" | awk 'tolower($1) == \"content-length:\" {print $2}' | tr -d '\r' | tail -n 1)"
-          cache_control="$(printf '%s\n' "$headers" | awk 'tolower($1) == \"cache-control:\" {$1=\"\"; sub(/^ /, \"\"); print}' | tr -d '\r' | tail -n 1)"
-          [[ \"$remote_size\" == \"$LOCAL_SIZE\" ]]
-          [[ \"$cache_control\" == *immutable* ]]
-          remote_sha256="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors \"$url\" | sha256sum | awk '{print $1}')"
-          [[ \"$remote_sha256\" == \"$LOCAL_SHA256\" ]]
-          echo \"Artifact URL: $url\"
-          echo \"sha256 for Formula: $LOCAL_SHA256\"
+          remote_size="$(printf '%s\n' "$headers" | awk 'tolower($1) == "content-length:" {print $2}' | tr -d '\r' | tail -n 1)"
+          cache_control="$(printf '%s\n' "$headers" | awk 'tolower($1) == "cache-control:" {$1=""; sub(/^ /, ""); print}' | tr -d '\r' | tail -n 1)"
+          [[ "$remote_size" == "$LOCAL_SIZE" ]]
+          [[ "$cache_control" == *immutable* ]]
+          remote_sha256="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url" | sha256sum | awk '{print $1}')"
+          [[ "$remote_sha256" == "$LOCAL_SHA256" ]]
+          echo "Artifact URL: $url"
+          echo "sha256 for Formula: $LOCAL_SHA256"
 
       - name: GitHub Release on os
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
@@ -180,14 +180,19 @@ jobs:
             --json number \
             --jq '.[0].number // empty')"
           if [[ -z "$pr_number" ]]; then
-            pr_number="$(gh pr create \
+            gh pr create \
               --repo identity-engineering/homebrew-tap \
               --base main \
               --head "$branch" \
               --title "ie-os ${VERSION}" \
-              --body "Updates the ie-os Homebrew formula to ${VERSION}." \
+              --body "Updates the ie-os Homebrew formula to ${VERSION}."
+            pr_number="$(gh pr list \
+              --repo identity-engineering/homebrew-tap \
+              --head "$branch" \
+              --base main \
+              --state open \
               --json number \
-              --jq '.number')"
+              --jq '.[0].number')"
           fi
           gh pr merge "$pr_number" \
             --repo identity-engineering/homebrew-tap \
