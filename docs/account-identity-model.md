@@ -2,7 +2,8 @@
 
 Status: architecture contract (locked direction 08.08.2026)  
 Space membrane model linked 09.08.2026 - see `docs/space-model.md`  
-Identity creation lineage + default jurisdiction linked 09.08.2026 - see `docs/identity-creation-jurisdiction.md`
+Identity creation lineage + default jurisdiction linked 09.08.2026 - see `docs/identity-creation-jurisdiction.md`  
+Product path updated 28.08.2026 - recommended Free is Managed; see `docs/pricing.md`
 
 ## Core claim
 
@@ -10,7 +11,7 @@ An **IE Account** is not an Identity.
 
 | Unit | Role |
 |------|------|
-| **IE Account** | Auth, billing/plan on the IE product (IE-managed Space only) |
+| **IE Account** | Auth, billing/plan on the IE product (IE-managed Space) |
 | **Identity** | Geometric unit: Surface, Registry, Mass, Stem, Public Card, signals |
 | **Space** | Membrane host: membership, Surface hosting, jurisdiction policy (`docs/space-model.md`) |
 | **Harness / Runtime / Agent / Idea / Org** | Substrate of an Identity - not a mode of the human owner |
@@ -46,7 +47,7 @@ Identity (and any explicit grants to others), not a global read/write flag.
 ## Layer model
 
 ```text
-IE Account (auth + plan; managed Space only)
+IE Account (auth + plan; managed Space)
   └── may pay for Identities and optional governed Spaces
 
 Space (membrane host; space_id ≈ sovereign Space Identity)
@@ -69,8 +70,9 @@ Installation / Harness bindings
 - Owns authentication (e.g. Supabase Auth user on the managed path).
 - Owns plan and entitlement metering for the IE product.
 - Is **not** the geometric container; Spaces and Identities are.
-- Does **not** replace local Free operation: local mini-Spaces remain viable
-  without an account.
+- Required for Free Managed and paid plans.
+- Does **not** erase the local private Space: a local mini-Space remains viable
+  without an account. That path is not the recommended Free product.
 
 ### Identity
 
@@ -93,8 +95,10 @@ switch, never a silent elevation to account-root.
 
 Examples:
 
-- Desktop local install → local Identity in a local mini-Space (Free, no account).
-- Same machine after `ie link` → that Identity gains membership in IE-managed Space.
+- Recommended path: account + Identity in the IE-managed Space (Free Managed).
+- Desktop local install → local Identity in a local private Space (no account).
+- Same machine after a later connector (intended Pro unlock) → that Identity
+  may gain membership in IE-managed Space under policy.
 - Chat agent under managed MCP → authenticates as its **agent Identity**, not
   as the human Identity by default.
 - Cloud runtime spawn → creates or resumes a runtime Identity with its own
@@ -132,14 +136,16 @@ jurisdiction package over the new Identity (policy, visibility, surface admin).
 Ordinary grants are revocable by the Child; a narrow residual emergency lever
 remains for the creator line. Full semantics: `docs/identity-creation-jurisdiction.md`.
 
-## Relation to local Free V1
+## Relation to local private Space V1
 
 SQLite-first V1 ships **one local Identity per installation**
-(`docs/sqlite-schema-v1.md`). That remains a valid Free mini-Space:
+(`docs/sqlite-schema-v1.md`). That remains a valid private mini-Space:
 
 - no account required,
 - full Ownership of the files,
 - Surface and Mature on that single Identity.
+
+It is not the recommended Free product. See `docs/pricing.md`.
 
 Multi-Identity and multi-Space are the same model at larger cardinality.
 Local V1 does not need N Identities before the contract is locked; schema
@@ -161,16 +167,16 @@ require the managed path to treat:
 - plan metering on **Identity capacity** and, for premium, **governed Space**
   capability - not only raw API calls.
 
-Indicative metering direction (not a frozen price sheet):
+Metering (product direction, `docs/pricing.md`):
 
 | Tier | Direction |
 |------|-----------|
-| Free (local mini-Space, optional light account) | few Identities |
-| Personal Pro | more Identities in IE-managed Space |
-| Team / Org | many Identities in managed Space **and/or** governed Space (IE-federated or self-hosted) |
+| Free Managed | 3 Identities in IE-managed Space |
+| Local private Space | isolated on-device Space; connector later / intended Pro unlock |
+| Personal Pro | about 10-15 Identities + 1 Local Space with connector |
+| Team / Org | many Identities and/or a governed Space (IE-federated or self-hosted) |
 
-Exact limits remain product decisions. Architecture: **meter geometry and
-membrane**, not seats alone.
+Architecture: **meter geometry and membrane**, not seats alone.
 
 ## Cloud runtime as Identity
 
@@ -188,12 +194,12 @@ here as substrate `runtime`, not as an infra side channel.
 
 ## Explicit non-goals of this contract
 
-- Replacing local Free with a mandatory account.
 - Making every agent automatically the human Identity.
 - Silent cross-Identity Mature or policy writes.
 - Treating subscription tier as a change of geometric contracts.
 - Requiring a global shared Registry across Spaces.
 - Multiple human Identities for one person because they work in two Spaces.
+- Requiring an account to run a local private Space.
 
 ## Implementation sketch (minimal data contract)
 
@@ -210,7 +216,7 @@ spaces                           -- see docs/space-model.md
 
 identities
   identity_id
-  account_id?                   -- null for pure local Free
+  account_id?                   -- null for pure local private Space
   primary_space_id?             -- canonical host Space when known
   substrate
   local_handle
@@ -253,14 +259,15 @@ the managed Identity/Space layer exists.
 
 ## Relation to existing docs
 
+- `docs/pricing.md` - current product tiers and prices
 - `docs/space-model.md` - Space membrane host; multi-Space membership
 - `docs/identity-creation-jurisdiction.md` - creator lineage, default grants, residual red button
 - `docs/identity-surface.md` - Surface is per Identity; bindings are MCP/HTTP/local
-- `docs/storage-tiers.md` - Free local vs managed continuity; same geometry
+- `docs/storage-tiers.md` - Free Managed vs local private Space vs Pro
 - `docs/sqlite-schema-v1.md` - V1 one Identity per install; evolution path above
 - `docs/registry.md` - Registry is always observer-relative
 - `docs/principles.md` - multi-substrate symmetry; Ownership as jurisdiction
-- `docs/open-core.md` - account/managed features stay optional
+- `docs/open-core.md` - local runtime stays open; managed stays closed
 - `docs/agent-contract-v1.md` - agents act as Identities via Surface/CLI; no direct DB writes
 - Issue #40 Access & Jurisdiction - operational probes for degrees of freedom
 - Issue #11 Multi-substrate symmetry
@@ -275,5 +282,5 @@ the managed Identity/Space layer exists.
 6. Cross-Identity power is grant-scoped; cross-Space visibility is membrane-scoped.
 7. Actor Identity is explicit on every mutation; `space_id` when membrane applies.
 8. Plan metering orients on Identity capacity and governed-Space capability.
-9. Local Free without account remains first-class (mini-Space).
+9. Local private Space without account remains first-class Open Core. Recommended Free product is Managed.
 10. Identity creation records lineage and issues a transferable default jurisdiction package; ordinary Parent grants are Child-revocable; residual emergency lever is narrow and audited (`docs/identity-creation-jurisdiction.md`).
