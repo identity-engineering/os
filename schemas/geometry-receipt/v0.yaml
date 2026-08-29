@@ -7,7 +7,8 @@
 #
 # See docs/probes-as-bridge.md.
 # Write-back into Tensor / Tension / Registry: OS #8 (not automatic in v0).
-# Scarcity / Preference allocation blocks: docs/scarcity-preference.md.
+# Scarcity / Preference allocation blocks: docs/scarcity-preference.md,
+# docs/preference.md.
 
 schema_version: "0"
 
@@ -54,29 +55,28 @@ geometry_deltas:                    # sparse; only what was observed with confid
     state_delta_summary: string     # short observation on State Differential
     vision_gradient_shift: string   # short observation on Vision Gradient clarity / direction
     coherence_note: string
-    # Preference (Economics) is this block plus Header vision_gradient.
-    # Revealed Preference is scarcity spend on path_note, not a second table.
+    # Declared Preference is stem_state fibers + this reaction to vision_gradient.
+    # Revealed Preference is scarcity spend on path_id. See docs/preference.md.
 
   optionality_delta:                # optional — local gradient of future option value
     value: number                   # signed float; positive = opens future paths / optionality, negative = closes
     confidence: float               # 0.0–1.0
     notes: string                   # short justification: which paths or degrees of freedom opened or closed relative to the current Stem
-    # Relation: quantitative partner to stem_differential.vision_gradient_shift (text observation).
-    # Measures local ΔO_τ induced by this Interaction.
-    # Supports operationalization of the causal-entropy / future-optionality design telos.
-    # Still proposal-level until extractors and OS #8 feed are in place.
 
-  scarcity_spent:                   # optional — Economics Phase 0; see docs/scarcity-preference.md
+  scarcity_spent:                   # optional — Economics Phase 0
     unit: string                    # tokens | energy_wh | attention_h | fiat_budget
     delta: number                   # signed; spend is negative
     remaining_after: number
     envelope_id: string             # uuid
     event_id: string                # uuid of scarcity event
-    path_note: string               # Stem path that consumed the envelope
+    path_id: string                 # optional fiber uuid
+    path_note: string               # Stem path label; resolve to path_id when possible
     # Never writes Mass. Envelope missing or remaining < 0 rejects the spend.
+    # Spend does not create fibers.
 
   opportunity_forgone:              # optional — qualitative in Phase 0
-    path_note: string               # next-best Stem path not taken
+    path_id: string                 # optional fiber not funded
+    path_note: string
     note: string
 
   ownership_move:                     # optional, Mature-mode typical
@@ -92,17 +92,8 @@ privacy:
 
 notes:
   - Geometry Receipt is the bridge, not a new core primitive.
-  - Quality of extraction is an engineering surface; v0 extractors may be coarse.
   - Self-Mass is never written from a self Geometry Receipt; it emerges only from foreign estimates.
-  - Tensor remains live (derived); Receipts are the intended primary update path (feed: OS #8).
-  - relative_mass_proxy for a foreign target is their published emergent self-Mass, not Self-Mass of the observer.
-  - jurisdiction_shift in v0 is observational membrane policy notes only (OS #40).
-  - optionality_delta is the local signed gradient of future option value (ΔO_τ).
-    In v0 it is an operator-supplied estimate, not a computed gradient. It is the
-    quantitative counterpart to vision_gradient_shift and a proposed operational signal
-    for the maximisation of causal entropy / future optionality. Source evidence and feed
-    into live geometry remain open (see OS #8).
-  - scarcity_spent links this receipt to an append-only scarcity event. Product host is
-    IE-managed SQL; Local Space mirrors the same logical tables.
+  - scarcity_spent links this receipt to an append-only scarcity event.
+  - Preference readout is derived (declared fibers vs revealed spend); not stored here as truth.
   - Mature self-probes require at least one existing root-relative source_refs entry and
     at least one recorded geometry change. They do not infer or apply trajectory updates.
