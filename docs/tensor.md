@@ -41,10 +41,22 @@ The **intended** primary update path is the **Geometry Receipt** produced by the
 	`docs/geometry-feed-delivery.md` (OS #44).
 - Receipts never write self-declared Mass; Self-Mass continues to emerge only from foreign estimates.
 
+## Sibling readings (2026-08-29)
+
+The same persist-samples / derive-reading rule applies to the owned Stem:
+
+- Tensor = live reading of Registry alloys under the Metric Stem
+- Particles = live reading of current `stem_state` as `x(t)`
+- Preference = live reading of recent `stem_revisions` as slope in the Now
+- Frequency = sampling / tension of that slope (`#73` after denser Tensor)
+
+None of those readings is a second source-of-truth table. See `docs/stem.md`.
+
 ## Storage implication
 
 See `docs/storage-tiers.md`. Free = local SQLite. Personal Pro = managed SQL.
 Skills are storage-agnostic.
+YAML under `schemas/` documents shape. It is not mutable state.
 
 ## Implications
 
