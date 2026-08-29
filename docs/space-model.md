@@ -1,6 +1,7 @@
 # Space model
 
-Status: architecture contract (locked direction 09.08.2026; framework alignment same day)
+Status: architecture contract (locked direction 09.08.2026; framework alignment same day)  
+Naming: Local Space (not mini-Space) 29.08.2026
 
 ## Core claim
 
@@ -12,14 +13,18 @@ Surface/MCP runs, and where jurisdiction policy is enforced.
 |------|---------|
 | **Registry** | Observer-relative perception of other Identities (geometry frame) |
 | **Space** | Host / membrane / jurisdiction plane (deployment + membership + policy) |
+| **Local Space** | On-device Space, self-hosted by the user. Counterpart to IE-managed Space. First-class, not a reduced geometry |
 | **IE-managed Space** | Canonical bootstrap/public Space operated by IE |
 | **Governed Space** | Isolated Team/Corp Space (IE-hosted federated or self-hosted) with stronger membrane policy |
 | **IE Account** | Auth + billing on the IE product only - lives in IE-managed, not in every Space |
 
-Local Free is not a failed cloud path. It is the minimal Space: one machine
-hosting one (or few) Identities. IE-managed is one Space among many, with
+A Local Space is not a failed cloud path and not a "mini" version of the model.
+It is a Space on the user's machine. IE-managed is one Space among many, with
 network bootstrap and account responsibilities. Team premium is the right to
 run an additional governed Space - not the only way to use IE as a team.
+
+Self-hosted Local Space ≠ self-hosted Governed Space. The first is on-device.
+The second is a later Team/Corp membrane, which may also be customer-operated.
 
 ### Framework alignment (one Space)
 
@@ -112,7 +117,7 @@ IE-managed Space          ← accounts, public/default hosting, discovery
     ↑ membership / federation
 Governed Space (Team)     ← stronger policy; IE-federated or self-hosted
 Governed Space (Corp)     ← isolation + professional controls
-Local mini-Space          ← Free install on a machine
+Local Space               ← on-device, self-hosted by the user
 ```
 
 All governed Spaces can **federate** toward IE-managed (become known, address
@@ -126,14 +131,14 @@ a grant + membrane decision. Creation-time jurisdiction packages and residual
 emergency levers govern who may set those caps
 (`docs/identity-creation-jurisdiction.md`).
 
-### Product tiers (direction, not price sheet)
+### Space kinds (architecture, not price sheet)
 
-| Mode | What you get |
-|------|----------------|
-| **Free local** | Mini-Space on device; no account required |
-| **Personal / default managed** | Identities hosted in IE-managed Space |
+| Kind | What it is |
+|------|------------|
+| **Local Space** | On-device Space; no account required; user hosts the store |
+| **IE-managed Space** | Identities hosted by IE |
 | **Team in IE-managed** | Fully valid: many Identities under accounts in the managed Space - not "premium isolation" |
-| **Team/Corp premium** | **Additional governed Space** (IE-hosted federated **or** customer self-hosted) with harder overall membrane policy, isolation, and governance. Especially billable when IE operates that Space |
+| **Governed Space** | Additional membrane (IE-hosted federated **or** customer self-hosted) with harder policy |
 
 Premium is the **membrane**, not the right to exist as a team inside IE-managed.
 
@@ -218,7 +223,7 @@ space_trust / federation
 every mutation envelope
   actor_identity_id             -- always required
   space_id                      -- required when a Space membrane applies
-                                -- (local mini-Space V1 may omit until Space rows exist)
+                                -- (Local Space V1 may omit until Space rows exist)
 ```
 
 Geometry tables remain Identity-scoped as in Open Core. Space rows add
@@ -226,9 +231,9 @@ hosting, membership, and membrane - they do not replace `registry_entries`.
 There is no separate "collective Boundary" table: outer membrane is policy on
 the Space / Space Identity; member Boundary is each Identity's Surface.
 
-## Relation to local Free V1
+## Relation to Local Space V1
 
-A local install is a **local mini-Space**:
+A local install is a **Local Space**:
 
 - one Identity per install in V1,
 - Registry remains observer-relative inside that Identity,
@@ -236,8 +241,9 @@ A local install is a **local mini-Space**:
 - optional later link: membership of that Identity into IE-managed Space
   without abandoning local sovereignty.
 
-SQLite is the store engine for local / self-hosted Spaces, not the product
-center. Product language is **Space-first / Identity-scoped** (see issue #59).
+SQLite is the store engine for Local Spaces and other self-hosted Spaces, not
+the product center. Product language is **Space-first / Identity-scoped**
+(see issue #59).
 
 ## Explicit non-goals (this contract)
 
@@ -248,6 +254,7 @@ center. Product language is **Space-first / Identity-scoped** (see issue #59).
 - Multiple human Identities for one person because they work in two Spaces
 - A second Boundary concept for teams (use Space Identity Boundary + membership)
 - Freezing Team/Corp price numbers
+- Treating Local Space as a reduced or "mini" geometry
 
 ## Locked decisions summary
 
@@ -260,7 +267,7 @@ center. Product language is **Space-first / Identity-scoped** (see issue #59).
 7. Team default in IE-managed is valid; premium = additional governed Space.
 8. Governed Space may be IE-federated or self-hosted; both are Team/Corp features.
 9. Membrane policy governs cross-Space visibility; IAM informs, geometry leads.
-10. Local Free remains a first-class mini-Space.
+10. Local Space is a first-class Space kind (on-device, self-hosted by the user).
 11. Framework and OS share one Space (physics degrees of freedom + biology Boundary + OS host).
 12. Boundary is scale-invariant; Space membrane = Boundary of the Space Identity; members nest under Multicellularity, not a second Boundary primitive.
 
@@ -270,7 +277,7 @@ center. Product language is **Space-first / Identity-scoped** (see issue #59).
 - `docs/identity-creation-jurisdiction.md` - creator lineage, default grants, residual red button
 - `docs/registry.md` - observer-relative Registry only
 - `docs/identity-surface.md` - Surface per Identity; membrane approval rules
-- `docs/storage-tiers.md` - Free local vs managed continuity
+- `docs/storage-tiers.md` - Local Space vs managed vs governed storage backends
 - `docs/living-form.md` - membrane / metabolism lens
 - `docs/principles.md` - multi-substrate; relative by default
 - Framework site: `/framework/space`, `/framework/boundary`, `/framework/multicellularity`, `/os`
