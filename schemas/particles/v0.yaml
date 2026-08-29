@@ -1,53 +1,34 @@
-# Particle configuration schema v0
+# Particle reading v0
 # Identity Engineering OS
 #
-# Proposal-layer operationalization. Not Core Concept law.
-# Snapshot lives on stem_state.substance_json.particles.
-# History = stem_revisions. See docs/particles.md.
+# Not a store. stem_state is x(t). This file only documents optional
+# aspect authorship inside substance_json. See docs/stem.md (PR #118)
+# and docs/particles.md.
+# YAML is documentation. The runtime does not read this file.
 
 schema_version: "0"
 
 purpose: |
-  Bound configuration of one Identity at time t (framework x(t)).
-  Strong Binding recorded as confined | loose | unbound.
-  No Fiber, no Preference, no numeric Charge.
+  Optional named aspects on an already-persisted Stem snapshot.
+  Zero aspects is a valid Particle configuration.
 
-host: stem_state.substance_json.particles
+host: stem_state   # the snapshot; not a particles table
 
-snapshot_required:
-  - as_of
-  - aspects
+aspect_optional_block: stem_state.substance_json.aspects[]
 
-snapshot_optional:
-  - mature_id
-  - coherence          # may live on stem_state.coherence instead
-
-aspect_required:
-  - aspect_id
-  - label
-  - binding
-
-aspect_optional:
-  - extract_cost_note
-  - charge_note        # qualitative only
-  - formed_from
+aspect_fields:
+  required_if_present: [aspect_id, label, binding]
+  optional: [extract_cost_note, formed_from]
 
 binding:
-  - confined           # Strong Binding claim; cannot extract cheaply
-  - loose              # in the bundle, not confined
-  - unbound            # free DoF in Space; not yet in the Particle
+  - confined
+  - loose
+  - unbound
 
 invariants:
-  - Particle is not an Identity
+  - Particle is a reading of stem_state, not an Identity
   - aspect creation is Mature only
-  - Interact may observe binding, never write particles
-  - stem_revisions are the history; no separate particles table
-  - ie db rebuild-projections is storage recovery, not Time
-  - no path_id / fiber until an aspect_id exists
-
-receipt_observation:               # optional Geometry Receipt block
-  aspects_noted:
-    - aspect_id                    # optional if label-only
-      label: string
-      observed_binding: confined | loose | unbound
-      note: string
+  - Interact never writes stem_state
+  - no separate particles table
+  - rebuild-projections is storage recovery, not Time
+  - no path_id until an aspect_id exists
