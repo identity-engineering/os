@@ -27,9 +27,15 @@ Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtim
 5. Standard Identity handle + proposal signal schema; `ie standard status` as source readout.
 6. Distribution (ops on PC).
 7. Dimensional Freedom / denser Tensor · **#73** Frequency after denser Tensor.
+8. **Particles at t** — bound configuration snapshot on `stem_state`
+   (`docs/particles.md`). Fiber and Preference wait on this.
+9. Economics Phase 0 (Scarcity envelope) remains on a separate branch until
+   Particle / Fiber naming is stable.
 
 ## Parked / later
 
 - **#86** Managed / remote MCP (Phase-3 auth).
 - **#91** Subagent vs Identity · **#93** Organism principles · **#5** harness mirrors.
 - IE operating-cycle foundation (#45), multi-substrate (#11), public /os (#21), Phase 3–5 billing.
+- Currency-Identity / fiat onramp / chain (Notion parked 2026-08-22).
+- Preference-as-Stem fibers until Particle aspects exist.
