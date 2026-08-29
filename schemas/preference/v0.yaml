@@ -1,59 +1,36 @@
-# Preference Schema v0
+# Preference readout v0
 # Identity Engineering OS
 #
-# Preference is a readout of Stem fibers + revealed spend.
-# Not a source-of-truth ranking table.
-# See docs/preference.md.
+# Not a store. Preference is the Stem curve in the Now.
+# See docs/stem.md (PR #118) and docs/preference.md.
+# YAML is documentation. The runtime does not read this file.
 
 schema_version: "0"
 
 purpose: |
-  Name Stem fibers, declare weights on stem_state, derive revealed
-  weights from scarcity spend. Divergence is computed, not stored as law.
-
-fiber_required:
-  - path_id
-  - identity_id
-  - label
-  - declared_weight
-  - active
-
-fiber_optional:
-  - formed_from            # stem_revision_id or trajectory_entry_id
-  - last_sharpened_at
-  - note
-
-fiber_invariants:
-  - declared_weight in [0, 1]
-  - active fibers should sum to 1; otherwise readout sets weights_unnormalized
-  - creating a fiber is a Stem / Mature write, never a silent spend side effect
-  - Metric Stem dimensions are not fibers
-
-stem_state_projection: |
-  stem_state.substance_json.fibers[] is the current declared bundle.
-  stem_revisions snapshot that bundle. No separate preferences table.
-
-scarcity_event_link:
-  path_id: optional uuid   # resolve when fiber exists
-  path_note: string        # always allowed; unbound notes listed on readout
+  Derived readout of declared Vision Gradient versus revealed slope
+  of recent stem_revisions. Spend may later join revealed. Fibers
+  are not a prerequisite.
 
 readout_required:
   - identity_id
   - as_of
-  - fibers                 # path_id, label, declared_weight, revealed_weight, divergence
+  - declared
+  - revealed
+  - sample_count
 
 readout_optional:
-  - period
-  - unit
-  - weights_unnormalized
-  - unbound_path_notes
-  - vision_gradient
+  - window
+  - divergence
+  - tension
 
-readout_rules:
-  declared: fiber.declared_weight for active fibers
-  revealed: |spend_delta| / sum(|spend|) in period and unit
-  divergence: revealed - declared
-  cache_ok: true           # only with as_of; never source of truth
+rules:
+  declared: vision_gradient plus any owner-named direction on stem_state
+  revealed: slope of stem_revisions in the window; later plus spend
+  divergence: readout / Probe; never auto-writes Stem
+  cache_ok: true   # only with as_of; never source of truth
+  no_fiber_table: true
+  no_path_id_without_aspect: true
 
 privacy:
   default: local_only
