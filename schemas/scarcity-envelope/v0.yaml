@@ -1,0 +1,87 @@
+# Scarcity Envelope Schema v0
+# Identity Engineering OS
+#
+# Logical contract. Hosted on IE-managed SQL (product path) and mirrored
+# in Local Space SQLite. Skills must not hard-code a backend.
+#
+# See docs/scarcity-preference.md.
+
+schema_version: "0"
+
+purpose: |
+  Identity-bound measurable envelope of what may be allocated in a period.
+  Append-only events rebuild the projection. Not Mass. Not currency-identity.
+
+envelope_required:
+  - envelope_id
+  - identity_id
+  - unit
+  - period
+  - cap
+  - spent
+  - remaining
+  - source
+  - revision
+  - updated_at
+
+envelope_optional:
+  - grant_id
+  - period_started_at
+  - period_ends_at
+  - space_id
+
+units:
+  - tokens
+  - energy_wh
+  - attention_h
+  - fiat_budget          # owner-set counter only; no onramp
+
+periods:
+  - session
+  - month
+  - lifetime
+
+sources:
+  - owner_grant
+  - substrate
+  - provider_limit
+
+event_required:
+  - event_id
+  - identity_id
+  - envelope_id
+  - unit
+  - kind
+  - delta
+  - cap_after
+  - remaining_after
+  - actor_identity_id
+  - created_at
+
+event_optional:
+  - space_id
+  - receipt_id
+  - grant_id
+  - path_note
+  - details_json
+
+event_kinds:
+  - spend                # delta < 0
+  - grant                # cap change and/or positive delta
+  - refill               # positive delta, cap unchanged
+  - period_reset         # spent -> 0 for a new period
+  - compensate           # positive delta; details_json.compensates_event_id required
+
+invariants:
+  - unit and period on an event match the envelope
+  - spend is rejected when no envelope exists for (identity_id, unit, period)
+  - v0 forbids remaining < 0
+  - history is append-only; compensate never deletes a spend
+  - actor_identity_id is mandatory
+  - envelope cap never writes emergent Self-Mass
+
+rebuild: |
+  For an open period, spent = -sum(delta of kind=spend)
+  plus signed grant/refill/compensate in that period.
+  remaining = cap - spent after the last event.
+  Projection rows are disposable; events are not.
