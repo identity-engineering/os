@@ -5,9 +5,10 @@ Product path: **IE-managed Space first**. Same logical schema on Local Space.
 Not a marketplace. Not a currency-identity. Not billing.
 
 Related: framework Economics lens (Scarcity, Preference),
+`docs/preference.md` (Preference operationalization),
 `docs/storage-tiers.md`, `docs/account-identity-model.md`,
 `docs/sqlite-schema-v1.md` (audit pattern), `schemas/scarcity-envelope/v0.yaml`,
-`schemas/geometry-receipt/v0.yaml`.
+`schemas/preference/v0.yaml`, `schemas/geometry-receipt/v0.yaml`.
 
 ## Why this exists
 
@@ -16,6 +17,8 @@ Preference is not a separate ranking table. It is the Stem read in the Now:
 the direction of Stem fibers shaped by past trajectory, reacting to Vision
 Gradient. Scarcity makes that direction allocatable.
 
+Full Preference contract: `docs/preference.md`.
+
 ## Locked decisions
 
 1. Scarcity is Identity-bound. Account is not the envelope holder.
@@ -23,8 +26,8 @@ Gradient. Scarcity makes that direction allocatable.
    `fiat_budget` is an owner-set counter only. No onramp, token, or chain.
 3. Cap is owner-granted or substrate-given. Identity cannot declare Mass
    by inflating its envelope.
-4. Preference is Stem-inherent (Header `vision_gradient` + `stem_state` +
-   Receipt `stem_differential`). Revealed Preference is spend on a path.
+4. Preference is Stem-inherent. Declared fibers live on `stem_state`.
+   Revealed Preference is spend on a fiber. See `docs/preference.md`.
 5. Logging is the existing append-only event / revision / receipt journal.
    Correction is a later compensating event. History is never rewritten.
 6. Backend is Space-kind: IE-managed SQL is the product host; Local Space
@@ -70,7 +73,8 @@ the lens. Default v0: no silent spend if no envelope exists for that unit.
 | `space_id` | When membrane applies |
 | `receipt_id` | Geometry Receipt or Apply Receipt |
 | `grant_id` | Optional |
-| `path_note` | Short owned label of the Stem path that consumed or received |
+| `path_id` | Optional fiber this event committed to |
+| `path_note` | Short owned label; resolve to `path_id` when the fiber exists |
 | `details_json` | Canonical extras (provider meter, energy Wh, token count) |
 | `created_at` | UTC RFC3339 |
 
@@ -80,26 +84,15 @@ Invariants:
 - Spend that would make `remaining < 0` is rejected in v0.
 - `compensate` references the original `event_id` in `details_json`.
 - Rebuild of `spent` / `remaining` is the ordered sum of events in the period.
+- Spend does not create fibers. Fiber creation is Mature / Stem write.
 
-## Preference (no extra table)
+## Preference
 
-Declared Preference lives where Stem already lives:
+See `docs/preference.md` and `schemas/preference/v0.yaml`.
 
-- Header `vision_gradient.direction`
-- `stem_state` substance + vision gradient
-- Geometry Receipt `stem_differential` / `vision_gradient_shift`
-
-Revealed Preference is derived:
-
-```text
-revealed_preference(path) =
-  scarcity_events.kind=spend grouped by path_note
-  weighted by |delta| in the open period
-```
-
-Do not store a third Preference ranking as source of truth. If declared and
-revealed diverge, the Receipt notes the split. Declared text without spend is
-Vision copy, not economic Preference.
+Declared = active fiber weights on `stem_state`.
+Revealed = spend grouped by `path_id` in the open period.
+Divergence = revealed minus declared. Cacheable readout only.
 
 ## Geometry Receipt additions
 
@@ -107,10 +100,10 @@ Optional block on `geometry_receipts` JSON (see schema):
 
 ```text
 scarcity_spent:
-  unit, delta, remaining_after, envelope_id, event_id, path_note
+  unit, delta, remaining_after, envelope_id, event_id, path_id, path_note
 
 opportunity_forgone:
-  path_note, note    # qualitative in v0; not a second ledger
+  path_id, path_note, note    # qualitative in v0; not a second ledger
 ```
 
 A high-cost Act writes Receipt + scarcity event in one transaction.
@@ -119,11 +112,11 @@ Prefer: one transaction for event + projection + receipt link.
 
 ## Loop (Phase 0)
 
-1. Session reads Header (Stem direction) and current envelopes.
-2. Proposed Act names unit + estimated delta + path_note.
+1. Session reads Stem fibers + Vision Gradient + current envelopes.
+2. Proposed Act names unit + estimated delta + `path_id` / `path_note`.
 3. If envelope missing or remaining insufficient: reject or ask owner grant.
 4. Commit scarcity event + envelope projection + Geometry Receipt.
-5. Revealed Preference updates by derivation, not by a Preference write.
+5. Revealed Preference updates by derivation. Declared fibers move only via Mature.
 
 Make-or-buy (later): compare own `opportunity_forgone` to a foreign offer.
 No Price table in Phase 0.
@@ -135,10 +128,12 @@ No Price table in Phase 0.
 | Set / raise cap | Owner or `grant_admin` over the Identity |
 | Spend | The Identity itself under its Surface, within cap |
 | Compensate | Owner or `residual_emergency` / `grant_admin` |
-| Read own envelope | The Identity |
-| Read another's envelope | Explicit grant only |
+| Create / reweight fibers | Owner via Mature |
+| Read own envelope / readout | The Identity |
+| Read another's envelope or fibers | Explicit grant only |
 
 Envelope is not Mass. Cap size never writes `emergent_self_mass`.
+Fiber weights never write Mass.
 
 ## Product vs Open Core
 
@@ -160,12 +155,14 @@ for billing.
 - Self-declared Price as Mass
 - Rewriting history for rollback
 - Treating `fiat_budget` as legal money movement
+- Auto-updating declared fiber weights from spend
 
 ## Exit criteria for Phase 0
 
 - [ ] This contract reviewed
 - [ ] Logical tables accepted (managed + Local Space mirror)
 - [ ] Geometry Receipt optional blocks in schema
-- [ ] One dogfood path: owner sets token cap; one Act spends; receipt + event visible
+- [ ] Preference fibers + readout (`docs/preference.md`)
+- [ ] One dogfood path: owner sets token cap; one Act spends on a fiber; receipt + event visible
 - [ ] Rebuild of envelope from events demonstrated
-- [ ] No Mass write from cap or spend
+- [ ] No Mass write from cap, spend, or fiber weights
