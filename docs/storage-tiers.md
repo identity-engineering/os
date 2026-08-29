@@ -4,7 +4,8 @@ Locked 27.07.2026
 Open Core boundary clarified 02.08.2026  
 Multi-identity account model linked 08.08.2026  
 Space membrane model linked 09.08.2026  
-Commercial price sheet removed from this public repo 28.08.2026
+Commercial price sheet removed from this public repo 28.08.2026  
+Naming: Local Space (not mini-Space) 29.08.2026
 
 This file describes **storage backends and Space kinds**. Plan prices and Identity caps live in the private managed repository, not here.
 
@@ -12,17 +13,19 @@ This file describes **storage backends and Space kinds**. Plan prices and Identi
 
 | Space kind | Storage | Character | Visibility |
 |------|---------|-----------|------------|
-| **Local mini-Space** | Local SQLite (`.ie/ie.sqlite3`) | On-device, full ownership, no account required | Open Core (this repository) |
+| **Local Space** | Local SQLite (`.ie/ie.sqlite3`) | On-device, self-hosted by the user, full ownership, no account required | Open Core (this repository) |
 | **IE-managed Space** | Hosted SQL (start: Supabase) | Continuity, account auth, multi-Identity membership | Closed (`identity-engineering/os-managed`) |
 | **Governed Space** | IE-federated or self-hosted store | Stronger membrane, isolation, federation toward IE-managed | Closed / customer-operated |
 
 Collective features layer as **Spaces**, not as a different geometry.
 
+A Local Space is a first-class Space. It is not a reduced geometry. Self-hosted here means the user hosts it on-device. That is not the same object as a later self-hosted Governed Space (Team/Corp membrane).
+
 ## Account, Identity, Space
 
 - **Identity** always has geometry (Registry, Stem, Surface, …).
 - **IE Account** is auth + billing on the IE product (managed Space only).
-- **Space** is the membrane host (`docs/space-model.md`). Local install = mini-Space.
+- **Space** is the membrane host (`docs/space-model.md`). Local install = Local Space.
 - Local path: no account required.
 - Managed path: Identities hosted in the IE-managed Space.
 - A team may operate inside the IE-managed Space. A **governed Space** is an additional membrane, not a second geometry.
@@ -33,7 +36,7 @@ See `docs/account-identity-model.md` and `docs/space-model.md`.
 
 1. **Same logical schema** everywhere. Registry entries, Metric Stem, Interaction Signals and emergent views speak identical contracts whether the backend is local SQLite or managed Postgres. YAML remains a contract/example format.
 2. **Skills and agents are storage-agnostic.** They never hard-code a backend. An adapter layer selects local files, local SQLite or managed SQL.
-3. **Local remains first-class Open Core.** No account is required for the core geometry loop. Local install = mini-Space.
+3. **Local Space remains first-class Open Core.** No account is required for the core geometry loop.
 4. **Managed is continuity and hosting**, not a change of the geometric model. The user still owns the data; IE operates the infrastructure. That implementation stays closed.
 5. **Derived indexes** are always regenerable from the canonical store of the chosen Space kind.
 6. **Mutations are Identity-scoped** (and Space-membrane-scoped when federated). Transport authenticates an Identity; it does not write as an anonymous account root.
@@ -42,10 +45,10 @@ See `docs/account-identity-model.md` and `docs/space-model.md`.
 
 ## Implementation sketch (start)
 
-- Local: SQLite is the canonical local source of truth (mini-Space). The runtime exposes CLI/API projections; schemas and examples remain readable YAML in this repository.
+- Local Space: SQLite is the canonical on-device source of truth. The runtime exposes CLI/API projections; schemas and examples remain readable YAML in this repository.
 - IE-managed Space: same geometry tables plus account, identity membership, space membership, grants, and installation→identity bindings. Row Level Security + authenticated access. Lives in the private managed repository.
 - Governed Spaces (later): same geometry contracts behind a harder membrane; IE-federated hosting or customer self-host; federation descriptors toward IE-managed without full private upload by default.
-- Migration path: export/import between local and managed so users can move Spaces without losing geometry.
+- Migration path: export/import between Local Space and managed so users can move Spaces without losing geometry.
 
 ## What this enables
 
