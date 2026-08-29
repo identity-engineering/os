@@ -27,9 +27,13 @@ Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtim
 5. Standard Identity handle + proposal signal schema; `ie standard status` as source readout.
 6. Distribution (ops on PC).
 7. Dimensional Freedom / denser Tensor · **#73** Frequency after denser Tensor.
+8. **Economics Phase 0** — Scarcity envelope + Preference-as-Stem
+   (`docs/scarcity-preference.md`). Managed-first logical tables; Local Space
+   mirror. No marketplace, no currency.
 
 ## Parked / later
 
 - **#86** Managed / remote MCP (Phase-3 auth).
 - **#91** Subagent vs Identity · **#93** Organism principles · **#5** harness mirrors.
 - IE operating-cycle foundation (#45), multi-substrate (#11), public /os (#21), Phase 3–5 billing.
+- Currency-Identity / fiat onramp / chain (Notion parked 2026-08-22).
