@@ -27,9 +27,9 @@ Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtim
 5. Standard Identity handle + proposal signal schema; `ie standard status` as source readout.
 6. Distribution (ops on PC).
 7. Dimensional Freedom / denser Tensor · **#73** Frequency after denser Tensor.
-8. **Economics Phase 0** — Scarcity envelope + Preference-as-Stem
-   (`docs/scarcity-preference.md`). Managed-first logical tables; Local Space
-   mirror. No marketplace, no currency.
+8. **Economics Phase 0** — Scarcity envelope (`docs/scarcity-preference.md`) +
+   Preference-as-Stem (`docs/preference.md`). Managed-first; Local Space mirror.
+   No marketplace, no currency.
 
 ## Parked / later
 
