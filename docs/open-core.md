@@ -2,16 +2,19 @@
 
 Locked 02.08.2026  
 Space-first wording 09.08.2026  
-Commercial terms moved out of this public repo 28.08.2026
+Commercial terms moved out of this public repo 28.08.2026  
+Naming: Local Space (not mini-Space) 29.08.2026
 
 ## Stance
 
 IE OS follows an **Open Core** model:
 
-- The geometric contracts, local **mini-Space** runtime, CLI, schemas and local store are open source.
+- The geometric contracts, **Local Space** runtime, CLI, schemas and local store are open source.
 - Managed infrastructure, hosted continuity in the **IE-managed Space**, billing and governed-Space features remain closed.
 
-Product language is **Space-first / Identity-scoped**. SQLite is the store engine for local and self-hosted Spaces, not the product center.
+Product language is **Space-first / Identity-scoped**. SQLite is the store engine for Local Spaces and other self-hosted Spaces, not the product center.
+
+A Local Space is a first-class Space. It is the on-device counterpart to an IE-managed Space, not a smaller geometry.
 
 Commercial prices, plan caps and go-to-market copy do **not** live in this repository. They live in private `identity-engineering/os-managed` and, for team strategy, in Notion.
 
@@ -21,7 +24,7 @@ This matches `docs/ecosystem-vision.md`, `docs/space-model.md` and `docs/account
 
 | Layer | Contents | Visibility |
 |-------|----------|------------|
-| **Open Core** | Schemas, local Surface Runtime, Geometry Receipt, Registry contracts, Interaction Signal, IE operating cycle as Probe phases, living-form lens, local mini-Space (SQLite store), `ie` CLI for local operations, contract templates, tests, Space + Account≠Identity architecture docs | Public (this repository) |
+| **Open Core** | Schemas, local Surface Runtime, Geometry Receipt, Registry contracts, Interaction Signal, IE operating cycle as Probe phases, living-form lens, Local Space (SQLite store), `ie` CLI for local operations, contract templates, tests, Space + Account≠Identity architecture docs | Public (this repository) |
 | **Managed product** | Hosted SQL adapters, multi-device sync, account auth, billing, plan entitlements, SLA, Identity capacity under accounts, governed Spaces, hosted Surface features | Private (`identity-engineering/os-managed`) |
 
 ## Why this cut
@@ -29,8 +32,8 @@ This matches `docs/ecosystem-vision.md`, `docs/space-model.md` and `docs/account
 1. **Standard first**  
    The Identity-Geometry contracts must be implementable by others without depending on our managed service. That maximises causal entropy of the standard itself.
 
-2. **Local mini-Space remains viable**  
-   People who want files on-device keep full ownership. No account is required for the local Geometry Loop. Local install = mini-Space (`docs/space-model.md`).
+2. **Local Space remains viable**  
+   People who want files on-device keep full ownership. No account is required for the local Geometry Loop. Local install = Local Space (`docs/space-model.md`).
 
 3. **Economic layer stays closed**  
    Billing, plan limits and hosted continuity do not change the geometric model. Keeping them out of this repo protects the business surface without polluting the open contracts.
@@ -44,11 +47,12 @@ This matches `docs/ecosystem-vision.md`, `docs/space-model.md` and `docs/account
 ## Implementation rules
 
 - All code and docs that define the open contracts live in this repository and are released under MIT.
-- Future managed adapters must not be required to run the local mini-Space path.
+- Future managed adapters must not be required to run the Local Space path.
 - Release artifacts for Open Core users (`brew install ie-os`, public tarballs) contain only the Open Core.
 - Community contributions to the Open Core are welcome under the CONTRIBUTING rules. Review remains strict on geometric consistency and Ownership defaults.
 - Public and entry docs prefer **Space / Identity / Account** wording over "SQLite-first product" language.
 - Do not add price tables, Stripe IDs or plan SKUs to this repository.
+- Do not call a Local Space a mini-Space.
 
 ## Related
 
