@@ -7,6 +7,7 @@
 #
 # See docs/probes-as-bridge.md.
 # Write-back into Tensor / Tension / Registry: OS #8 (not automatic in v0).
+# Scarcity / Preference allocation blocks: docs/scarcity-preference.md.
 
 schema_version: "0"
 
@@ -53,6 +54,8 @@ geometry_deltas:                    # sparse; only what was observed with confid
     state_delta_summary: string     # short observation on State Differential
     vision_gradient_shift: string   # short observation on Vision Gradient clarity / direction
     coherence_note: string
+    # Preference (Economics) is this block plus Header vision_gradient.
+    # Revealed Preference is scarcity spend on path_note, not a second table.
 
   optionality_delta:                # optional — local gradient of future option value
     value: number                   # signed float; positive = opens future paths / optionality, negative = closes
@@ -62,6 +65,19 @@ geometry_deltas:                    # sparse; only what was observed with confid
     # Measures local ΔO_τ induced by this Interaction.
     # Supports operationalization of the causal-entropy / future-optionality design telos.
     # Still proposal-level until extractors and OS #8 feed are in place.
+
+  scarcity_spent:                   # optional — Economics Phase 0; see docs/scarcity-preference.md
+    unit: string                    # tokens | energy_wh | attention_h | fiat_budget
+    delta: number                   # signed; spend is negative
+    remaining_after: number
+    envelope_id: string             # uuid
+    event_id: string                # uuid of scarcity event
+    path_note: string               # Stem path that consumed the envelope
+    # Never writes Mass. Envelope missing or remaining < 0 rejects the spend.
+
+  opportunity_forgone:              # optional — qualitative in Phase 0
+    path_note: string               # next-best Stem path not taken
+    note: string
 
   ownership_move:                     # optional, Mature-mode typical
   commitment: string                # concrete next action (e.g. 72h)
@@ -86,5 +102,7 @@ notes:
     quantitative counterpart to vision_gradient_shift and a proposed operational signal
     for the maximisation of causal entropy / future optionality. Source evidence and feed
     into live geometry remain open (see OS #8).
+  - scarcity_spent links this receipt to an append-only scarcity event. Product host is
+    IE-managed SQL; Local Space mirrors the same logical tables.
   - Mature self-probes require at least one existing root-relative source_refs entry and
     at least one recorded geometry change. They do not infer or apply trajectory updates.
