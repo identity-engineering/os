@@ -65,6 +65,8 @@ jobs:
           mkdir -p ie/templates
           rm -rf ie/templates/personal
           cp -R templates/personal ie/templates/personal
+          rm -rf ie/templates/skills
+          cp -R templates/skills ie/templates/skills
 
       - name: Build distributions
         run: python -m build
@@ -74,3 +76,9 @@ jobs:
           python -m pip install --force-reinstall dist/*.whl
           cd /tmp
           python -c "from ie import __version__; print(__version__)"
+
+      - name: Run install-like Messaging dogfood
+        run: |
+          IE_BIN="$(command -v ie)" \
+            PYTHON_BIN="$(command -v python)" \
+            bash scripts/dogfood_messaging.sh

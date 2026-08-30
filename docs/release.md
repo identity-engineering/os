@@ -50,8 +50,9 @@ Use the manual Developer Artifact workflow to test a branch, tag, or SHA as an
 installed package without creating a release tag or publishing to R2, GitHub
 Releases, or Homebrew. It runs the full test suite, builds a dev-only PEP 440
 version, installs the wheel in a fresh virtual environment, and runs
-`scripts/dogfood_free.sh`. The resulting wheel, sdist, and dogfood script are
-uploaded as a GitHub Actions artifact for seven days.
+`scripts/dogfood_free.sh` as an installed-package smoke test. The resulting
+wheel, sdist, and test script are uploaded as a GitHub Actions artifact for
+seven days.
 
 ```bash
 gh workflow run dev-artifact.yml \
@@ -72,7 +73,9 @@ IE_BIN=/tmp/ie-os-dev-venv/bin/ie \
 ```
 
 This package path validates bundled templates and the installed `ie` entry
-point. `pip install -e .` remains useful for the faster source-tree loop.
+point. It is automated testing only and does not count as Jonas's Dogfood;
+real Dogfood uses the Grok MCP connector against code on `main`.
+`pip install -e .` remains useful for the faster source-tree loop.
 
 ## Daily tag workflow (`daily-release.yml`)
 

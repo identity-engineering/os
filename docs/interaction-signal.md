@@ -113,7 +113,8 @@ Refusal-of-Control is expressed simply: an Identity can refuse to emit anything 
 - Multi-party / collective signals
 - Automatic high-fidelity Geometry Extraction (see `docs/probes-as-bridge.md`)
 
-Those come after the minimal contract is stable and dogfooded.
+Those come after the minimal contract is stable and validated through the Grok
+MCP Dogfood path against `main`.
 
 ## Relation to Header / Surface / Probes
 

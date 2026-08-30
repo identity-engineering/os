@@ -8,10 +8,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from ie.init_cmd import install_standard_skills
 from runtime.database import Database, database_path, initialize_database
 from runtime.mcp_handler import McpSurface, handle_rpc, TOOL_DEFS
 from runtime.mcp_server import MCPBindingError, MCPIdentityBinding, create_mcp_server
 from runtime.mcp_session import bind_local_session
+from runtime.messaging import register_card, send_envelope
 from runtime.models import ApplyStatus
 from runtime.space_bootstrap import create_additional_identity
 
@@ -38,7 +40,29 @@ EXPECTED_TOOLS = {
     "ie_requests_list",
     "ie_registry_list",
     "ie_identity_list",
+    "ie_context_list",
+    "ie_context_get",
+    "ie_messaging_cards",
+    "ie_messaging_status",
+    "ie_messaging_card",
+    "ie_messaging_card_register",
+    "ie_messaging_inbox",
+    "ie_messaging_send",
+    "ie_messaging_metabolize",
 }
+
+MESSAGING_PEER_ID = "018f3a2b-7c9e-7d01-8a2b-0000000000aa"
+
+
+def _messaging_card(identity_id: str, name: str) -> dict:
+    return {
+        "identityId": identity_id,
+        "name": name,
+        "type": "agent",
+        "version": "0.1",
+        "endpoints": {"messaging": "http://127.0.0.1:7420/messaging"},
+        "recognitionPolicy": {"default": "accept-all"},
+    }
 
 
 def _add_second_identity(install: Path, handle: str = "other") -> str:
@@ -122,8 +146,11 @@ class McpToolTests(unittest.TestCase):
             self.install, handle="me", preferred_name="Me"
         )
         self.identity_id = meta["identity_id"]
+        install_standard_skills(self.install)
         self.session = bind_local_session(self.install)
         self.surface = McpSurface(self.session)
+        register_card(self.install, _messaging_card(self.identity_id, "Me"))
+        register_card(self.install, _messaging_card(MESSAGING_PEER_ID, "Peer"))
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -193,6 +220,116 @@ class McpToolTests(unittest.TestCase):
         self.assertEqual(len(bound), 1)
         self.assertEqual(bound[0]["identity_id"], other_id)
 
+    def test_context_list_and_get_are_identity_scoped(self) -> None:
+        result = self.surface.call_tool("ie_context_list", {})
+        self.assertEqual(result["identity_id"], self.identity_id)
+        self.assertIn("onboarding", {item["name"] for item in result["skills"]})
+
+        document = self.surface.call_tool("ie_context_get", {"name": "onboarding"})
+        self.assertEqual(document["actor"]["actor_identity_id"], self.identity_id)
+        self.assertIn("Account != Identity", document["body"])
+        with self.assertRaises(ValueError):
+            self.surface.call_tool("ie_context_get", {"name": "../IE"})
+
+    def test_messaging_card_register_forces_bound_identity(self) -> None:
+        result = self.surface.call_tool(
+            "ie_messaging_card_register",
+            {"card": _messaging_card("foreign-identity", "Bound card")},
+        )
+        self.assertEqual(result["card"]["identityId"], self.identity_id)
+        self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
+
+    def test_messaging_status_includes_actor_and_policy_readouts(self) -> None:
+        result = self.surface.call_tool("ie_messaging_status", {})
+        self.assertEqual(result["identity_id"], self.identity_id)
+        self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
+        self.assertIn("receipts", result)
+        self.assertIn("consent_audit", result)
+        self.assertIn("damping", result)
+
+    def test_messaging_send_forces_bound_sender(self) -> None:
+        result = self.surface.call_tool(
+            "ie_messaging_send",
+            {
+                "envelope": {
+                    "from": "foreign-identity",
+                    "to": MESSAGING_PEER_ID,
+                    "signal": {"type": "task"},
+                    "payload": {"contentType": "text/plain", "inline": "task"},
+                }
+            },
+        )
+        self.assertEqual(result["status"], "delivered")
+        self.assertEqual(result["envelope"]["from"], self.identity_id)
+        self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
+
+    def test_messaging_inbox_filters_to_bound_receiver(self) -> None:
+        peer_to_me = send_envelope(
+            self.install,
+            {
+                "from": MESSAGING_PEER_ID,
+                "to": self.identity_id,
+                "signal": {"type": "task"},
+                "payload": {"contentType": "text/plain", "inline": "inbox"},
+            },
+        )
+        self.assertEqual(peer_to_me.status, "delivered")
+        peer_message = send_envelope(
+            self.install,
+            {
+                "from": self.identity_id,
+                "to": MESSAGING_PEER_ID,
+                "signal": {"type": "task"},
+                "payload": {"contentType": "text/plain", "inline": "other inbox"},
+            },
+        )
+        self.assertEqual(peer_message.status, "delivered")
+
+        result = self.surface.call_tool("ie_messaging_inbox", {})
+        self.assertEqual(result["actor"]["actor_identity_id"], self.identity_id)
+        self.assertEqual(
+            [message["messageId"] for message in result["messages"]],
+            [peer_to_me.envelope["messageId"]],
+        )
+
+    def test_messaging_metabolize_rejects_foreign_receiver(self) -> None:
+        result = send_envelope(
+            self.install,
+            {
+                "from": self.identity_id,
+                "to": MESSAGING_PEER_ID,
+                "signal": {"type": "task"},
+                "payload": {"contentType": "text/plain", "inline": "private"},
+            },
+        )
+        with self.assertRaises(ValueError):
+            self.surface.call_tool(
+                "ie_messaging_metabolize",
+                {"message_id": result.envelope["messageId"]},
+            )
+
+    def test_messaging_metabolize_records_bound_receiver(self) -> None:
+        result = send_envelope(
+            self.install,
+            {
+                "from": MESSAGING_PEER_ID,
+                "to": self.identity_id,
+                "signal": {"type": "task"},
+                "payload": {"contentType": "text/plain", "inline": "accepted"},
+            },
+        )
+        metabolized = self.surface.call_tool(
+            "ie_messaging_metabolize",
+            {
+                "message_id": result.envelope["messageId"],
+                "classification": "task-accepted",
+                "notes": "accepted through MCP",
+            },
+        )
+        self.assertEqual(metabolized["status"], "metabolized")
+        self.assertEqual(metabolized["record"]["to"], self.identity_id)
+        self.assertEqual(metabolized["actor"]["actor_identity_id"], self.identity_id)
+
     def test_signal_apply_forces_to_bound_identity(self) -> None:
         signal = {
             "from": "peer-alice",
@@ -221,12 +358,31 @@ class McpRpcTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         self.install = Path(self._tmp.name) / "install"
-        initialize_database(self.install, handle="me", preferred_name="Me")
+        meta = initialize_database(self.install, handle="me", preferred_name="Me")
+        self.identity_id = meta["identity_id"]
+        install_standard_skills(self.install)
+        register_card(self.install, _messaging_card(self.identity_id, "Me"))
+        register_card(self.install, _messaging_card(MESSAGING_PEER_ID, "Peer"))
         self.session = bind_local_session(self.install)
         self.surface = McpSurface(self.session)
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
+
+    def _call_tool(self, request_id: int, name: str, arguments: dict) -> dict:
+        response = handle_rpc(
+            self.surface,
+            {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "method": "tools/call",
+                "params": {"name": name, "arguments": arguments},
+            },
+        )
+        assert response is not None
+        result = response["result"]
+        self.assertFalse(result.get("isError"), result)
+        return result["structuredContent"]
 
     def test_initialize(self) -> None:
         resp = handle_rpc(
@@ -279,6 +435,87 @@ class McpRpcTests(unittest.TestCase):
         self.assertFalse(resp["result"].get("isError"))
         structured = resp["result"].get("structuredContent") or {}
         self.assertIn("effective_freedom", structured)
+
+    def test_messaging_rpc_forces_card_identity_and_sender(self) -> None:
+        registered = self._call_tool(
+            5,
+            "ie_messaging_card_register",
+            {"card": _messaging_card("foreign-identity", "Bound through RPC")},
+        )
+        self.assertEqual(registered["card"]["identityId"], self.identity_id)
+        self.assertEqual(registered["actor"]["actor_identity_id"], self.identity_id)
+
+        sent = self._call_tool(
+            6,
+            "ie_messaging_send",
+            {
+                "envelope": {
+                    "from": "foreign-identity",
+                    "to": MESSAGING_PEER_ID,
+                    "signal": {"type": "task"},
+                    "payload": {"contentType": "text/plain", "inline": "RPC task"},
+                }
+            },
+        )
+        self.assertEqual(sent["status"], "delivered")
+        self.assertEqual(sent["envelope"]["from"], self.identity_id)
+        self.assertEqual(sent["actor"]["actor_identity_id"], self.identity_id)
+
+    def test_messaging_rpc_filters_inbox_and_rejects_foreign_metabolize(self) -> None:
+        inbound = send_envelope(
+            self.install,
+            {
+                "from": MESSAGING_PEER_ID,
+                "to": self.identity_id,
+                "signal": {"type": "task"},
+                "payload": {"contentType": "text/plain", "inline": "inbound"},
+            },
+        )
+        foreign_receiver = send_envelope(
+            self.install,
+            {
+                "from": self.identity_id,
+                "to": MESSAGING_PEER_ID,
+                "signal": {"type": "task"},
+                "payload": {"contentType": "text/plain", "inline": "peer-only"},
+            },
+        )
+
+        inbox = self._call_tool(7, "ie_messaging_inbox", {})
+        self.assertEqual(
+            [message["messageId"] for message in inbox["messages"]],
+            [inbound.envelope["messageId"]],
+        )
+        self.assertEqual(inbox["actor"]["actor_identity_id"], self.identity_id)
+
+        rejected = handle_rpc(
+            self.surface,
+            {
+                "jsonrpc": "2.0",
+                "id": 8,
+                "method": "tools/call",
+                "params": {
+                    "name": "ie_messaging_metabolize",
+                    "arguments": {"message_id": foreign_receiver.envelope["messageId"]},
+                },
+            },
+        )
+        assert rejected is not None
+        self.assertTrue(rejected["result"]["isError"])
+        error = rejected["result"]["structuredContent"]
+        self.assertEqual(error["actor"]["actor_identity_id"], self.identity_id)
+
+        metabolized = self._call_tool(
+            9,
+            "ie_messaging_metabolize",
+            {
+                "message_id": inbound.envelope["messageId"],
+                "classification": "task-accepted",
+            },
+        )
+        self.assertEqual(metabolized["status"], "metabolized")
+        self.assertEqual(metabolized["record"]["to"], self.identity_id)
+        self.assertEqual(metabolized["actor"]["actor_identity_id"], self.identity_id)
 
     def test_notification_returns_none(self) -> None:
         resp = handle_rpc(

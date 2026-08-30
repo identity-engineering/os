@@ -43,7 +43,7 @@ Design lock: `docs/bidirectional-gravitational-sensor.md`.
 ## CLI examples
 
 ```bash
-# Land a request in *this* install's inbox (local receive / dogfood)
+# Land a request in *this* install's inbox (local receive / testing only)
 ie request create --from alice --to me --scope coarse_mass_estimate,mass_confidence
 
 ie request list

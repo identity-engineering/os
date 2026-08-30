@@ -23,6 +23,16 @@ from runtime.freedom import compute_freedom_readout
 from runtime.grants import list_grants
 from runtime.geometry_feed import feed_pending, feed_receipt
 from runtime.mass import build_public_card, compute_mass_readout
+from runtime.messaging import (
+    collect_messaging_status,
+    get_card,
+    get_message,
+    list_cards,
+    list_inbox,
+    register_card,
+    send_envelope,
+)
+from runtime.messaging_metabolize import metabolize_message
 from runtime.mcp_session import IdentitySession, bind_local_session
 from runtime.models import RequestStatus
 from runtime.policy import LocalPolicy
@@ -177,6 +187,130 @@ TOOL_DEFS: list[dict[str, Any]] = [
         ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
+    {
+        "name": "ie_context_list",
+        "description": (
+            "List installed Context Layer documents for the bound Identity. "
+            "Read-only; geometry remains in SQLite."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "ie_context_get",
+        "description": (
+            "Read one installed Context Layer document, such as the onboarding "
+            "skill, for the bound Identity. Read-only."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Context document name, for example onboarding",
+                }
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_messaging_cards",
+        "description": "List locally registered Identity Messaging Cards.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "ie_messaging_status",
+        "description": (
+            "Show Messaging receipts, consent audit, metabolization status, "
+            "damping windows, and explainable rejection reasons."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "ie_messaging_card",
+        "description": "Read one locally registered public Messaging Card.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "identity_id": {"type": "string", "description": "Card identityId"}
+            },
+            "required": ["identity_id"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_messaging_card_register",
+        "description": (
+            "Register the bound Identity's Messaging Card. identityId is always "
+            "forced to the bound session Identity."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "card": {"type": "object", "description": "Messaging Card payload"}
+            },
+            "required": ["card"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_messaging_inbox",
+        "description": "Read Messaging Envelopes addressed to the bound Identity.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Optional maximum number of newest messages",
+                }
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_messaging_send",
+        "description": (
+            "Send a Messaging Envelope. The envelope from field is always forced "
+            "to the bound Identity."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "envelope": {"type": "object", "description": "Messaging Envelope payload"}
+            },
+            "required": ["envelope"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ie_messaging_metabolize",
+        "description": (
+            "Metabolize a message addressed to the bound receiving Identity, with "
+            "an optional Mature commit."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "message_id": {"type": "string", "description": "Message ID"},
+                "notes": {
+                    "type": "string",
+                    "description": "Processing notes",
+                    "default": "",
+                },
+                "classification": {
+                    "type": "string",
+                    "description": "Optional classification label",
+                },
+                "mature": {
+                    "type": "boolean",
+                    "description": "Also commit a Mature step",
+                    "default": False,
+                },
+            },
+            "required": ["message_id"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -213,6 +347,52 @@ class McpSurface:
             return self._registry_list()
         if name == "ie_identity_list":
             return self._identity_list()
+        if name == "ie_context_list":
+            return self._context_list()
+        if name == "ie_context_get":
+            context_name = args.get("name")
+            if not isinstance(context_name, str):
+                raise ValueError("ie_context_get requires name string")
+            return self._context_get(context_name)
+        if name == "ie_messaging_cards":
+            return self._messaging_cards()
+        if name == "ie_messaging_status":
+            return self._messaging_status()
+        if name == "ie_messaging_card":
+            identity_id = args.get("identity_id")
+            if not isinstance(identity_id, str) or not identity_id.strip():
+                raise ValueError("ie_messaging_card requires identity_id string")
+            return self._messaging_card(identity_id.strip())
+        if name == "ie_messaging_card_register":
+            card = args.get("card")
+            if not isinstance(card, dict):
+                raise ValueError("ie_messaging_card_register requires card object")
+            return self._messaging_card_register(card)
+        if name == "ie_messaging_inbox":
+            return self._messaging_inbox(limit=args.get("limit"))
+        if name == "ie_messaging_send":
+            envelope = args.get("envelope")
+            if not isinstance(envelope, dict):
+                raise ValueError("ie_messaging_send requires envelope object")
+            return self._messaging_send(envelope)
+        if name == "ie_messaging_metabolize":
+            message_id = args.get("message_id")
+            if not isinstance(message_id, str) or not message_id.strip():
+                raise ValueError("ie_messaging_metabolize requires message_id string")
+            notes = args.get("notes", "")
+            if not isinstance(notes, str):
+                raise ValueError("ie_messaging_metabolize notes must be a string")
+            classification = args.get("classification")
+            if classification is not None and not isinstance(classification, str):
+                raise ValueError(
+                    "ie_messaging_metabolize classification must be a string"
+                )
+            return self._messaging_metabolize(
+                message_id.strip(),
+                notes=notes,
+                classification=classification,
+                mature=bool(args.get("mature", False)),
+            )
         raise ValueError(f"unknown tool: {name}")
 
     def _status(self) -> dict[str, Any]:
@@ -329,6 +509,168 @@ class McpSurface:
                 "identities": identities,
             }
         )
+
+    def _context_root(self) -> Path:
+        return (self.session.install_root / "skills").resolve()
+
+    def _context_path(self, name: str) -> Path:
+        context_name = name.strip()
+        if (
+            not context_name
+            or context_name in {".", ".."}
+            or "/" in context_name
+            or "\\" in context_name
+        ):
+            raise ValueError(f"invalid context name: {name!r}")
+
+        install_root = self.session.install_root.resolve()
+        path = (self._context_root() / context_name / "SKILL.md").resolve()
+        try:
+            path.relative_to(install_root)
+        except ValueError as exc:
+            raise ValueError("context path escapes install root") from exc
+        return path
+
+    def _context_list(self) -> dict[str, Any]:
+        install_root = self.session.install_root.resolve()
+        skills: list[dict[str, str]] = []
+        root = self._context_root()
+        if root.is_dir():
+            for child in sorted(root.iterdir(), key=lambda item: item.name.lower()):
+                if not child.is_dir():
+                    continue
+                skill_path = (child / "SKILL.md").resolve()
+                if not skill_path.is_file():
+                    continue
+                try:
+                    relative_path = skill_path.relative_to(install_root)
+                except ValueError:
+                    continue
+                skills.append(
+                    {
+                        "name": child.name,
+                        "source": "local_fs",
+                        "path": relative_path.as_posix(),
+                    }
+                )
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "skills": skills,
+            }
+        )
+
+    def _context_get(self, name: str) -> dict[str, Any]:
+        path = self._context_path(name)
+        if not path.is_file():
+            raise ValueError(f"context document not found: {name}")
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "name": name.strip(),
+                "source": "local_fs",
+                "path": path.relative_to(self.session.install_root.resolve()).as_posix(),
+                "body": path.read_text(encoding="utf-8"),
+            }
+        )
+
+    @staticmethod
+    def _message_targets_identity(message: dict[str, Any], identity_id: str) -> bool:
+        target = message.get("to")
+        if isinstance(target, str):
+            return target == identity_id
+        return isinstance(target, dict) and target.get("collectiveId") == identity_id
+
+    def _messaging_cards(self) -> dict[str, Any]:
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "cards": list_cards(self.session.install_root),
+            }
+        )
+
+    def _messaging_status(self) -> dict[str, Any]:
+        body = collect_messaging_status(self.session.install_root)
+        body["identity_id"] = self.session.identity_id
+        return self.session.with_actor(body)
+
+    def _messaging_card(self, identity_id: str) -> dict[str, Any]:
+        card = get_card(self.session.install_root, identity_id)
+        if card is None:
+            raise ValueError(f"Messaging Card not found: {identity_id}")
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "card": card,
+            }
+        )
+
+    def _messaging_card_register(self, card: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(card)
+        payload["identityId"] = self.session.identity_id
+        stored = register_card(self.session.install_root, payload)
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "card": stored,
+            }
+        )
+
+    def _messaging_inbox(self, *, limit: Any = None) -> dict[str, Any]:
+        resolved_limit: Optional[int] = None
+        if limit is not None:
+            try:
+                resolved_limit = int(limit)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("ie_messaging_inbox limit must be an integer") from exc
+            if resolved_limit < 1:
+                raise ValueError("ie_messaging_inbox limit must be at least 1")
+
+        messages = [
+            message
+            for message in list_inbox(self.session.install_root)
+            if self._message_targets_identity(message, self.session.identity_id)
+        ]
+        if resolved_limit is not None:
+            messages = messages[:resolved_limit]
+        return self.session.with_actor(
+            {
+                "identity_id": self.session.identity_id,
+                "messages": messages,
+            }
+        )
+
+    def _messaging_send(self, envelope: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(envelope)
+        payload["from"] = self.session.identity_id
+        result = send_envelope(self.session.install_root, payload)
+        body = result.to_dict()
+        body["identity_id"] = self.session.identity_id
+        return self.session.with_actor(body)
+
+    def _messaging_metabolize(
+        self,
+        message_id: str,
+        *,
+        notes: str,
+        classification: Optional[str],
+        mature: bool,
+    ) -> dict[str, Any]:
+        message = get_message(self.session.install_root, message_id)
+        if message is None:
+            raise ValueError(f"message not found: {message_id}")
+        if not self._message_targets_identity(message, self.session.identity_id):
+            raise ValueError("message is not addressed to the bound receiving Identity")
+        result = metabolize_message(
+            self.session.install_root,
+            message_id,
+            notes=notes,
+            classification=classification,
+            commit_mature=mature,
+        )
+        body = dict(result)
+        body["identity_id"] = self.session.identity_id
+        return self.session.with_actor(body)
 
 
 def _tool_result(payload: dict[str, Any], *, is_error: bool = False) -> dict[str, Any]:

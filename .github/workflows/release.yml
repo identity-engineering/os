@@ -74,6 +74,8 @@ jobs:
           mkdir -p ie/templates
           rm -rf ie/templates/personal
           cp -R templates/personal ie/templates/personal
+          rm -rf ie/templates/skills
+          cp -R templates/skills ie/templates/skills
 
       - name: Build sdist and wheel
         run: rm -rf dist && python -m build

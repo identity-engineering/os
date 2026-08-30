@@ -17,6 +17,7 @@ STANDARD_SKILL_NAMES = (
     "signal",
     "card",
     "propose-to-standard",
+    "onboarding",
 )
 
 
