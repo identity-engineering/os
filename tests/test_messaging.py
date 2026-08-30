@@ -7,16 +7,24 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from typer.testing import CliRunner
+
+from ie.cli import app
+from runtime.database import initialize_database
 from runtime.messaging import (
     MessagingError,
+    collect_messaging_status,
     get_card,
     grant_consent,
     has_consent,
+    list_consent_audit,
     list_cards,
+    list_consents,
     list_inbox,
     register_card,
     send_envelope,
 )
+from runtime.messaging_metabolize import metabolize_message
 
 # Fixed UUID-v7-shaped ids for deterministic tests
 ID_A = "018f3a2b-7c9e-7d01-8a2b-000000000001"
@@ -77,6 +85,11 @@ class MessagingTests(unittest.TestCase):
         self.assertEqual(card["identityId"], ID_A)
         self.assertEqual(get_card(self.root, ID_A)["name"], "alice")
         self.assertEqual(len(list_cards(self.root)), 1)
+
+    def test_register_allows_existing_local_identity_id(self) -> None:
+        metadata = initialize_database(self.root, handle="jonas", preferred_name="Jonas")
+        card = register_card(self.root, _card(metadata["identity_id"], "Jonas"))
+        self.assertEqual(card["identityId"], metadata["identity_id"])
 
     def test_register_rejects_bad_uuid(self) -> None:
         bad = _card("not-a-uuid")
@@ -182,6 +195,47 @@ class MessagingTests(unittest.TestCase):
             _envelope(ID_A, ID_B, impact_hints=["stem-altering"]),
         )
         self.assertEqual(follow.status, "delivered")
+
+    def test_status_exposes_consent_audit_metabolization_and_rejection_reason(self) -> None:
+        register_card(self.root, _card(ID_B, "bob", default="accept-known", allowlist=[ID_A]))
+        grant_consent(
+            self.root,
+            target_id=ID_B,
+            sender_id=ID_A,
+            impact_classes=["mass-altering"],
+        )
+        delivered = send_envelope(
+            self.root,
+            _envelope(ID_A, ID_B, impact_hints=["mass-altering"]),
+        )
+        self.assertEqual(delivered.status, "delivered")
+        metabolize_message(self.root, delivered.envelope["messageId"])
+
+        rejected = send_envelope(self.root, _envelope(ID_C, ID_B))
+        self.assertEqual(rejected.status, "rejected")
+
+        status = collect_messaging_status(self.root)
+        self.assertEqual(status["consents"]["count"], 1)
+        self.assertEqual(len(list_consents(self.root)), 1)
+        self.assertEqual(status["consent_audit"]["count"], 1)
+        self.assertEqual(len(list_consent_audit(self.root)), 1)
+        self.assertEqual(status["metabolizations"]["count"], 1)
+        self.assertEqual(status["receipts"]["by_type"]["metabolized"], 1)
+        self.assertEqual(status["rejections"][0]["reason"], rejected.receipt["reason"])
+
+    def test_cli_status_lists_messaging_loop(self) -> None:
+        initialize_database(self.root, handle="me", preferred_name="Me")
+        register_card(self.root, _card(ID_B, "bob", default="accept-all"))
+        send_envelope(self.root, _envelope(ID_A, ID_B))
+
+        result = CliRunner().invoke(
+            app,
+            ["messaging", "status", "--path", str(self.root), "--json"],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        status = json.loads(result.output)
+        self.assertEqual(status["outbox"]["count"], 1)
+        self.assertEqual(status["receipts"]["count"], 1)
 
 
 if __name__ == "__main__":

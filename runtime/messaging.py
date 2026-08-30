@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import json
 import re
+import sqlite3
 import time
 import uuid
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -58,7 +60,16 @@ def messaging_root(install_root: Path) -> Path:
 
 def ensure_layout(install_root: Path) -> Path:
     root = messaging_root(install_root)
-    for sub in ("cards", "inbox", "outbox", "receipts", "consents", "damping"):
+    for sub in (
+        "cards",
+        "inbox",
+        "outbox",
+        "receipts",
+        "consents",
+        "consent_audit",
+        "damping",
+        "metabolized",
+    ):
         (root / sub).mkdir(parents=True, exist_ok=True)
     return root
 
@@ -76,6 +87,21 @@ def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _is_local_identity_id(install_root: Path, identity_id: str) -> bool:
+    db_path = install_root.resolve() / ".ie" / "ie.sqlite3"
+    if not db_path.is_file():
+        return False
+    try:
+        with sqlite3.connect(db_path) as connection:
+            row = connection.execute(
+                "SELECT 1 FROM identity WHERE identity_id = ? LIMIT 1",
+                (identity_id,),
+            ).fetchone()
+    except sqlite3.Error:
+        return False
+    return row is not None
+
+
 # ---------------------------------------------------------------------------
 # Identity Cards
 # ---------------------------------------------------------------------------
@@ -87,8 +113,12 @@ def register_card(install_root: Path, card: dict) -> dict:
     identity_id = card.get("identityId")
     if not identity_id or not isinstance(identity_id, str):
         raise MessagingError("card.identityId is required")
-    if not UUID_V7_RE.match(identity_id):
-        raise MessagingError("card.identityId must be UUID v7 format")
+    if not UUID_V7_RE.match(identity_id) and not _is_local_identity_id(
+        install_root, identity_id
+    ):
+        raise MessagingError(
+            "card.identityId must be UUID v7 format or an existing local Identity ID"
+        )
     for key in ("name", "type", "version", "endpoints"):
         if key not in card:
             raise MessagingError(f"card.{key} is required")
@@ -184,6 +214,10 @@ def _consent_path(install_root: Path, target_id: str, sender_id: str) -> Path:
     return messaging_root(install_root) / "consents" / f"{_consent_key(target_id, sender_id)}.json"
 
 
+def _consent_audit_dir(install_root: Path) -> Path:
+    return messaging_root(install_root) / "consent_audit"
+
+
 def grant_consent(
     install_root: Path,
     *,
@@ -206,16 +240,32 @@ def grant_consent(
         except (OSError, json.JSONDecodeError):
             existing = {}
 
-    merged = sorted(set(existing.get("impactClasses") or []) | set(classes))
+    previous_classes = sorted(set(existing.get("impactClasses") or []))
+    merged = sorted(set(previous_classes) | set(classes))
+    added_classes = sorted(set(merged) - set(previous_classes))
+    now = _utc_now()
     record = {
         "targetId": target_id,
         "senderId": sender_id,
         "impactClasses": merged,
         "grantedBy": granted_by or target_id,
-        "updatedAt": _utc_now(),
-        "createdAt": existing.get("createdAt") or _utc_now(),
+        "updatedAt": now,
+        "createdAt": existing.get("createdAt") or now,
     }
     _write_json(path, record)
+    audit = {
+        "auditId": _new_uuid_v7(),
+        "eventType": "consent-granted",
+        "targetId": target_id,
+        "senderId": sender_id,
+        "requestedImpactClasses": classes,
+        "addedImpactClasses": added_classes,
+        "impactClasses": merged,
+        "grantedBy": record["grantedBy"],
+        "changed": bool(added_classes),
+        "createdAt": now,
+    }
+    _write_json(_consent_audit_dir(install_root) / f"{audit['auditId']}.json", audit)
     return record
 
 
@@ -612,3 +662,159 @@ def get_message(install_root: Path, message_id: str) -> Optional[dict]:
         if path.is_file():
             return _read_json(path)
     return None
+
+
+def _list_json_records(directory: Path, *, reverse: bool = False) -> list[dict]:
+    records: list[dict] = []
+    for path in sorted(directory.glob("*.json"), reverse=reverse):
+        try:
+            record = _read_json(path)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    return records
+
+
+def list_outbox(install_root: Path) -> list[dict]:
+    ensure_layout(install_root)
+    return _list_json_records(messaging_root(install_root) / "outbox", reverse=True)
+
+
+def list_receipts(install_root: Path) -> list[dict]:
+    ensure_layout(install_root)
+    return _list_json_records(messaging_root(install_root) / "receipts", reverse=True)
+
+
+def list_consents(install_root: Path) -> list[dict]:
+    ensure_layout(install_root)
+    return _list_json_records(messaging_root(install_root) / "consents")
+
+
+def list_consent_audit(install_root: Path) -> list[dict]:
+    ensure_layout(install_root)
+    return _list_json_records(
+        messaging_root(install_root) / "consent_audit", reverse=True
+    )
+
+
+def list_damping(install_root: Path) -> list[dict]:
+    ensure_layout(install_root)
+    states: dict[str, dict[str, Any]] = {}
+
+    for card in list_cards(install_root):
+        identity_id = card.get("identityId")
+        regulation = card.get("regulation") or {}
+        damping = regulation.get("damping") if isinstance(regulation, dict) else None
+        if not isinstance(identity_id, str) or not isinstance(damping, dict):
+            continue
+        states[identity_id] = {
+            "identityId": identity_id,
+            "configured": True,
+            "maxMessagesPerWindow": damping.get("maxMessagesPerWindow"),
+            "windowSeconds": damping.get("windowSeconds"),
+            "timestamps": [],
+            "currentCount": 0,
+            "updatedAt": None,
+        }
+
+    damping_dir = messaging_root(install_root) / "damping"
+    for path in sorted(damping_dir.glob("*.json")):
+        identity_id = path.stem
+        try:
+            state = _read_json(path)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(state, dict):
+            continue
+        item = states.setdefault(
+            identity_id,
+            {
+                "identityId": identity_id,
+                "configured": False,
+                "maxMessagesPerWindow": None,
+                "windowSeconds": None,
+                "timestamps": [],
+                "currentCount": 0,
+                "updatedAt": None,
+            },
+        )
+        item["timestamps"] = state.get("timestamps") or []
+        item["updatedAt"] = state.get("updatedAt")
+
+    now = time.time()
+    for item in states.values():
+        timestamps: list[float] = []
+        for timestamp in item.get("timestamps") or []:
+            try:
+                timestamps.append(float(timestamp))
+            except (TypeError, ValueError):
+                continue
+        try:
+            window_seconds = int(item.get("windowSeconds"))
+        except (TypeError, ValueError):
+            window_seconds = 0
+        active = [timestamp for timestamp in timestamps if not window_seconds or timestamp >= now - window_seconds]
+        item["timestamps"] = active
+        item["currentCount"] = len(active)
+
+    return [states[key] for key in sorted(states)]
+
+
+def collect_messaging_status(install_root: Path) -> dict[str, Any]:
+    root = install_root.expanduser().resolve()
+    ensure_layout(root)
+    cards = list_cards(root)
+    inbox = list_inbox(root)
+    outbox = list_outbox(root)
+    receipts = list_receipts(root)
+    consents = list_consents(root)
+    consent_audit = list_consent_audit(root)
+    damping = list_damping(root)
+    from .messaging_metabolize import list_metabolizations
+
+    metabolizations = list_metabolizations(root)
+    rejected = [
+        {
+            "receiptId": receipt.get("messageId"),
+            "messageId": receipt.get("inReplyTo"),
+            "from": receipt.get("from"),
+            "createdAt": receipt.get("createdAt"),
+            "reason": receipt.get("reason") or "unspecified rejection",
+        }
+        for receipt in receipts
+        if receipt.get("receiptType") == "rejected"
+    ]
+    receipt_types = Counter(str(receipt.get("receiptType") or "unknown") for receipt in receipts)
+    return {
+        "root": str(root),
+        "cards": {
+            "count": len(cards),
+            "identity_ids": [card.get("identityId") for card in cards],
+        },
+        "inbox": {"count": len(inbox)},
+        "outbox": {"count": len(outbox)},
+        "receipts": {
+            "count": len(receipts),
+            "by_type": dict(sorted(receipt_types.items())),
+            "items": receipts,
+        },
+        "consents": {
+            "count": len(consents),
+            "items": consents,
+        },
+        "consent_audit": {
+            "count": len(consent_audit),
+            "items": consent_audit,
+        },
+        "metabolizations": {
+            "count": len(metabolizations),
+            "by_status": {"metabolized": len(metabolizations)},
+            "items": metabolizations,
+        },
+        "damping": {
+            "count": len(damping),
+            "items": damping,
+        },
+        "rejections": rejected,
+    }

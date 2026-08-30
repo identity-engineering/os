@@ -1,0 +1,26 @@
+{
+  "identityId": "018f3a2b-7c9e-7d01-8a2b-0000000000a2",
+  "name": "Jonas Coding Agent",
+  "type": "agent",
+  "version": "0.1",
+  "description": "Deterministic coding-agent Identity fixture for local Messaging dogfood.",
+  "ownerIdentityId": "018f3a2b-7c9e-7d01-8a2b-0000000000a1",
+  "scope": "personal",
+  "endpoints": {
+    "messaging": "http://127.0.0.1:7420/messaging"
+  },
+  "frequencySignature": {
+    "preferred": ["async", "task"],
+    "accepted": ["async", "task", "signal-only"],
+    "rejected": ["sync-blocking"]
+  },
+  "causalEntropyConstraints": {
+    "requireExplicitConsentFor": ["mass-altering", "stem-altering"],
+    "maxAutomaticImpact": "low"
+  },
+  "recognitionPolicy": {
+    "default": "accept-known",
+    "allowlist": ["018f3a2b-7c9e-7d01-8a2b-0000000000a1"],
+    "blocklist": []
+  }
+}

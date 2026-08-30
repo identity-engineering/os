@@ -26,7 +26,7 @@ addressee (see `propose-to-standard` skill).
 
 - Destination must match the intended recipient Identity (`to` / `to_handle`).
 - Never treat `coarse_mass_estimate` as the sender's own Mass.
-- Do not invent consent; use policy grants or explicit open-consent only when the human asks (dogfood).
+- Do not invent consent; use policy grants or explicit open-consent only when the human asks. The Grok MCP connector against `main` is the real Dogfood path; local runs are testing.
 - After apply, Geometry feed may run via hook; explicit path: `ie geometry feed` / MCP `ie_geometry_feed`.
 
 ## Related

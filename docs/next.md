@@ -6,11 +6,13 @@ Surface Runtime (CLI / HTTP / MCP) · Geometry Receipt + feed · Mass · Freedom
 scalar · Request inbox · Jurisdiction · Grants · Account ≠ Identity ·
 Space-as-membrane · Context Layer standard skills (#90) · Local MCP (#84, #87).
 
-**Personal / local Geometry Loop dogfood (2026-08-17)** — installable, persistent,
-verified: Geometry Receipts, emergent Self-Mass from inbound estimates (not
-self-declared), Registry write-back, Identity-scoped MCP stdio surface, local
-Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtime
-+ proof file; contracts and Open Core implementation live on `main`.
+**Personal / local Geometry Loop test evidence (2026-08-17)** — installable,
+persistent, verified: Geometry Receipts, emergent Self-Mass from inbound
+estimates (not self-declared), Registry write-back, Identity-scoped MCP stdio
+surface, local Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence
+is local runtime + proof file. This is testing only, not Dogfood evidence. Real
+Dogfood is Jonas's use of the Grok MCP connector against the current code on
+`main`.
 
 ## Now
 
@@ -19,8 +21,9 @@ Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtim
 2. **#95 / #96 ContextStore + Notion** — adapter PR; restore full CLI on that branch before merge.
 3. **First external human run** — a second person (not the owner) executes the
    local Geometry Loop once and produces a Geometry Receipt + Registry write-back.
-4. **Daily harness** — skills + real Registry entries in ongoing personal use
-   (continuation of former #17 dogfood pressure).
+4. **Daily test harness** — skills + real Registry entries in ongoing local
+   testing. Real Dogfood is tracked only through Jonas's Grok MCP use against
+   `main`.
 
 ## Then
 

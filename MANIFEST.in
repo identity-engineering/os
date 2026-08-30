@@ -1,5 +1,6 @@
 recursive-include templates/personal *
 recursive-include templates/skills *
+recursive-include schemas/messaging *.json
 recursive-include ie/templates *
 include README.md
 include LICENSE

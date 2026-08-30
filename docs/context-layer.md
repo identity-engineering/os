@@ -39,6 +39,7 @@ Skills must not instruct agents to edit SQLite or bypass Surface policy.
 | `signal` | Interact; Foreign-Mature carrier |
 | `card` | Public card readout |
 | `propose-to-standard` | Standard-Mature outbound (Signal-first) |
+| `onboarding` | Multi-Identity onboarding and first Geometry Loop |
 
 ## Storage
 
@@ -51,6 +52,8 @@ file overwrite of personalized skills (`docs/mature.md`, #92).
 ## Discovery
 
 - `IE.md` points agents at `skills/` and at CLI/MCP.
+- Agents without computer use can discover and read these files through the
+  local MCP tools `ie_context_list` and `ie_context_get`.
 - `docs/local-entry.md` remains discovery of the **install**, not skill content.
 - `docs/agent-contract-v1.md` remains the semantic contract for tool use.
 

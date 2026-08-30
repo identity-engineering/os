@@ -2,6 +2,10 @@
 
 Issue #18 — installable `ie` command.
 
+The CLI is a local developer, operator, and test surface. It is not the current
+Dogfood path; real Dogfood is Jonas's use of the Grok MCP connector against the
+current code on `main`.
+
 The CLI operates a **local mini-Space** (`docs/space-model.md`): one install, one
 Identity in V1, full Ownership, no account required for the geometry loop.
 Mutable state is stored in SQLite under `.ie/ie.sqlite3` (store engine).
@@ -18,7 +22,23 @@ brew tap identity-engineering/tap && brew install ie-os
 pipx install ie-os
 ```
 
-Dev until public packages exist: `pip install -e /path/to/os`.
+Homebrew is the canonical machine installation. Upgrade the existing command
+with one source and verify that the installed binary exposes Messaging:
+
+```bash
+brew update && brew upgrade identity-engineering/tap/ie-os
+hash -r
+command -v ie
+ie --version
+ie messaging --help
+```
+
+Do not use `pip install -e` to replace the machine-wide `ie`; use an explicit
+virtual environment or the worktree path for development only. This keeps one
+reproducible `ie` on `PATH`.
+
+For a development checkout before public packages exist:
+`pip install -e /path/to/os` inside a dedicated virtual environment.
 
 ## Personal setup — interactive
 

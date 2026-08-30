@@ -1,0 +1,20 @@
+{
+  "messageId": "018f3a2b-7c9e-7d01-8a2b-0000000000b1",
+  "from": "018f3a2b-7c9e-7d01-8a2b-0000000000a2",
+  "to": "018f3a2b-7c9e-7d01-8a2b-0000000000a1",
+  "createdAt": "2026-08-30T06:00:00Z",
+  "signal": {
+    "type": "task",
+    "priority": "normal",
+    "frequency": "async"
+  },
+  "payload": {
+    "contentType": "text/markdown",
+    "inline": "Review the local Messaging productization path and record the next safe implementation step."
+  },
+  "impactHints": ["informational"],
+  "ownership": {
+    "holder": "018f3a2b-7c9e-7d01-8a2b-0000000000a2",
+    "visibility": "sender-receiver"
+  }
+}

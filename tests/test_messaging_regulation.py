@@ -6,7 +6,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from runtime.messaging import list_inbox, register_card, send_envelope
+from runtime.messaging import (
+    collect_messaging_status,
+    list_inbox,
+    register_card,
+    send_envelope,
+)
 
 COLLECTIVE = "018f3a2b-7c9e-7d01-8a2b-0000000000c0"
 SPEC_A = "018f3a2b-7c9e-7d01-8a2b-0000000000a1"
@@ -128,9 +133,18 @@ class RegulationTests(unittest.TestCase):
         )
         first = send_envelope(self.root, _env(COLLECTIVE))
         self.assertEqual(first.status, "delivered")
+        status = collect_messaging_status(self.root)
+        damping = status["damping"]["items"]
+        self.assertEqual(len(damping), 1)
+        self.assertEqual(damping[0]["currentCount"], 1)
+        self.assertEqual(damping[0]["maxMessagesPerWindow"], 1)
         second = send_envelope(self.root, _env(COLLECTIVE))
         self.assertEqual(second.status, "rejected")
         self.assertIn("damping", second.receipt["reason"])
+        status = collect_messaging_status(self.root)
+        self.assertEqual(status["consent_audit"]["count"], 0)
+        self.assertEqual(len(status["rejections"]), 1)
+        self.assertEqual(status["rejections"][0]["reason"], second.receipt["reason"])
 
 
 if __name__ == "__main__":
