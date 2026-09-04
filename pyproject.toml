@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = ["mcp>=2.0,<3"]
-dev = ["build>=1.2", "pytest>=8.0", "mcp>=2.0,<3"]
+dev = ["build>=1.2", "jsonschema>=4.20", "pytest>=8.0", "mcp>=2.0,<3"]
 
 [project.scripts]
 ie = "ie.cli:app"
@@ -29,10 +29,11 @@ Repository = "https://github.com/identity-engineering/os"
 Releases = "https://identity-engineering.org/releases/ie-os/"
 
 [tool.setuptools.packages.find]
-include = ["ie*", "runtime*"]
+include = ["ie*", "runtime*", "schemas"]
 
 [tool.setuptools.package-data]
 ie = ["py.typed", "templates/**/*"]
+schemas = ["messaging/v0.1/*.json"]
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0.dev0"

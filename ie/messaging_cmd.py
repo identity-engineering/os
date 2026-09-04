@@ -13,6 +13,7 @@ from ie.paths import require_ie_root
 from runtime.database import database_path
 from runtime.messaging import (
     MessagingError,
+    collect_messaging_status,
     get_card,
     get_message,
     list_cards,
@@ -47,6 +48,37 @@ def _load_json(file: Optional[Path]) -> dict:
     if not isinstance(data, dict):
         raise SystemExit("Expected a JSON object")
     return data
+
+
+def format_messaging_status(info: dict) -> str:
+    receipts = info.get("receipts") or {}
+    receipt_types = receipts.get("by_type") or {}
+    receipt_summary = ", ".join(
+        f"{name}={count}" for name, count in receipt_types.items()
+    ) or "none"
+    lines = [
+        f"Messaging install: {info.get('root') or '—'}",
+        f"  cards:           {(info.get('cards') or {}).get('count', 0)}",
+        f"  inbox:           {(info.get('inbox') or {}).get('count', 0)}",
+        f"  outbox:          {(info.get('outbox') or {}).get('count', 0)}",
+        f"  receipts:        {receipts.get('count', 0)} ({receipt_summary})",
+        f"  consents:        {(info.get('consents') or {}).get('count', 0)}",
+        f"  consent audit:   {(info.get('consent_audit') or {}).get('count', 0)} event(s)",
+        f"  metabolized:     {(info.get('metabolizations') or {}).get('count', 0)}",
+        f"  damping:         {(info.get('damping') or {}).get('count', 0)} target(s)",
+    ]
+
+    for rejection in info.get("rejections") or []:
+        lines.append(
+            f"  reject:          {rejection.get('messageId') or '?'}: "
+            f"{rejection.get('reason') or 'unspecified rejection'}"
+        )
+    for item in (info.get("damping") or {}).get("items") or []:
+        lines.append(
+            f"  damping window:  {item.get('identityId') or '?'} "
+            f"{item.get('currentCount', 0)}/{item.get('maxMessagesPerWindow') or 'unlimited'}"
+        )
+    return "\n".join(lines)
 
 
 @card_app.command("register")
@@ -177,6 +209,20 @@ def messaging_inbox(
             f"{m.get('messageId', '?')}  from={m.get('from', '?')}  "
             f"signal={sig}  at={m.get('createdAt', '?')}"
         )
+
+
+@messaging_app.command("status")
+def messaging_status(
+    path: Optional[Path] = typer.Option(None, "--path", help="IE install root"),
+    json_out: bool = typer.Option(False, "--json", help="Print machine-readable status"),
+) -> None:
+    """Show the local Messaging delivery, policy, and metabolization loop."""
+    root = _root(path)
+    info = collect_messaging_status(root)
+    if json_out:
+        typer.echo(json.dumps(info, indent=2, ensure_ascii=False))
+        return
+    typer.echo(format_messaging_status(info))
 
 
 @messaging_app.command("show")

@@ -93,7 +93,7 @@ It is **not** Access/Jurisdiction geometry. Full Ownership operationalization: *
 
 ## Next levers
 
-1. Dogfood Interact path (default on).  
+1. Grok MCP Dogfood path against `main` (default on).
 2. Think / Mature entry points (`target=self`).  
 3. **Feed Geometry Receipt into Tension / Tensor / Registry** — **#8**.  
 4. **Access & Jurisdiction probes / membrane policy** — **#40**.  

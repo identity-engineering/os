@@ -28,8 +28,9 @@ explicit.
 
 Standard skills live under `<install>/skills/<name>/SKILL.md` (see
 `docs/context-layer.md`). Humans invoke them (e.g. `/mature`). **Agents read
-the skill text and execute CLI/MCP commands** listed there. Skills are not a
-second write API.
+the skill text and execute CLI/MCP commands** listed there. Agents without
+computer use can read installed skills through `ie_context_list` and
+`ie_context_get`. Skills are not a second write API.
 
 ## MCP binding (local V1)
 
@@ -43,7 +44,9 @@ ie surface mcp
 Session is bound to one Identity (default install active; optional
 `--identity-id` / `--handle`). Every tool result carries
 `actor.actor_identity_id`. `ie_signal_apply` forces the destination to the
-bound Identity. See `docs/mcp-surface-v0.md`.
+bound Identity. Messaging Card registration forces `identityId`, Messaging
+send forces `from`, and inbox/metabolization enforce the bound receiver. See
+`docs/mcp-surface-v0.md`.
 
 ## Read path
 
@@ -57,31 +60,30 @@ ie request list --json
 ie db info --json
 ```
 
-An MCP-capable agent may use the same local Surface Runtime after installing
-the optional SDK extra:
+The canonical local endpoint is `ie surface mcp` (or
+`python -m runtime.mcp_handler --install <root>`). The optional `ie-mcp` entry
+point exposes the earlier SDK compatibility subset; it is not the
+Context/Messaging contract below. The MCP process is bound once at startup to
+the one local V1 Identity. The optional `--identity-id` is an assertion, not a
+context switch. MCP tools do not accept an identity selector, and every
+canonical structured result includes `identity_id` plus
+`actor.actor_identity_id`. Local Free V1 has no membrane tables yet; passing
+`--space-id` therefore fails closed instead of silently treating the request as
+account-root access.
 
-```text
-pip install ie-os[mcp]
-ie-mcp --install /path/to/install --transport stdio
-```
+The canonical local MCP tool set is:
 
-The MCP process is bound once at startup to the one local V1 Identity. The
-optional `--identity-id` is an assertion, not a context switch. MCP tools do
-not accept an identity selector, and every structured result includes
-`actor_identity_id`, `identity_id`, and `space_id`. Local Free V1 has no
-membrane tables yet; passing `--space-id` therefore fails closed instead of
-silently treating the request as account-root access.
+- `ie_status`, `ie_card`, `ie_mass`, `ie_freedom`
+- `ie_signal_apply`, `ie_geometry_feed`, `ie_grants_list`, `ie_requests_list`
+- `ie_registry_list`, `ie_identity_list`
+- `ie_context_list`, `ie_context_get`
+- `ie_messaging_cards`, `ie_messaging_status`, `ie_messaging_card`, `ie_messaging_card_register`
+- `ie_messaging_inbox`, `ie_messaging_send`, `ie_messaging_metabolize`
 
-The initial local MCP tool set is:
-
-- `get_status`
-- `get_public_card`
-- `get_mass`
-- `list_inbound_requests`
-- `receive_interaction_signal`
-
-Mature and policy-changing Surface operations remain on the existing CLI and
-runtime paths until their approval and grant envelopes are exposed explicitly.
+Direct Mature and policy-changing Surface operations remain on the existing
+CLI and runtime paths. `ie_messaging_metabolize` may opt into one explicit
+Mature commit for the addressed message; it does not provide arbitrary Mature
+or cross-Identity writes.
 
 Every JSON result should identify the relevant schema version and stable IDs.
 Agents should use receipt IDs, event IDs, Mature IDs, and revision numbers when

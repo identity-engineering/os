@@ -64,7 +64,7 @@ That field can emerge if:
 - Building a global attention feed as core product
 - Requiring every Identity to rate every other Identity
 - Auto-answering estimate requests
-- Claiming empirical "collective intelligence platform" status before dogfood and open contracts exist
+- Claiming empirical "collective intelligence platform" status before real Dogfood through the Grok MCP connector against `main` and open contracts exist
 
 ## Related
 

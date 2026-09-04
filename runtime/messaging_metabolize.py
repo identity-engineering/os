@@ -39,6 +39,20 @@ def get_metabolization(install_root: Path, message_id: str) -> Optional[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def list_metabolizations(install_root: Path) -> list[dict]:
+    ensure_layout(install_root)
+    directory = messaging_root(install_root) / "metabolized"
+    records: list[dict] = []
+    for path in sorted(directory.glob("*.json"), reverse=True):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    return records
+
+
 def metabolize_message(
     install_root: Path,
     message_id: str,
