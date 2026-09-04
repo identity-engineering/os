@@ -14,6 +14,11 @@ metabolize → optional Mature. Conceptual specs live in framework; runtime in O
 `stem_revisions` are the samples. Mature is the only author. Particles and
 Preference are readings, not stores. YAML is documentation. See `docs/stem.md`.
 
+**Status readout (2026-09-04)** - `ie status` / `ie_status` reads `stem_state`
+as `x(t)`. Init is `present` and `unformed`. A Mature that writes a non-empty
+Differential / Vision / Coherence field sets `formed`. Default omits
+`substance_json`. No slope number.
+
 **Personal / local Geometry Loop test evidence (2026-08-17)** - installable,
 persistent, verified: Geometry Receipts, emergent Self-Mass from inbound
 estimates (not self-declared), Registry write-back, Identity-scoped MCP stdio
@@ -27,8 +32,8 @@ Dogfood is Jonas's use of the Grok MCP connector against the current code on
 1. **#92 Mature contract** - Self / Foreign / Standard; Signal-first propose;
    inbound as Mature over sources (`docs/mature.md`). Write path already forms
    Stem; thicken structure only through `_apply_stem`.
-2. **Status / session readout** of `stem_state` as `x(t)`, then qualitative
-   slope from `stem_revisions` once sample_count beats noise.
+2. **Qualitative slope** from `stem_revisions` once sample_count beats noise.
+   Not a Preference table.
 3. **#95 / #96 ContextStore + Notion** - adapter PR; restore full CLI on that branch before merge.
 4. **First external human run** - a second person (not the owner) executes the
    local Geometry Loop once and produces a Geometry Receipt + Registry write-back.
