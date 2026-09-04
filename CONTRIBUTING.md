@@ -27,6 +27,20 @@ Managed Pro features live elsewhere and are out of scope here.
 4. **Tests**  
    Behavioural changes to the runtime or CLI should come with tests.
 
+## Development
+
+Install the package with its development dependencies in editable mode:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Run the test suite with:
+
+```bash
+pytest
+```
+
 ## Process
 
 1. Open an issue for non-trivial ideas (especially anything that touches schemas or Ownership defaults).
