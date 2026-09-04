@@ -1,14 +1,22 @@
 # Schemas
 
-Placeholders for the core Identity Engineering contracts.
+Language-neutral shape notes for IE contracts. They are documentation.
 
-These will be filled only after the praxis work (see `docs/next.md`):
+Canonical mutable state lives in the database (Local SQLite or managed SQL).
+The runtime does not read these YAML files to decide what to persist.
+See `docs/sqlite-schema-v1.md` and `docs/stem.md`.
 
-- `stem/` — Stem Schema v0.1 (Person + Runtime, privacy defaults, multi-substrate)
-- `header/` — Header Schema v0.1 (always-on entry point)
-- `trajectory/` — Trajectory-Log Format
-- `mass-proxy/` — Relative Mass Proxies v0.1
-- `tension-tensor/` — Living Tension Tensor update protocol
-- `registry/` — Local Registry architecture
+Present contract files under this tree (v0):
 
-No schema is final until it can be derived from and remains consistent with the geometric + ownership primitives of Identity Engineering.
+- `header/` — public entry fields
+- `interaction-signal/` — cross-membrane signal
+- `estimate-request/` — inbound / outbound estimate ask
+- `foreign-estimate-zone/` — observer-local estimate projection
+- `geometry-receipt/` — Probe product after Interact / Mature
+- `registry/` — observer alloys
+- `dimension-catalogue/` — Metric Stem basis
+- `surface-operations/` — Surface verbs
+- `messaging/` — transport notes
+
+Do not add a `particles`, `fibers`, or `preferences` schema as if it were a
+store. Those are readings of `stem_state` / `stem_revisions` (`docs/stem.md`).

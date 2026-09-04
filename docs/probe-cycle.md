@@ -1,6 +1,7 @@
 # IE Operating Cycle as Probe Modes (Discipline Cross)
 
 Working definition · 01.08.2026 · Foundation lock 05.08.2026 · Recalibrated same day
+Stem lock 29.08.2026: `docs/stem.md`
 
 ## Status
 
@@ -10,15 +11,15 @@ The IE operating cycle (Think · Interact · Mature) organizes Interaction under
 
 This doc defines the **discipline cross**:
 
-- **Layer A — Geometry (IE Core):** Mass, Curvature, Stem, Relativity, Causal Entropy, …  
+- **Layer A — Geometry (IE Core):** Mass, Curvature, Stem, Relativity, Causal Entropy, …
 - **Layer B — IE operating cycle:** Think / Interact / Mature as phase organization
-- **Layer C — Living-form perspective:** Cell / organism as *lens* on how B metabolizes A  
+- **Layer C — Living-form perspective:** Cell / organism as *lens* on how B metabolizes A
 
 See `docs/living-form.md` for the cell mapping and the June 2026 article grounding.
 
 ## Everything is Interaction
 
-There is no clean split "question vs action".  
+There is no clean split "question vs action".
 Self-talk, prompts, tool calls, ownership moves, and learning reviews are all Interaction under Relativity — measurement and potential reshape at once.
 
 The cycle names three **phases by observer-reference to the membrane**:
@@ -43,8 +44,8 @@ Think appears in workflows and system prompts as a deliberate first step ("clari
 
 Cross-membrane surface:
 
-- Interaction Signals (peer Identities) via `ie signal apply` / Surface Runtime  
-- Tool interfaces: APIs, CLIs, MCPs, HTTP  
+- Interaction Signals (peer Identities) via `ie signal apply` / Surface Runtime
+- Tool interfaces: APIs, CLIs, MCPs, HTTP
 - Deterministic building blocks: scripts and modules you stabilize instead of regenerating
 
 An always-on Geometry Hook runs after each non-rejected signal apply. It may feed the foreign-estimate zone / emergent self-Mass under policy. It never touches Stem, Vision Gradient, or access policy.
@@ -58,6 +59,11 @@ root and at least one learning change. It records the operator's current reading
 of the Trajectory and atomically applies the supplied Stem, Workspace, Registry,
 evidence, Geometry, and explicit reassessment changes. It validates the change set
 but does not infer changes that the owner did not supply.
+
+Every accepted commit calls `_apply_stem`. That write *is* the new `x(t)`.
+`stem_revisions` keep the samples. Particles and Preference are readings of
+those rows, not other operating phases. Rebuild-projections is storage recovery,
+not Mature. Details: `docs/stem.md`, `docs/mature.md`.
 
 Biology lens (not isomorphism): directed metabolism that commits experience into the persistent Bauplan (Identity DNA). Closest readings: epigenetic marking, developmental maturation, homeostatic plasticity. Not backpropagation of the agentic loop (Identity ≠ Loop).
 
@@ -83,15 +89,16 @@ Invariants:
 - Every Mature receipt carries at least one local source reference.
 - Optionality is an explicit v0 estimate, not a computed gradient.
 - Geometry Receipt is the metabolic product; continuous feed remains Issue #8.
+- No Particles or Preference table. Those readings consume Stem rows.
 
 ## Discipline cross (short form)
 
 > **The IE operating cycle is the biology-inspired operations discipline of Identity Engineering.**
-> It organizes Interaction (under Relativity) into Self- and Other-phases and treats Identity as a living operative form.  
+> It organizes Interaction (under Relativity) into Self- and Other-phases and treats Identity as a living operative form.
 > It does not introduce new geometric primitives. It specifies how geometry *lives* and metabolizes through continuous Probes.
 
-- **Think** names the inward phase (substrate + prompts).  
-- **Interact** is the tool/signal membrane surface.  
+- **Think** names the inward phase (substrate + prompts).
+- **Interact** is the tool/signal membrane surface.
 - **Mature** is the deliberate evolve step (`ie mature`).
 
 Mature specifically bridges Causal Entropy (design telos) and Stem continuity: it refines the relative causal model so that expanded future freedom remains continuous with who the Identity is.
@@ -107,26 +114,29 @@ Mature specifically bridges Causal Entropy (design telos) and Stem continuity: i
 ## What stays out
 
 - The operating cycle as a product brand
-- `ie probe think` / Think as isolation runtime  
-- Sensory / immunity / organism **agents** as shipped modules  
+- `ie probe think` / Think as isolation runtime
+- Sensory / immunity / organism **agents** as shipped modules
 - Claim that the operating cycle is empirical biology
-- Identity = agentic loop  
+- Identity = agentic loop
 - Mature as automatic backprop of the reasoning loop
+- Rebuild-projections as an identity-time step
 
 ## Why this is safe to pull in now
 
-1. **Framework-grounded:** Relativity + Probes already imply continuous geometry from Interaction.  
-2. **No overbuild:** Think is not reinvented; Mature is the missing personal evolve surface.  
-3. **Membrane-first:** Surface + foreign-estimate zone remain the cell boundary.  
-4. **Causal Entropy honesty:** Mature records the causal-model update ownership-gated.  
+1. **Framework-grounded:** Relativity + Probes already imply continuous geometry from Interaction.
+2. **No overbuild:** Think is not reinvented; Mature is the missing personal evolve surface.
+3. **Membrane-first:** Surface + foreign-estimate zone remain the cell boundary.
+4. **Causal Entropy honesty:** Mature records the causal-model update ownership-gated.
 5. **Installability:** Receipts live on disk; feed is #8.
 
 ## Related
 
-- `docs/living-form.md`  
-- `docs/probes-as-bridge.md`  
-- `docs/geometry-hook.md`  
-- `schemas/geometry-receipt/v0.yaml`  
-- Issue #45  
-- Issue #8 (Tensor feed), #40 (Access & Jurisdiction)  
-- LinkedIn: *KI ist nicht das neue Gehirn. Sie ist der Zellkern.* (Jonas Siebler, 15.06.2026)  
+- `docs/stem.md`
+- `docs/mature.md`
+- `docs/living-form.md`
+- `docs/probes-as-bridge.md`
+- `docs/geometry-hook.md`
+- `schemas/geometry-receipt/v0.yaml`
+- Issue #45
+- Issue #8 (Tensor feed), #40 (Access & Jurisdiction)
+- LinkedIn: *KI ist nicht das neue Gehirn. Sie ist der Zellkern.* (Jonas Siebler, 15.06.2026)

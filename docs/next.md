@@ -10,6 +10,10 @@ Identity-Native Messaging on `main` (Aug 2026): Identity Card, envelope/payload,
 consent grants, local HTTP + serve CLI, A2A adapter, collective Regulation,
 metabolize → optional Mature. Conceptual specs live in framework; runtime in OS.
 
+**Stem as x(t) (2026-08-29)** - `stem_state` is the current configuration.
+`stem_revisions` are the samples. Mature is the only author. Particles and
+Preference are readings, not stores. YAML is documentation. See `docs/stem.md`.
+
 **Personal / local Geometry Loop test evidence (2026-08-17)** - installable,
 persistent, verified: Geometry Receipts, emergent Self-Mass from inbound
 estimates (not self-declared), Registry write-back, Identity-scoped MCP stdio
@@ -20,11 +24,11 @@ Dogfood is Jonas's use of the Grok MCP connector against the current code on
 
 ## Now
 
-1. **#118 Stem lock** - Stem is `x(t)` (`stem_state` + `stem_revisions`).
-   Particles and Preference are readings. Mature is the only Stem author.
-   Do not grow Particles / Preference / Scarcity stores ahead of this PR.
-2. **#92 Mature contract** - Self / Foreign / Standard; Signal-first propose;
-   inbound as Mature over sources (`docs/mature.md`).
+1. **#92 Mature contract** - Self / Foreign / Standard; Signal-first propose;
+   inbound as Mature over sources (`docs/mature.md`). Write path already forms
+   Stem; thicken structure only through `_apply_stem`.
+2. **Status / session readout** of `stem_state` as `x(t)`, then qualitative
+   slope from `stem_revisions` once sample_count beats noise.
 3. **#95 / #96 ContextStore + Notion** - adapter PR; restore full CLI on that branch before merge.
 4. **First external human run** - a second person (not the owner) executes the
    local Geometry Loop once and produces a Geometry Receipt + Registry write-back.
@@ -37,7 +41,8 @@ Dogfood is Jonas's use of the Grok MCP connector against the current code on
 6. Standard Identity handle + proposal signal schema; `ie standard status` as source readout.
 7. Distribution (ops on PC).
 8. Dimensional Freedom / denser Tensor · **#73** Frequency after denser Tensor.
-9. Particles / Preference readings after #118; Scarcity envelope (`path_note` only) after that lock.
+9. Particles / Preference readings stay derived. Scarcity envelope may resume
+   with `path_note` only; `path_id` only for Mature-named aspects.
 
 ## Parked / later
 
@@ -45,3 +50,5 @@ Dogfood is Jonas's use of the Grok MCP connector against the current code on
 - **#91** Subagent vs Identity · **#93** Organism principles · **#5** harness mirrors.
 - Closed-unmerged: #117 (Particles store superseded by #118), #116 (Scarcity parked until Stem lock).
 - IE operating-cycle foundation (#45), multi-substrate (#11), public /os (#21), Phase 3–5 billing.
+- Currency-Identity / fiat onramp / chain (Notion parked 2026-08-22).
+- Numeric Charge / Identity Chemistry / Particles as public Core Concept.

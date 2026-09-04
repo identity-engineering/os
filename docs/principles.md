@@ -13,27 +13,29 @@ Every operational contract must be derivable from or consistent with the core pr
 
 No pattern is imported just because it worked in an earlier product. Patterns enter only when Framework-grounded.
 
-## 2. Static files + Dynamic entry + Living Tension Tensor
+## 2. Persist samples, derive readings
 
-- Static layer = relative perception an Identity holds of itself and others.  
-- Local entry = always-on entry point for State Differential + Vision Gradient + tension signals.  
+- Static layer = relative perception an Identity holds of itself and others.
+- Local entry = always-on entry point for State Differential + Vision Gradient + tension signals.
 - Every interaction produces a local Geometry Receipt (Probe process). Continuous write-back into Registry / Tensor is the living-update path (**#8**).
+- Mutable state lives in the database (managed SQL or Local SQLite). YAML under `schemas/` documents shape and is not read as state.
+- Live geometry is a reading of persisted samples, not a second store. Tensor reads Registry + Metric Stem. Particles read `stem_state`. Preference reads recent `stem_revisions` as slope in the Now. Frequency is that sampling. See `docs/stem.md` and `docs/tensor.md`.
 
 This turns dead documents into living identity artifacts.
 
 ## 3. Relative and local by default
 
-- Mass, Registry, and most signals are relative to the observing Identity.  
-- Registry is local to the observer. Global display names are not required.  
-- Minimal always-shareable signal: existence + interaction depth (+ optional coarse Mass).  
-- Richer signals are consent-based.  
+- Mass, Registry, and most signals are relative to the observing Identity.
+- Registry is local to the observer. Global display names are not required.
+- Minimal always-shareable signal: existence + interaction depth (+ optional coarse Mass).
+- Richer signals are consent-based.
 - Sensing is bidirectional with agency on both sides (outbound signals + inbound estimate requests; never auto-answered).
 
 **Registry ≠ Space.** Registry is the observer frame. **Space** is the membrane host (membership, Surface hosting, jurisdiction policy). See `docs/space-model.md`.
 
 ## 4. Privacy, Consent, Refusal-of-Control
 
-Structural defaults against surveillance, forced alignment, and over-transparency.  
+Structural defaults against surveillance, forced alignment, and over-transparency.
 Encoded in Stem, local entry, Mass ratings, Registry, Surface policy, and Space membrane export/inbound rules.
 
 ## 5. Multi-substrate symmetry from day 1
@@ -46,7 +48,7 @@ Same Stem / Trajectory / Surface contracts for human Identities and substrate-fr
 
 ## 6. Practical installability
 
-Clonable / copyable so that "IE is installed" and the next interaction already lives via local entry + Geometry Receipt + Tension update.  
+Clonable / copyable so that "IE is installed" and the next interaction already lives via local entry + Geometry Receipt + Tension update.
 Local install is a mini-Space. CLI free personal / paid collective tiers later — after core contracts are solid.
 
 ## 7. Living form in, organism agents out
@@ -54,7 +56,7 @@ Local install is a mini-Space. CLI free personal / paid collective tiers later �
 **In:**
 
 - Think · Interact · Mature as Probe phases under Relativity (`docs/probe-cycle.md`)
-- Living-form lens: Identity as operative form with membrane (Surface / Space) and metabolism (Interaction → Geometry Receipt) (`docs/living-form.md`)  
+- Living-form lens: Identity as operative form with membrane (Surface / Space) and metabolism (Interaction → Geometry Receipt) (`docs/living-form.md`)
 - Explicit split: Identity ≠ agentic loop (loop may be nuclear machinery inside the form)
 
 **Out (for now):**
