@@ -6,44 +6,42 @@ Surface Runtime (CLI / HTTP / MCP) · Geometry Receipt + feed · Mass · Freedom
 scalar · Request inbox · Jurisdiction · Grants · Account ≠ Identity ·
 Space-as-membrane · Context Layer standard skills (#90) · Local MCP (#84, #87).
 
-**Personal / local Geometry Loop dogfood (2026-08-17)** — installable, persistent,
-verified: Geometry Receipts, emergent Self-Mass from inbound estimates (not
-self-declared), Registry write-back, Identity-scoped MCP stdio surface, local
-Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence is local runtime
-+ proof file; contracts and Open Core implementation live on `main`.
+Identity-Native Messaging on `main` (Aug 2026): Identity Card, envelope/payload,
+consent grants, local HTTP + serve CLI, A2A adapter, collective Regulation,
+metabolize → optional Mature. Conceptual specs live in framework; runtime in OS.
 
-**Stem as x(t) (2026-08-29, this branch)** — `stem_state` is the current
-configuration. `stem_revisions` are the samples. Mature is the only author.
-Particles and Preference are readings, not stores. YAML is documentation.
-See `docs/stem.md`.
+**Personal / local Geometry Loop test evidence (2026-08-17)** - installable,
+persistent, verified: Geometry Receipts, emergent Self-Mass from inbound
+estimates (not self-declared), Registry write-back, Identity-scoped MCP stdio
+surface, local Managed Auth/RLS/import/sync/rebuild/revoke/erase path. Evidence
+is local runtime + proof file. This is testing only, not Dogfood evidence. Real
+Dogfood is Jonas's use of the Grok MCP connector against the current code on
+`main`.
 
 ## Now
 
-1. **Stem lock review** — accept `docs/stem.md` and close or rebase #116 / #117
-   onto it. Do not merge the older Particles-as-module or fibers-table readings.
-2. **#92 Mature contract** — Self / Foreign / Standard; Signal-first propose;
-   inbound as Mature over sources (`docs/mature.md`). Write path already forms
-   Stem; thicken structure only through `_apply_stem`.
-3. **#95 / #96 ContextStore + Notion** — adapter PR; restore full CLI on that branch before merge.
-4. **First external human run** — a second person (not the owner) executes the
+1. **#118 Stem lock** - Stem is `x(t)` (`stem_state` + `stem_revisions`).
+   Particles and Preference are readings. Mature is the only Stem author.
+   Do not grow Particles / Preference / Scarcity stores ahead of this PR.
+2. **#92 Mature contract** - Self / Foreign / Standard; Signal-first propose;
+   inbound as Mature over sources (`docs/mature.md`).
+3. **#95 / #96 ContextStore + Notion** - adapter PR; restore full CLI on that branch before merge.
+4. **First external human run** - a second person (not the owner) executes the
    local Geometry Loop once and produces a Geometry Receipt + Registry write-back.
-5. **Daily harness** — skills + real Registry entries in ongoing personal use
-   (continuation of former #17 dogfood pressure).
+5. **Daily test harness** - skills + real Registry entries in ongoing local
+   testing. Real Dogfood is tracked only through Jonas's Grok MCP use against
+   `main`.
 
 ## Then
 
-6. Status / session readout of `stem_state` as `x(t)`, then qualitative slope
-   from `stem_revisions` once sample_count beats noise.
-7. Standard Identity handle + proposal signal schema; `ie standard status` as source readout.
-8. Distribution (ops on PC).
-9. Dimensional Freedom / denser Tensor · **#73** Frequency after denser Tensor.
-10. Economics / Scarcity envelope only after this lock holds. `path_note`
-    allowed; `path_id` only for Mature-named aspects.
+6. Standard Identity handle + proposal signal schema; `ie standard status` as source readout.
+7. Distribution (ops on PC).
+8. Dimensional Freedom / denser Tensor · **#73** Frequency after denser Tensor.
+9. Particles / Preference readings after #118; Scarcity envelope (`path_note` only) after that lock.
 
 ## Parked / later
 
 - **#86** Managed / remote MCP (Phase-3 auth).
 - **#91** Subagent vs Identity · **#93** Organism principles · **#5** harness mirrors.
+- Closed-unmerged: #117 (Particles store superseded by #118), #116 (Scarcity parked until Stem lock).
 - IE operating-cycle foundation (#45), multi-substrate (#11), public /os (#21), Phase 3–5 billing.
-- Currency-Identity / fiat onramp / chain (Notion parked 2026-08-22).
-- Numeric Charge / Identity Chemistry / Particles as public Core Concept.
