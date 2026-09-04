@@ -99,7 +99,7 @@ class StatusTests(unittest.TestCase):
             self.assertIn("x(t) formed", text)
             self.assertIn("moved from reaction to decision", text)
 
-    def test_mature_without_prose_stays_unformed(self):
+    def test_substance_only_mature_stays_unformed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "install"
             initialize_database(root, handle="me", preferred_name="Me")
@@ -109,7 +109,8 @@ class StatusTests(unittest.TestCase):
             commit_mature(
                 root,
                 source_refs=["evidence.txt"],
-                notes="notes only, no geometry slice",
+                notes="substance bag only, no geometry slice",
+                substance={"current_focus": "ownership probe"},
             )
 
             stem = collect_status(root)["stem"]
@@ -117,6 +118,7 @@ class StatusTests(unittest.TestCase):
             self.assertFalse(stem["formed"])
             self.assertIsNotNone(stem["last_mature_id"])
             self.assertEqual(stem["revision_count"], 1)
+            self.assertNotIn("substance", stem)
 
 
 if __name__ == "__main__":
