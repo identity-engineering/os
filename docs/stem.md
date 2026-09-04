@@ -7,7 +7,8 @@ Time as worldlines, Frequency as sampling in the Now.
 Particles / Space remain proposal layers on the public site.
 
 Related: `docs/mature.md`, `docs/probe-cycle.md`, `docs/tensor.md`,
-`docs/sqlite-schema-v1.md`, `runtime/mature.py` (`_apply_stem`).
+`docs/sqlite-schema-v1.md`, `runtime/mature.py` (`_apply_stem`),
+`ie/status_cmd.py` (session readout of `stem_state` as `x(t)`).
 
 ## Claim
 
@@ -127,6 +128,11 @@ See `docs/preference.md`.
 Session start, `ie status`, Interact observation, and Mature authorship
 all read the current snapshot. Allocation decisions read the curve.
 
+`ie status` / `ie_status` expose `present` (row exists after init) and
+`formed` (at least one Mature wrote a non-empty Differential, Vision, or
+Coherence field). Default readout omits `substance_json`. No slope number
+in v0.
+
 ## Ownership
 
 | Operation | Who |
@@ -151,9 +157,9 @@ Foreign-Mature may propose a reading in a Signal. It does not write Stem.
 ## Exit criteria
 
 - [x] This reading written against live `runtime/mature.py`
-- [ ] Contract reviewed
-- [ ] #117 / #116 rewritten onto this lock or closed as superseded
-- [ ] Status / session readout treats `stem_state` as `x(t)`
+- [x] Contract reviewed
+- [x] #117 / #116 rewritten onto this lock or closed as superseded
+- [x] Status / session readout treats `stem_state` as `x(t)`
 - [ ] Slope readout specified once enough revisions exist to beat noise
 - [ ] Scarcity work resumes only after named aspects exist *or* explicitly
       accepts unbound `path_note` without `path_id`
