@@ -164,26 +164,50 @@ jobs:
             echo "Homebrew formula already points to ${VERSION}."
             exit 0
           fi
-          git -C homebrew-tap switch --create "$branch"
+          if git -C homebrew-tap show-ref --verify --quiet "refs/heads/${branch}"; then
+            git -C homebrew-tap switch "$branch"
+          else
+            git -C homebrew-tap switch --create "$branch"
+          fi
           git -C homebrew-tap config user.name "identity-engineering release bot"
           git -C homebrew-tap config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C homebrew-tap add Formula/ie-os.rb
           git -C homebrew-tap commit -m "ie-os ${VERSION}"
-          open_prs="$(gh pr list \
+          git -C homebrew-tap push --set-upstream origin "$branch"
+          pr_number="$(gh pr list \
             --repo identity-engineering/homebrew-tap \
             --head "$branch" \
             --base main \
             --state open \
             --json number \
-            --jq 'length')"
-          if [[ "$open_prs" != "0" ]]; then
-            echo "Homebrew formula PR for ${VERSION} already exists."
-            exit 0
+            --jq '.[0].number // empty')"
+          if [[ -z "$pr_number" ]]; then
+            gh pr create \
+              --repo identity-engineering/homebrew-tap \
+              --base main \
+              --head "$branch" \
+              --title "ie-os ${VERSION}" \
+              --body "Updates the ie-os Homebrew formula to ${VERSION}."
+            pr_number="$(gh pr list \
+              --repo identity-engineering/homebrew-tap \
+              --head "$branch" \
+              --base main \
+              --state open \
+              --json number \
+              --jq '.[0].number')"
           fi
-          git -C homebrew-tap push origin "HEAD:refs/heads/${branch}"
-          gh pr create \
+          gh pr merge "$pr_number" \
             --repo identity-engineering/homebrew-tap \
-            --base main \
-            --head "$branch" \
-            --title "ie-os ${VERSION}" \
-            --body "Updates the ie-os Homebrew formula to ${VERSION}."
+            --squash \
+            --delete-branch
+          gh pr list \
+            --repo identity-engineering/homebrew-tap \
+            --state open \
+            --json number,title \
+            --jq '.[] | select(.title | test("^ie-os ")) | .number' \
+          | while read -r stale; do
+              [[ -n "$stale" ]] || continue
+              gh pr close "$stale" \
+                --repo identity-engineering/homebrew-tap \
+                --comment "Superseded by ie-os ${VERSION}."
+            done
